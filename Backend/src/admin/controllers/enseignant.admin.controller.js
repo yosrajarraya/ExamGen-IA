@@ -1,0 +1,125 @@
+const bcrypt = require('bcryptjs');
+const Enseignant = require('../../enseignant/models/Enseignant');
+
+/**
+ * POST /api/admin/enseignants/create
+ * L'admin crée un compte enseignant — le password est hashé avant stockage
+ */
+const createEnseignant = async (req, res) => {
+  try {
+    const { Prenom, Nom, Email, Password, Telephone, Grade, Departement, Specialite, Active } = req.body;
+
+    if (!Prenom || !Nom || !Email || !Password) {
+      return res.status(400).json({ message: 'Prenom, Nom, Email et Password sont obligatoires' });
+    }
+
+    const existingEnseignant = await Enseignant.findOne({ Email: Email.toLowerCase() });
+    if (existingEnseignant) {
+      return res.status(400).json({ message: 'Cet email est déjà utilisé' });
+    }
+
+    const hashedPassword = await bcrypt.hash(Password, 10);
+
+    const newEnseignant = new Enseignant({
+      Prenom,
+      Nom,
+      Email,
+      Password: hashedPassword,
+      Telephone,
+      Grade,
+      Departement,
+      Specialite,
+      Active: Active !== undefined ? Active : true,
+    });
+
+    const saved = await newEnseignant.save();
+    const { Password: _, ...data } = saved.toObject();
+
+    res.status(201).json({
+      message: 'Enseignant créé avec succès',
+      enseignant: data,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * GET /api/admin/enseignants
+ * Liste tous les enseignants (sans les passwords)
+ */
+const getEnseignants = async (req, res) => {
+  try {
+    const enseignants = await Enseignant.find().select('-Password').sort({ createdAt: -1 });
+    res.status(200).json(enseignants);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * PUT /api/admin/enseignants/:id/toggle-active
+ * Activer ou désactiver un compte enseignant
+ */
+const toggleActive = async (req, res) => {
+  try {
+    const enseignant = await Enseignant.findById(req.params.id);
+    if (!enseignant) {
+      return res.status(404).json({ message: 'Enseignant introuvable' });
+    }
+
+    enseignant.Active = !enseignant.Active;
+    await enseignant.save();
+
+    res.status(200).json({
+      message: `Compte ${enseignant.Active ? 'activé' : 'désactivé'} avec succès`,
+      Active: enseignant.Active,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * PUT /api/admin/enseignants/:id/reset-password
+ * Réinitialiser le mot de passe d'un enseignant
+ */
+const resetPassword = async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword) {
+      return res.status(400).json({ message: 'Nouveau mot de passe requis' });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await Enseignant.findByIdAndUpdate(req.params.id, { Password: hashedPassword });
+
+    res.status(200).json({ message: 'Mot de passe réinitialisé avec succès' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/**
+ * DELETE /api/admin/enseignants/:id
+ * Supprimer un enseignant
+ */
+const deleteEnseignant = async (req, res) => {
+  try {
+    const deleted = await Enseignant.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ message: 'Enseignant introuvable' });
+    }
+    res.status(200).json({ message: 'Enseignant supprimé avec succès' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  createEnseignant,
+  getEnseignants,
+  toggleActive,
+  resetPassword,
+  deleteEnseignant,
+};

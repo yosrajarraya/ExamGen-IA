@@ -1,0 +1,188 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.profil-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f4f6f9;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* ── Sidebar ────────────────────────────────────────────────────────────────── */
+.profil-sidebar {
+  width: 220px;
+  background: #0f2a1a;
+  display: flex; flex-direction: column;
+  flex-shrink: 0;
+}
+
+.sidebar-logo {
+  display: flex; align-items: center; gap: 10px;
+  padding: 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+
+.sidebar-logo-icon {
+  width: 36px; height: 36px;
+  background: #057a55;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800; font-size: 12px; color: white; flex-shrink: 0;
+}
+
+.sidebar-logo-name { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; color: white; }
+.sidebar-logo-sub  { font-size: 10px; color: rgba(255,255,255,.4); margin-top: 1px; }
+
+.sidebar-nav { flex: 1; padding: 10px 0; }
+
+.sidebar-nav-item {
+  padding: 10px 16px;
+  font-size: 13px; color: rgba(255,255,255,.55);
+  cursor: pointer; transition: all .15s;
+}
+
+.sidebar-nav-item.active {
+  background: rgba(255,255,255,.1);
+  color: white; font-weight: 500;
+  border-left: 3px solid #6ee7b7;
+}
+
+.sidebar-footer { padding: 14px 16px; border-top: 1px solid rgba(255,255,255,.08); }
+
+.sidebar-user { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+
+.sidebar-avatar {
+  width: 30px; height: 30px;
+  background: rgba(255,255,255,.15);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600; color: white; flex-shrink: 0;
+}
+
+.sidebar-user-name  { font-size: 12px; color: white; font-weight: 500; }
+.sidebar-user-email { font-size: 10px; color: rgba(255,255,255,.4); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
+
+.btn-logout {
+  width: 100%;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px; padding: 8px;
+  font-size: 12px; color: rgba(255,255,255,.6);
+  cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .15s;
+}
+.btn-logout:hover { background: rgba(255,255,255,.12); color: white; }
+
+/* ── Main ───────────────────────────────────────────────────────────────────── */
+.profil-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.profil-topbar {
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 16px 24px;
+}
+
+.profil-page-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: #111827; }
+
+.profil-content { flex: 1; padding: 20px 24px; overflow-y: auto; }
+
+/* Info card */
+.profil-info-card {
+  background: white; border: 1px solid #e5e7eb;
+  border-radius: 12px; padding: 20px 24px;
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 20px;
+}
+
+.profil-info-avatar {
+  width: 56px; height: 56px;
+  background: #dcfce7; color: #15803d;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-size: 18px; font-weight: 800; flex-shrink: 0;
+}
+
+.profil-info-name  { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: #111827; margin-bottom: 2px; }
+.profil-info-email { font-size: 13px; color: #6b7280; margin-bottom: 8px; }
+
+.badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+.badge-active   { background: #dcfce7; color: #15803d; }
+.badge-inactive { background: #fee2e2; color: #991b1b; }
+
+/* Grid cartes */
+.profil-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px 24px; }
+.card-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 16px; }
+
+.profil-form { display: flex; flex-direction: column; gap: 14px; }
+
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label { font-size: 12px; color: #374151; font-weight: 500; }
+
+.form-group input {
+  border: 1px solid #d1d5db;
+  border-radius: 8px; padding: 9px 12px;
+  font-size: 13px; color: #111827;
+  font-family: 'DM Sans', sans-serif;
+  outline: none; transition: border-color .2s, box-shadow .2s;
+  width: 100%;
+}
+.form-group input:focus { border-color: #057a55; box-shadow: 0 0 0 3px rgba(5,122,85,.1); }
+
+/* Password toggle */
+.input-pw-wrapper { position: relative; }
+.input-pw-wrapper input { padding-right: 44px; }
+
+.btn-toggle-pw {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer;
+  font-size: 14px; color: #9ca3af;
+  padding: 4px; line-height: 1; transition: color .15s;
+}
+.btn-toggle-pw:hover { color: #374151; }
+
+.form-error {
+  background: #fef2f2; border: 1px solid #fecaca;
+  border-radius: 8px; padding: 10px 14px;
+  font-size: 13px; color: #991b1b;
+}
+
+.btn-primary {
+  background: #057a55; color: white; border: none;
+  border-radius: 8px; padding: 10px;
+  font-size: 13px; font-weight: 500;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background .15s;
+}
+.btn-primary:hover:not(:disabled) { background: #068a60; }
+.btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: #111827; color: white;
+  padding: 12px 20px; border-radius: 10px;
+  font-size: 13px; font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0,0,0,.2);
+  z-index: 200; animation: slideUp .2s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Loading */
+.profil-loading {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh;
+  font-family: 'DM Sans', sans-serif; color: #6b7280; font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .profil-sidebar { display: none; }
+  .profil-grid { grid-template-columns: 1fr; }
+}
