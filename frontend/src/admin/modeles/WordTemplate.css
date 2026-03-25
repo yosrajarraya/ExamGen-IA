@@ -1,0 +1,535 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ══════════════════════════════════════════════
+   LAYOUT PARTAGÉ
+══════════════════════════════════════════════ */
+.new-admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f0f2f5;
+  font-family: 'Inter', sans-serif;
+}
+
+.new-admin-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.new-topbar {
+  background: white;
+  padding: 18px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.new-topbar-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.new-topbar-sub {
+  font-size: 12.5px;
+  color: #6b7280;
+  margin-top: 3px;
+}
+
+.new-admin-body {
+  flex: 1;
+  padding: 24px 28px;
+  overflow-y: auto;
+}
+
+.wt-body {
+  padding: 0;
+}
+
+/* ══════════════════════════════════════════════
+   WORD TEMPLATE LAYOUT
+══════════════════════════════════════════════ */
+.wt-root {
+  display: flex;
+  height: 100%;
+  min-height: calc(100vh - 65px);
+}
+
+.wt-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  font-size: 14px;
+  color: #6b7280;
+  width: 100%;
+}
+
+/* ── Colonne gauche modèles ── */
+.wt-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: white;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+}
+
+.wt-sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 16px 14px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.wt-sidebar__title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.wt-btn-new {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  background: #2563eb;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .15s;
+  font-family: 'Inter', sans-serif;
+}
+
+.wt-btn-new:hover { background: #1d4ed8; }
+
+.wt-sidebar__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wt-btn-delete {
+  margin: 8px;
+  padding: 9px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #ef4444;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: 'Inter', sans-serif;
+  text-align: center;
+}
+
+.wt-btn-delete:hover {
+  background: #fee2e2;
+}
+
+/* ── Carte modèle ── */
+.model-card {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .12s;
+  border: 1.5px solid transparent;
+}
+
+.model-card:hover { background: #f9fafb; }
+
+.model-card--active {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.model-card__name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.model-card__meta {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+/* ── Formulaire ── */
+.wt-form {
+  flex: 1;
+  background: white;
+  padding: 28px 36px;
+  overflow-y: auto;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.wt-section {
+  padding: 20px 0;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.wt-section:last-of-type { border-bottom: none; }
+
+.wt-section__title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.wt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wt-field-grow { flex: 1; }
+.wt-field-sm   { width: 120px; flex-shrink: 0; }
+
+.wt-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.wt-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.wt-input, .wt-select {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: #111827;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  font-family: 'Inter', sans-serif;
+}
+
+.wt-input:focus, .wt-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  background: white;
+}
+
+.wt-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-color: #f9fafb;
+  padding-right: 36px;
+}
+
+/* Sections toggle */
+.wt-section-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  cursor: pointer;
+  border-bottom: 1px solid #f9fafb;
+}
+
+.wt-section-toggle__label {
+  font-size: 13px;
+  color: #374151;
+}
+
+.wt-section-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+/* Actions */
+.wt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 24px;
+  margin-top: 8px;
+}
+
+.wt-btn-preview {
+  padding: 10px 22px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all .15s;
+}
+
+.wt-btn-preview:hover {
+  background: #f9fafb;
+}
+
+.wt-btn-primary {
+  padding: 10px 26px;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  background: #16a34a;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: background .15s;
+}
+
+.wt-btn-primary:hover:not(:disabled) { background: #15803d; }
+.wt-btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+
+.wt-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #dc2626;
+  margin-top: 8px;
+}
+
+/* ══════════════════════════════════════════════
+   MODAL APERÇU A4
+══════════════════════════════════════════════ */
+.preview-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(3px);
+}
+
+.preview-modal {
+  background: #f8fafc;
+  border-radius: 14px;
+  width: 95vw;
+  max-width: 880px;
+  max-height: 95vh;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-modal-header {
+  padding: 16px 24px;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.preview-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.preview-modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all .15s;
+}
+
+.preview-modal-close:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.preview-modal-content {
+  flex: 1;
+  padding: 30px;
+  overflow: auto;
+  background: #eef1f5;
+  display: flex;
+  justify-content: center;
+}
+
+/* ══════════════════════════════════════════════
+   FEUILLE A4
+══════════════════════════════════════════════ */
+.a4-sheet {
+  width: 210mm;
+  min-height: 297mm;
+  background: white;
+  color: #111827;
+  box-shadow: 0 15px 50px rgba(0,0,0,.25);
+  border: 2px solid #111827;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+  line-height: 1.45;
+}
+
+.exam-header-top {
+  display: grid;
+  grid-template-columns: 1fr 2.2fr 1fr;
+  gap: 12px;
+  padding: 18px 20px 12px;
+  border-bottom: 3px double #111827;
+  align-items: start;
+}
+
+.exam-header-left {
+  font-size: 11px;
+  line-height: 1.3;
+  font-weight: 600;
+}
+
+.exam-header-center {
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.exam-header-right {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.iit-logo-box {
+  width: 78px;
+  height: 78px;
+  border: 2.5px solid #111827;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 26px;
+  background: white;
+  color: #111827;
+}
+
+.exam-main-box {
+  border: 3px solid #111827;
+  margin: 20px 18px;
+}
+
+.exam-title-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  border-bottom: 2px solid #111827;
+  min-height: 58px;
+  background: #f8fafc;
+}
+
+.exam-title-left {
+  padding: 12px 18px;
+  font-size: 19px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  text-transform: uppercase;
+}
+
+.exam-title-right {
+  border-left: 2px solid #111827;
+  background: #111827;
+}
+
+.exam-info-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  padding: 14px 18px;
+  gap: 18px;
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+.exam-info-left strong,
+.exam-info-right strong {
+  font-weight: 700;
+  color: #1a56a0;
+}
+
+.exam-student-row {
+  border-top: 2px solid #111827;
+  padding: 14px 18px;
+  font-size: 14px;
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  gap: 20px;
+}
+
+.exam-marking-row {
+  display: grid;
+  grid-template-columns: 1fr 1.8fr 0.9fr;
+  gap: 14px;
+  margin: 18px 18px 22px;
+}
+
+.mark-box {
+  border: 2px solid #111827;
+  padding: 12px 14px;
+  min-height: 88px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mark-box.large { min-height: 110px; }
+
+.exam-notes-block {
+  margin: 0 18px 25px;
+  padding: 14px 18px;
+  border: 1.5px solid #444;
+  background: #fdfdfd;
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.notes-title {
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: #b91c1c;
+}
+
+/* ══════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .wt-root { flex-direction: column; }
+  .wt-sidebar { width: 100%; min-height: auto; }
+}
