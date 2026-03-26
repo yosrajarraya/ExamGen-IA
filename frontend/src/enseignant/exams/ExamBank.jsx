@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import useAuth from '../../context/useAuth';
 import Sidebar from '../../components/sidebar/Sidebar';
 import { enseignantNavItems, buildEnseignantProfile } from '../../components/sidebar/sidebarConfigs';
-import { downloadExamBankFile, getExamBank } from '../../api/enseignant/Enseignant.api';
+import { downloadExamBankFile, getExamBank, deleteExamBankItem } from '../../api/enseignant/Enseignant.api';
 import './ExamBank.css';
 
 const normalizeStatus = (value) => String(value || '').trim().toLowerCase();
-
 const formatDuration = (value) => String(value || '').trim() || '-';
 
 const saveBlob = (blob, filename) => {
@@ -28,20 +27,25 @@ const filterExamList = (items, query, status) => {
   return (items || []).filter((item) => {
     const byStatus = st === 'tous' || st === '' ? true : normalizeStatus(item.status) === st;
     if (!byStatus) return false;
-
     if (!q) return true;
-
-    const haystack = [
-      item.title,
-      item.filiere,
-      item.createdByName,
-      item.createdByEmail,
-    ]
+    const haystack = [item.title, item.filiere, item.createdByName, item.createdByEmail]
       .map((v) => String(v || '').toLowerCase())
       .join(' ');
-
     return haystack.includes(q);
   });
+};
+
+/**
+ * ✅ Extrait un ID string fiable depuis n'importe quelle forme Mongoose/JSON :
+ *   - string normale : "69c4595e..."
+ *   - ObjectId sérialisé : { $oid: "69c4595e..." }
+ *   - ObjectId Mongoose brut : objet avec .toString()
+ */
+const toId = (id) => {
+  if (!id) return '';
+  if (typeof id === 'object' && id.$oid) return String(id.$oid);
+  if (typeof id === 'object' && typeof id.toString === 'function') return id.toString();
+  return String(id);
 };
 
 const ExamBank = () => {
@@ -52,10 +56,8 @@ const ExamBank = () => {
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
   const [actionMessage, setActionMessage] = useState('');
-
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('tous');
-
   const [mesExamens, setMesExamens] = useState([]);
   const [autresExamens, setAutresExamens] = useState([]);
 
@@ -73,7 +75,6 @@ const ExamBank = () => {
         setLoading(false);
       }
     };
-
     load();
   }, []);
 
@@ -98,14 +99,42 @@ const ExamBank = () => {
 
   const handleDownload = async (exam) => {
     try {
-      const blob = await downloadExamBankFile(exam.id);
+      const id = toId(exam.id);
+      const blob = await downloadExamBankFile(id);
       const safeName = `${String(exam.title || 'examen').replace(/[^a-zA-Z0-9_-]+/g, '_') || 'examen'}.docx`;
       saveBlob(blob, safeName);
       setActionError('');
-      setActionMessage('Examen telecharge avec succes.');
+      setActionMessage('Examen téléchargé avec succès.');
     } catch (err) {
       setActionMessage('');
-      setActionError(err?.response?.data?.message || 'Impossible de telecharger cet examen');
+      setActionError(err?.response?.data?.message || 'Impossible de télécharger cet examen');
+    }
+  };
+
+  const handleDelete = async (exam) => {
+    if (
+      !window.confirm(
+        `Êtes-vous sûr de vouloir supprimer "${exam.title || 'Examen sans titre'}" ? Cette action ne peut pas être annulée.`
+      )
+    ) return;
+
+    // ✅ Extraire l'ID de manière fiable avant l'appel API
+    const id = toId(exam.id);
+
+    if (!id) {
+      setActionError("Impossible d'identifier l'examen à supprimer.");
+      return;
+    }
+
+    try {
+      await deleteExamBankItem(id);
+      // ✅ Retirer l'examen de la liste locale avec comparaison normalisée
+      setMesExamens((prev) => prev.filter((item) => toId(item.id) !== id));
+      setActionError('');
+      setActionMessage('Examen supprimé avec succès.');
+    } catch (err) {
+      setActionMessage('');
+      setActionError(err?.response?.data?.message || 'Impossible de supprimer cet examen');
     }
   };
 
@@ -119,110 +148,138 @@ const ExamBank = () => {
       />
 
       <main className="exam-bank-main">
-        <header className="exam-bank-header">
-          <h1>Mes examens sauvegardes</h1>
-          <button className="exam-bank-logout" type="button" onClick={logout}>Se deconnecter</button>
-        </header>
+        <div className="exam-bank-topbar">
+          <div className="exam-bank-topbar-left">
+            <h1 className="exam-bank-title">Bonjour, {user?.Prenom || 'Enseignant'}</h1>
+            <p className="exam-bank-subtitle">Gérez vos examens et accédez à la banque d'examens.</p>
+          </div>
+          <button
+            className="exam-bank-btn-primary"
+            type="button"
+            onClick={() => navigate('/enseignant/exams/create')}
+          >
+            + Nouvel examen
+          </button>
+        </div>
 
-        <section className="exam-bank-filters">
+        <div className="exam-bank-filters-bar">
           <input
             type="text"
-            placeholder="Rechercher par titre, filiere, auteur..."
+            placeholder="Rechercher par titre, filière, auteur..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="exam-bank-search"
           />
-
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-            <option value="tous">Tous</option>
-            <option value="exporte">Exporte</option>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="exam-bank-select">
+            <option value="tous">Tous statuts</option>
+            <option value="exporte">Exporté</option>
             <option value="en cours">En cours</option>
             <option value="brouillon">Brouillon</option>
           </select>
+        </div>
 
-          <button type="button" className="exam-bank-new-btn" onClick={() => navigate('/enseignant/exams/create')}>
-            + Nouvel examen
-          </button>
-        </section>
+        {error && <div className="exam-bank-alert exam-bank-alert-error">{error}</div>}
+        {actionMessage && <div className="exam-bank-alert exam-bank-alert-success">{actionMessage}</div>}
+        {actionError && <div className="exam-bank-alert exam-bank-alert-error">{actionError}</div>}
 
-        {error && <p className="exam-bank-error">{error}</p>}
-        {actionMessage && <p className="exam-bank-success">{actionMessage}</p>}
-        {actionError && <p className="exam-bank-error">{actionError}</p>}
-
-        <section className="exam-bank-card">
-          <h2>Mes examens</h2>
+        {/* ── Mes examens ─────────────────────────────────────────────── */}
+        <section className="exam-bank-section">
+          <h2 className="exam-bank-section-title">Mes examens</h2>
 
           {loading ? (
             <div className="exam-bank-empty">Chargement...</div>
           ) : myFiltered.length === 0 ? (
             <div className="exam-bank-empty">Aucun examen dans mes sauvegardes.</div>
           ) : (
-            <table className="exam-bank-table">
-              <thead>
-                <tr>
-                  <th>Examen</th>
-                  <th>Filiere</th>
-                  <th>Statut</th>
-                  <th>Pts</th>
-                  <th>Q.</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {myFiltered.map((exam) => (
-                  <tr key={exam.id}>
-                    <td>
-                      <strong>{exam.title || 'Examen sans titre'}</strong>
-                      <small>{formatDuration(exam.duree)}</small>
-                    </td>
-                    <td>{exam.filiere || '-'}</td>
-                    <td>{exam.status || '-'}</td>
-                    <td>{Number(exam.noteTotale) || 0}</td>
-                    <td>{Number(exam.questionsCount) || 0}</td>
-                    <td>
-                      <button type="button" className="exam-bank-action-btn" onClick={() => handleDownload(exam)}>
-                        Telecharger
-                      </button>
-                    </td>
+            <div className="exam-bank-table-wrapper">
+              <table className="exam-bank-table">
+                <thead>
+                  <tr>
+                    <th>Examen</th>
+                    <th>Filiere</th>
+                    <th>Statut</th>
+                    <th>Pts</th>
+                    <th>Q.</th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {myFiltered.map((exam) => (
+                    <tr key={toId(exam.id)} className="exam-bank-row">
+                      <td className="exam-bank-cell-title">
+                        <div className="exam-bank-title-block">
+                          <span className="exam-bank-exam-name">{exam.title || 'Examen sans titre'}</span>
+                          {formatDuration(exam.duree) !== '-' && (
+                            <span className="exam-bank-exam-duration">{formatDuration(exam.duree)}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="exam-bank-cell">{exam.filiere || '—'}</td>
+                      <td className="exam-bank-cell">
+                        <span className={`exam-bank-badge exam-bank-badge-${String(exam.status || '').toLowerCase().replace(/\s+/g, '-')}`}>
+                          {exam.status || '—'}
+                        </span>
+                      </td>
+                      <td className="exam-bank-cell exam-bank-cell-number">{Number(exam.noteTotale) || 0}</td>
+                      <td className="exam-bank-cell exam-bank-cell-number">{Number(exam.questionsCount) || 0}</td>
+                      <td className="exam-bank-cell exam-bank-cell-action">
+                        <button type="button" className="exam-bank-btn-download" onClick={() => handleDownload(exam)}>
+                          Telecharger
+                        </button>
+                        <button type="button" className="exam-bank-btn-delete" onClick={() => handleDelete(exam)}>
+                          Supprimer
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
 
-        <section className="exam-bank-card">
-          <h2>Anciens examens d'autres profs</h2>
+        {/* ── Anciens examens d'autres profs ──────────────────────────── */}
+        <section className="exam-bank-section">
+          <h2 className="exam-bank-section-title">Anciens examens d'autres profs</h2>
 
           {loading ? (
             <div className="exam-bank-empty">Chargement...</div>
           ) : othersFiltered.length === 0 ? (
             <div className="exam-bank-empty">Aucun examen disponible pour le moment.</div>
           ) : (
-            <table className="exam-bank-table">
-              <thead>
-                <tr>
-                  <th>Examen</th>
-                  <th>Filiere</th>
-                  <th>Auteur</th>
-                  <th>Pts</th>
-                  <th>Q.</th>
-                </tr>
-              </thead>
-              <tbody>
-                {othersFiltered.map((exam) => (
-                  <tr key={exam.id}>
-                    <td>
-                      <strong>{exam.title || 'Examen sans titre'}</strong>
-                      <small>{formatDuration(exam.duree)}</small>
-                    </td>
-                    <td>{exam.filiere || '-'}</td>
-                    <td>{exam.createdByName || exam.createdByEmail || 'Professeur'}</td>
-                    <td>{Number(exam.noteTotale) || 0}</td>
-                    <td>{Number(exam.questionsCount) || 0}</td>
+            <div className="exam-bank-table-wrapper">
+              <table className="exam-bank-table">
+                <thead>
+                  <tr>
+                    <th>Examen</th>
+                    <th>Filiere</th>
+                    <th>Auteur</th>
+                    <th>Pts</th>
+                    <th>Q.</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {othersFiltered.map((exam) => (
+                    <tr key={toId(exam.id)} className="exam-bank-row">
+                      <td className="exam-bank-cell-title">
+                        <div className="exam-bank-title-block">
+                          <span className="exam-bank-exam-name">{exam.title || 'Examen sans titre'}</span>
+                          {formatDuration(exam.duree) !== '-' && (
+                            <span className="exam-bank-exam-duration">{formatDuration(exam.duree)}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="exam-bank-cell">{exam.filiere || '—'}</td>
+                      <td className="exam-bank-cell exam-bank-cell-author">
+                        {exam.createdByName || exam.createdByEmail || 'Professeur'}
+                      </td>
+                      <td className="exam-bank-cell exam-bank-cell-number">{Number(exam.noteTotale) || 0}</td>
+                      <td className="exam-bank-cell exam-bank-cell-number">{Number(exam.questionsCount) || 0}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </section>
       </main>

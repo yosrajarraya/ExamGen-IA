@@ -14,6 +14,7 @@ const {
 	addExamToBank,
 	getExamBank,
 	downloadExamBankFile,
+	deleteExamBankItem,
 } = require('../controllers/enseignant.controller');
 
 // Toutes ces routes nécessitent d'être connecté en tant qu'enseignant
@@ -31,5 +32,6 @@ router.delete('/questions/bank/:id', deleteQuestionBankItem); // Supprimer ma qu
 router.post('/exams/bank', addExamToBank);           // Ajouter examen exporté à la banque
 router.get('/exams/bank', getExamBank);              // Récupérer banque d'examens
 router.get('/exams/bank/:id/download', downloadExamBankFile); // Télécharger un .docx
+router.delete('/exams/bank/:id', deleteExamBankItem); // Supprimer mon examen
 
 module.exports = router;

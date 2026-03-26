@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { loginEnseignant } from '../../api/enseignant/Auth.enseignant.api';
 import './LoginEnseignant.css';
 
@@ -23,8 +23,11 @@ const IconKey = () => (
 
 const LoginEnseignant = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [email, setEmail] = useState('');
+  const successMessage = location.state?.message || '';
+
+  const [email, setEmail] = useState(location.state?.email || '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -73,6 +76,7 @@ const LoginEnseignant = () => {
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form" noValidate>
+          {successMessage && <div className="reset-alert-success" role="status">{successMessage}</div>}
           {error && <div className="alerte-erreur" role="alert">{error}</div>}
 
           <div className="form-groupe">

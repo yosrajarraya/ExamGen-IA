@@ -2,86 +2,131 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: 260px 1fr;
-  background: #ececf4;
+  background: #f5f7fb;
 }
 
 .exam-bank-main {
-  padding: 20px;
+  padding: 28px 32px;
 }
 
-.exam-bank-header {
-  background: #fff;
-  border: 1px solid #e5e8f4;
-  border-radius: 14px;
-  padding: 18px 22px;
+/* ===== TOPBAR ===== */
+.exam-bank-topbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 32px;
 }
 
-.exam-bank-header h1 {
+.exam-bank-topbar-left h1,
+.exam-bank-topbar-left p {
   margin: 0;
-  color: #132c57;
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
 }
 
-.exam-bank-logout {
-  border: 1px solid #f2c2c2;
-  border-radius: 12px;
-  background: #fff5f5;
-  color: #be4c4c;
-  padding: 10px 16px;
-  font-size: 16px;
+.exam-bank-title {
+  color: #1a2d4d;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.exam-bank-subtitle {
+  color: #7a8fa3;
+  font-size: 14px;
+  margin-top: 8px;
+  font-weight: 400;
+}
+
+.exam-bank-btn-primary {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 11px 20px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
+  transition: background 0.2s ease;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
 }
 
-.exam-bank-filters {
-  margin-top: 14px;
-  background: #fff;
-  border: 1px solid #e5e8f4;
-  border-radius: 14px;
-  padding: 14px;
+.exam-bank-btn-primary:hover {
+  background: #2563eb;
+}
+
+/* ===== FILTERS ===== */
+.exam-bank-filters-bar {
   display: grid;
-  grid-template-columns: 1fr 190px 170px;
-  gap: 10px;
+  grid-template-columns: 1fr 200px;
+  gap: 14px;
+  margin-bottom: 24px;
+  background: white;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.exam-bank-filters input,
-.exam-bank-filters select {
-  border: 1px solid #d8dfef;
-  border-radius: 12px;
-  background: #fbfcff;
-  height: 44px;
-  padding: 0 12px;
-  font-size: 16px;
-  color: #1e3558;
+.exam-bank-search,
+.exam-bank-select {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fafbfc;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #1a2d4d;
+  font-family: inherit;
+  transition: border-color 0.2s ease;
 }
 
-.exam-bank-new-btn {
-  border: 1px solid #2f8bec;
-  border-radius: 12px;
-  background: #2f8bec;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
+.exam-bank-search:focus,
+.exam-bank-select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: white;
 }
 
-.exam-bank-card {
-  margin-top: 14px;
-  background: #fff;
-  border: 1px solid #e5e8f4;
-  border-radius: 14px;
-  padding: 16px;
+/* ===== ALERTS ===== */
+.exam-bank-alert {
+  padding: 14px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  border-left: 4px solid;
 }
 
-.exam-bank-card h2 {
-  margin: 0 0 12px;
+.exam-bank-alert-success {
+  background: #ecfdf5;
+  color: #047857;
+  border-left-color: #10b981;
+}
+
+.exam-bank-alert-error {
+  background: #fef2f2;
+  color: #991b1b;
+  border-left-color: #ef4444;
+}
+
+/* ===== SECTION ===== */
+.exam-bank-section {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.exam-bank-section-title {
+  color: #1a2d4d;
   font-size: 22px;
-  color: #142f5a;
+  font-weight: 700;
+  margin: 0 0 16px;
+}
+
+/* ===== TABLE ===== */
+.exam-bank-table-wrapper {
+  overflow-x: auto;
 }
 
 .exam-bank-table {
@@ -89,63 +134,149 @@
   border-collapse: collapse;
 }
 
-.exam-bank-table th,
-.exam-bank-table td {
+.exam-bank-table thead {
+  background: #f9fafc;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.exam-bank-table th {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 16px;
   text-align: left;
-  padding: 12px 8px;
-  border-top: 1px solid #edf1f8;
-  font-size: 18px;
-  color: #243955;
 }
 
-.exam-bank-table thead th {
-  border-top: none;
-  color: #1b355d;
-  font-weight: 800;
+.exam-bank-row {
+  border-bottom: 1px solid #e2e8f0;
+  transition: background-color 0.15s ease;
 }
 
-.exam-bank-table td strong {
-  display: block;
-  font-size: 16px;
-  color: #1b355d;
+.exam-bank-row:hover {
+  background-color: #f8fafc;
 }
 
-.exam-bank-table td small {
-  display: block;
-  margin-top: 6px;
-  color: #7d8aa3;
+.exam-bank-cell {
+  padding: 14px 16px;
+  font-size: 14px;
+  color: #475569;
+  vertical-align: middle;
+}
+
+.exam-bank-cell-title {
+  padding: 14px 16px;
+}
+
+.exam-bank-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.exam-bank-exam-name {
+  color: #1a2d4d;
+  font-weight: 700;
   font-size: 14px;
 }
 
-.exam-bank-action-btn {
-  border: 1px solid #2f8bec;
-  border-radius: 12px;
-  background: #2f8bec;
-  color: #fff;
-  font-size: 16px;
+.exam-bank-exam-duration {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.exam-bank-cell-number {
+  text-align: center;
+  font-weight: 600;
+  color: #1a2d4d;
+}
+
+.exam-bank-cell-author {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.exam-bank-cell-action {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+/* ===== BADGE ===== */
+.exam-bank-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
   font-weight: 700;
-  padding: 8px 14px;
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+
+.exam-bank-badge-exporte {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.exam-bank-badge-en-cours {
+  background: #dbeafe;
+  color: #0369a1;
+}
+
+.exam-bank-badge-brouillon {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+/* ===== ACTION BUTTON ===== */
+.exam-bank-btn-download {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
-.exam-bank-empty {
-  border: 1px dashed #cfd9ec;
-  border-radius: 12px;
-  background: #fbfcff;
-  color: #607089;
-  padding: 16px;
-  font-size: 16px;
+.exam-bank-btn-download:hover {
+  background: #2563eb;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
 }
 
-.exam-bank-success,
-.exam-bank-error {
-  margin: 10px 0 0;
-  font-size: 15px;
+.exam-bank-btn-delete {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
   font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  margin-left: 8px;
 }
 
-.exam-bank-success {
-  color: #0f7c35;
+.exam-bank-btn-delete:hover {
+  background: #dc2626;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
+}
+
+/* ===== EMPTY STATE ===== */
+.exam-bank-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #94a3b8;
+  font-size: 14px;
+  background: #f9fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
 }
 
 .exam-bank-error {

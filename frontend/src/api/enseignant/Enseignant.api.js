@@ -71,3 +71,8 @@ export const downloadExamBankFile = async (id) => {
   });
   return response.data;
 };
+
+export const deleteExamBankItem = async (id) => {
+  const response = await api.delete(`/enseignant/exams/bank/${id}`);
+  return response.data;
+};

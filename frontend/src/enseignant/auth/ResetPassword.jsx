@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   resetPasswordEnseignant,
-  loginEnseignant,
 } from '../../api/enseignant/Auth.enseignant.api';
 import './ResetPassword.css';
 
@@ -72,14 +71,15 @@ const ResetPassword = () => {
       setMessage(resetData.message || 'Mot de passe réinitialisé avec succès');
       setSuccess(true);
 
-      // Connexion automatique après reset
-      const loginData = await loginEnseignant(email, newPassword);
-      localStorage.setItem('token', loginData.token);
-      localStorage.setItem('user', JSON.stringify(loginData.user));
-
-      // Redirection vers le profil après 1.5s
+      // Redirection vers login après 1.5s (sans auto-connexion)
       setTimeout(() => {
-        window.location.href = '/enseignant/profil';
+        navigate('/enseignant/login', {
+          state: {
+            message: 'Mot de passe modifié avec succès. Connectez-vous avec votre nouveau mot de passe.',
+            email,
+          },
+          replace: true,
+        });
       }, 1500);
     } catch (err) {
       setError(err?.response?.data?.message || 'Erreur lors de la réinitialisation');

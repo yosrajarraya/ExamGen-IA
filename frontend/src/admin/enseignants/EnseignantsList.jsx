@@ -5,7 +5,6 @@ import { adminNavItems, buildAdminProfile } from '../../components/sidebar/sideb
 import {
   getEnseignants,
   toggleActive,
-  resetPassword,
   deleteEnseignant,
 } from '../../api/admin/Enseignant.api';
 import CreateEnseignant from './CreateEnseignant';
@@ -32,10 +31,6 @@ const EnseignantsList = () => {
   const [toast, setToast] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [editingEnseignant, setEditingEnseignant] = useState(null);
-  const [resetModal, setResetModal] = useState(null);
-  const [newPw, setNewPw] = useState('');
-  const [resetError, setResetError] = useState('');
-  const [resetLoading, setResetLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [filterStatut, setFilterStatut] = useState('tous');
   const [filterDept, setFilterDept] = useState('tous');
@@ -68,20 +63,6 @@ const EnseignantsList = () => {
     } catch { showToast('Erreur lors de la modification'); }
   };
 
-  const handleResetPassword = async (e) => {
-    e.preventDefault();
-    setResetLoading(true);
-    setResetError('');
-    try {
-      await resetPassword(resetModal.id, newPw);
-      showToast('Mot de passe réinitialisé avec succès');
-      setResetModal(null);
-      setNewPw('');
-    } catch (err) {
-      setResetError(err?.response?.data?.message || 'Erreur');
-    } finally { setResetLoading(false); }
-  };
-
   const handleDelete = async (id, nom) => {
     if (!window.confirm(`Confirmer la suppression de ${nom} ?`)) return;
     try {
@@ -89,11 +70,6 @@ const EnseignantsList = () => {
       setEnseignants((prev) => prev.filter((e) => e._id !== id));
       showToast('Enseignant supprimé');
     } catch { showToast('Erreur lors de la suppression'); }
-  };
-
-  const openResetModal = (ens) => {
-    setResetModal({ id: ens._id, nom: `${ens.Prenom} ${ens.Nom}` });
-    setNewPw(''); setResetError('');
   };
 
   const openEditModal = (ens) => {
@@ -196,7 +172,6 @@ const EnseignantsList = () => {
                           <button className={`new-btn-link ${ens.Active ? 'new-btn-desactiver' : 'new-btn-activer'}`} onClick={() => handleToggle(ens._id)}>
                             {ens.Active ? 'Desactiver' : 'Activer'}
                           </button>
-                          <button className="new-btn-link" onClick={() => openResetModal(ens)}>Mot de passe</button>
                           <button className="new-btn-link new-btn-supprimer" onClick={() => handleDelete(ens._id, `${ens.Prenom} ${ens.Nom}`)}>Supprimer</button>
                         </div>
                       </td>
@@ -227,29 +202,6 @@ const EnseignantsList = () => {
         }}
         showToast={showToast}
       />
-
-      {resetModal && (
-        <div className="new-modal-overlay" onClick={() => setResetModal(null)} role="dialog" aria-modal="true">
-          <div className="new-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="new-modal-header">
-              <h2>Réinitialiser le mot de passe</h2>
-              <button className="new-modal-close" onClick={() => setResetModal(null)}>✕</button>
-            </div>
-            <p className="new-modal-desc">Nouveau mot de passe pour <strong>{resetModal.nom}</strong></p>
-            <form onSubmit={handleResetPassword} className="new-modal-form" noValidate>
-              <div className="new-form-group">
-                <label>Nouveau mot de passe <span className="req">*</span></label>
-                <input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} required placeholder="••••••••" />
-              </div>
-              {resetError && <div className="new-form-error">{resetError}</div>}
-              <div className="new-modal-actions">
-                <button type="button" className="new-btn-secondary" onClick={() => setResetModal(null)}>Annuler</button>
-                <button type="submit" className="new-btn-primary" disabled={resetLoading}>{resetLoading ? 'En cours...' : 'Confirmer'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       <Toast message={toast} />
     </div>
