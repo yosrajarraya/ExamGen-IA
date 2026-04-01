@@ -1,0 +1,351 @@
+:root {
+  --bleu-fonce: #1a3a5c;
+  --bleu: #2e86c1;
+  --bleu-hover: #1a6fa8;
+  --fond: #f0f4f8;
+  --blanc: #ffffff;
+  --texte: #2c3e50;
+  --texte-clair: #7f8c8d;
+  --rouge: #e74c3c;
+  --bordure: #dce3ea;
+  --rayon: 10px;
+  --transition: 0.2s ease;
+}
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  background: var(--fond);
+  color: var(--texte);
+  min-height: 100vh;
+  padding: 10px;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+}
+
+.auth-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: calc(100vh - 20px);
+  max-width: 1320px;
+  margin: 0 auto;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--blanc);
+}
+
+.auth-panneau-gauche {
+  background: url('../../assets/iit.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 50px;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-panneau-gauche::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0.22);
+  pointer-events: none;
+}
+
+.auth-logo-bloc {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  margin-bottom: -45px;
+}
+
+.auth-logo-icone {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: -170px auto 16px;
+  animation: float 3s ease-in-out infinite;
+}
+
+.auth-logo-icone svg {
+  width: 44px;
+  height: 44px;
+  fill: var(--blanc);
+}
+
+.auth-info-bloc {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 340px;
+  margin-top: 20px;
+}
+
+.auth-info-titre {
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: var(--blanc);
+  line-height: 1.3;
+}
+
+.auth-info-titre span {
+  color: var(--blanc);
+}
+
+.auth-panneau-droit {
+  background: var(--blanc);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 44px 56px;
+}
+
+.auth-form-header {
+  width: 100%;
+  max-width: 360px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.auth-titre-principal {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--bleu-fonce);
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.auth-sous-titre {
+  font-size: 0.88rem;
+  color: var(--texte-clair);
+  line-height: 1.55;
+}
+
+.auth-form {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-groupe {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-groupe label {
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: var(--texte);
+}
+
+.input-conteneur {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icone-left {
+  position: absolute;
+  left: 13px;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.input-icone-left svg {
+  width: 16px;
+  height: 16px;
+  fill: var(--texte-clair);
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 14px 12px 40px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 0.93rem;
+  color: var(--texte);
+  background: var(--fond);
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+}
+
+.form-input:focus {
+  border-color: var(--bleu);
+  background: var(--blanc);
+  box-shadow: 0 0 0 3px rgba(46,134,193,0.18);
+}
+
+.btn-voir-mdp {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--bleu);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.alerte-erreur {
+  background: #fdf0ef;
+  border: 1.5px solid #f5c6c3;
+  border-left: 4px solid var(--rouge);
+  border-radius: var(--rayon);
+  padding: 11px 15px;
+  font-size: 0.87rem;
+  color: #c0392b;
+}
+
+.form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.86rem;
+  color: var(--texte-clair);
+  cursor: pointer;
+}
+
+.checkbox-label input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--bleu);
+  cursor: pointer;
+}
+
+.lien-oublie {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--bleu);
+  text-decoration: none;
+}
+
+.btn-connexion {
+  width: 100%;
+  padding: 13px;
+  background: var(--blanc);
+  color: var(--texte);
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 0.97rem;
+  font-weight: 700;
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.btn-connexion svg {
+  width: 18px;
+  height: 18px;
+  fill: var(--texte);
+}
+
+.spinner {
+  width: 17px;
+  height: 17px;
+  border: 2px solid var(--bordure);
+  border-top-color: var(--bleu);
+  border-radius: 50%;
+  animation: tourner 0.75s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@keyframes tourner {
+  to { transform: rotate(360deg); }
+}
+
+.auth-footer {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 360px;
+  font-size: 0.83rem;
+  color: var(--texte-clair);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-footer a {
+  color: var(--bleu);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.separateur {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--texte-clair);
+  font-size: 0.8rem;
+  margin-bottom: 2px;
+}
+
+.separateur::before,
+.separateur::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--bordure);
+}
+
+@media (max-width: 900px) {
+  body { padding: 0; }
+
+  .auth-container {
+    grid-template-columns: 1fr;
+    border-radius: 0;
+    min-height: 100vh;
+  }
+
+  .auth-panneau-gauche {
+    padding: 40px 30px;
+    min-height: 220px;
+  }
+
+  .auth-panneau-droit {
+    padding: 40px 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-panneau-droit { padding: 30px 18px; }
+  .auth-titre-principal { font-size: 1.5rem; }
+  .auth-info-titre { font-size: 2rem; }
+}

@@ -1,0 +1,19 @@
+# Node
+node_modules/
+npm-debug.log*
+
+
+# Build
+dist/
+build/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vite / React
+.vite/
