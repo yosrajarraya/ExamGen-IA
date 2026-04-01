@@ -1,0 +1,24 @@
+# Node dependencies
+node_modules/
+Backend/node_modules/
+frontend/node_modules/
+
+
+
+# Build outputs
+dist/
+build/
+frontend/dist/
+Backend/dist/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Vite cache
+.vite/
