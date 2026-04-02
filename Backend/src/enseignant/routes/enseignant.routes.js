@@ -15,18 +15,14 @@ const {
 const {
   addQuestionToBank,
   getQuestionBank,
-  getFilteredQuestions,
   updateQuestionBankItem,
   deleteQuestionBankItem,
-  copyQuestionBankItem,
 } = require("../controllers/enseignant.questionBank.controller");
 const {
   addExamToBank,
   getExamBank,
-  getFilteredExams,
   downloadExamBankFile,
   deleteExamBankItem,
-  copyExamBankItem,
 } = require("../controllers/enseignant.examBank.controller");
 
 // Toutes ces routes nécessitent d'être connecté en tant qu'enseignant
@@ -39,15 +35,11 @@ router.put("/profil", updateProfil); // Modifier ses informations
 router.put("/change-password", changePassword); // Changer son mot de passe
 router.post("/questions/bank", addQuestionToBank); // Ajouter question à la banque
 router.get("/questions/bank", getQuestionBank); // Récupérer banque de questions
-router.get("/questions/filtered", getFilteredQuestions); // Récupérer questions filtrées
 router.put("/questions/bank/:id", updateQuestionBankItem); // Modifier ma question
 router.delete("/questions/bank/:id", deleteQuestionBankItem); // Supprimer ma question
-router.post("/questions/bank/:id/copy", copyQuestionBankItem); // Copier une question
 router.post("/exams/bank", addExamToBank); // Ajouter examen exporté à la banque
 router.get("/exams/bank", getExamBank); // Récupérer banque d'examens
-router.get("/exams/filtered", getFilteredExams); // Récupérer examens filtrés
 router.get("/exams/bank/:id/download", downloadExamBankFile); // Télécharger un .docx
 router.delete("/exams/bank/:id", deleteExamBankItem); // Supprimer mon examen
-router.post("/exams/bank/:id/copy", copyExamBankItem); // Copier un examen
 
 module.exports = router;

@@ -98,7 +98,7 @@ const CreateEnseignant = ({ isOpen, onClose, onCreated, onError, showToast, mode
                 type="text"
                 value={form.Prenom}
                 onChange={set('Prenom')}
-                placeholder="Ines"
+                placeholder="votre prenom"
               />
             </div>
             <div className="form-group">
@@ -107,7 +107,7 @@ const CreateEnseignant = ({ isOpen, onClose, onCreated, onError, showToast, mode
                 type="text"
                 value={form.Nom}
                 onChange={set('Nom')}
-                placeholder="Kessemtini"
+                placeholder="votre nom"
               />
             </div>
           </div>
@@ -119,7 +119,7 @@ const CreateEnseignant = ({ isOpen, onClose, onCreated, onError, showToast, mode
               type="email"
               value={form.Email}
               onChange={set('Email')}
-              placeholder="ines.kessemtini@iit.tn"
+              placeholder="votre.email@iit.tn"
             />
           </div>
 

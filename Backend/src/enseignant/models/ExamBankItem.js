@@ -21,13 +21,6 @@ const examBankItemSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: '',
-      index: true,
-    },
-    anneeUniversitaire: {
-      type: String,
-      trim: true,
-      default: '',
-      index: true,
     },
     type: {
       type: String,
