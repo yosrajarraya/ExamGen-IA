@@ -164,6 +164,14 @@ const wordTemplateSchema = new mongoose.Schema(
       default: 2.0,
     },
 
+    exercices: [
+      {
+        numero: Number,
+        contenu: String,
+        points: String,
+      },
+    ],
+
     examCount: {
       type: Number,
       default: 0,

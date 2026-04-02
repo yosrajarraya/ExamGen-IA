@@ -71,7 +71,32 @@ function generatePassword(length = 10) {
   return password;
 }
 
-async function sendTeacherCredentialsEmail({ to, nomComplet, email, motDePasse }) {
+// Mot de passe simple sans caractères problématiques pour meilleure lisibilité
+function generateSimplePassword(length = 12) {
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+  const numbers = '0123456789';
+  const simpleSpecials = '!#%&*+-=?@';
+
+  const allChars = uppercase + lowercase + numbers + simpleSpecials;
+
+  let password = '';
+  // Garantir au moins 1 de chaque type
+  password += uppercase.charAt(Math.floor(Math.random() * uppercase.length));
+  password += lowercase.charAt(Math.floor(Math.random() * lowercase.length));
+  password += numbers.charAt(Math.floor(Math.random() * numbers.length));
+  password += simpleSpecials.charAt(Math.floor(Math.random() * simpleSpecials.length));
+
+  // Remplir le reste aléatoirement
+  for (let i = password.length; i < length; i += 1) {
+    password += allChars.charAt(Math.floor(Math.random() * allChars.length));
+  }
+
+  // Mélanger
+  return password.split('').sort(() => Math.random() - 0.5).join('');
+}
+
+async function sendTeacherCredentialsEmail({ to, nomComplet, email, motDePasse, prenom, nom, password }) {
   const transporter = getTransporter();
   const config = readMailConfig();
 
@@ -83,28 +108,105 @@ async function sendTeacherCredentialsEmail({ to, nomComplet, email, motDePasse }
     };
   }
 
+  const finalName = nomComplet || `${prenom || ''} ${nom || ''}`.trim() || 'Enseignant';
+  const finalEmail = email || to || '';
+  const finalPassword = motDePasse || password || '';
+  const appUrl = process.env.APP_URL || 'http://localhost:5173/enseignant/login';
+
   try {
     await transporter.sendMail({
       from: config.from,
-      to,
+      to: finalEmail,
       subject: 'Vos accès enseignant - ExamGen-IA',
-      text: `Bonjour ${nomComplet},
+      text: `Bonjour ${finalName},
 
-Votre compte enseignant est créé.
+Votre compte enseignant a été créé avec succès sur la plateforme ExamGen-IA.
 
-Email: ${email}
-Mot de passe: ${motDePasse}
+Identifiants de connexion :
+Email: ${finalEmail}
+Mot de passe: ${finalPassword}
 
-Connectez-vous sur l'espace enseignant et changez votre mot de passe après la première connexion.
+Lien d'accès à l'application : ${appUrl}
+
+Instructions :
+1. Accédez à l'application via le lien ci-dessus
+2. Connectez-vous avec vos identifiants
+3. Changez votre mot de passe après la première connexion
+
+Bienvenue sur ExamGen-IA !
 `,
       html: `
-        <p>Bonjour ${nomComplet},</p>
-        <p>Votre compte enseignant est créé.</p>
-        <p>
-          <strong>Email:</strong> ${email}<br/>
-          <strong>Mot de passe:</strong> ${motDePasse}
-        </p>
-        <p>Connectez-vous sur l'espace enseignant et changez votre mot de passe après la première connexion.</p>
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; }
+              .container { max-width: 600px; margin: 0 auto; background: #f9f9f9; padding: 20px; border-radius: 8px; }
+              .header { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center; }
+              .header h1 { margin: 0; font-size: 28px; }
+              .content { background: white; padding: 30px; border-radius: 0 0 8px 8px; }
+              .greeting { font-size: 16px; margin-bottom: 20px; }
+              .credentials-box { background: #f0f9ff; border-left: 4px solid #2563eb; padding: 15px; margin: 20px 0; border-radius: 4px; }
+              .credentials-box strong { color: #1e40af; font-size: 14px; }
+              .credentials-box div { margin: 8px 0; }
+              .button-container { text-align: center; margin: 30px 0; }
+              .button { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: white; padding: 14px 32px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block; }
+              .button:hover { opacity: 0.9; }
+              .footer { color: #666; font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; }
+              .warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px; color: #92400e; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>ExamGen-IA</h1>
+                <p style="margin: 10px 0 0;">Plateforme de Gestion d'Examens Intelligente</p>
+              </div>
+              
+              <div class="content">
+                <div class="greeting">
+                  <p>Bonjour <strong>${finalName}</strong>,</p>
+                  <p>Bienvenue sur <strong>ExamGen-IA</strong> ! Votre compte enseignant a été créé avec succès.</p>
+                </div>
+
+                <h3 style="color: #1e40af; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">Vos Identifiants de Connexion</h3>
+                
+                <div class="credentials-box">
+                  <div>
+                    <strong>Email :</strong><br/>
+                    <code style="background: #f5f5f5; padding: 4px 8px; border-radius: 4px; display: inline-block;">${finalEmail}</code>
+                  </div>
+                  <div>
+                    <strong>Mot de Passe :</strong><br/>
+                    <code style="background: #f5f5f5; padding: 4px 8px; border-radius: 4px; display: inline-block; letter-spacing: 1px;">${finalPassword}</code>
+                  </div>
+                </div>
+
+                <div class="button-container">
+                  <a href="${appUrl}" class="button">Se Connecter à l'Application</a>
+                </div>
+
+                <h3 style="color: #1e40af;">Instructions de Première Connexion</h3>
+                <ol style="color: #555;">
+                  <li>Cliquez sur le bouton "Se Connecter à l'Application" ci-dessus</li>
+                  <li>Entrez votre email et mot de passe</li>
+                  <li><strong>Important :</strong> Changez votre mot de passe après la première connexion</li>
+                  <li>Accédez à votre tableau de bord enseignant</li>
+                </ol>
+
+                <div class="warning">
+                  <strong>⚠️ Sécurité :</strong> Gardez ces identifiants confidentiels. Changez votre mot de passe dès votre première connexion pour plus de sécurité.
+                </div>
+
+                <div class="footer">
+                  <p>Besoin d'aide ? Contactez l'administration.</p>
+                  <p style="margin-top: 10px; color: #999;">ExamGen-IA © 2026 - Tous droits réservés</p>
+                </div>
+              </div>
+            </div>
+          </body>
+        </html>
       `,
     });
 
@@ -160,6 +262,7 @@ Si vous n'avez pas fait cette demande, ignorez ce message.
 
 module.exports = {
   generatePassword,
+  generateSimplePassword,
   sendTeacherCredentials,
   sendTeacherCredentialsEmail,
   sendPasswordResetCodeEmail,

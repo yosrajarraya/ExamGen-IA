@@ -41,7 +41,7 @@ const makeDefault = () => ({
   actif: true,
   langue: 'Français',
 
-  universiteFr: 'Institut Informatique de Tunis',
+  universiteFr: 'Université Nord-Américaine Privée',
   institutFr: 'Institut International de Technologie',
   departementFr: 'Département Informatique',
   universiteAr: '',
@@ -67,6 +67,8 @@ const makeDefault = () => ({
   taille: '11pt',
   margeH: '2',
   margeV: '2',
+
+  exercices: [],
 });
 
 const normalizeFromServer = (t, existingLocalId = null) => ({
@@ -76,6 +78,7 @@ const normalizeFromServer = (t, existingLocalId = null) => ({
   margeH: String(t.margeH ?? 2),
   margeV: String(t.margeV ?? 2),
   sections: t.sections || { ...DEFAULT_SECTIONS },
+  exercices: t.exercices || [],
 });
 
 const A4Preview = ({ config }) => (
@@ -177,6 +180,24 @@ const A4Preview = ({ config }) => (
         <div>— Les ordinateurs et l'accès à Internet sont strictement interdits</div>
       </div>
     )}
+
+    {config.exercices?.length > 0 && (
+      <div className="exam-exercises-block">
+        <div className="exercises-title">Exercices</div>
+        {config.exercices
+          .filter((ex) => ex.contenu && ex.contenu.trim() && ex.numero)
+          .sort((a, b) => parseInt(a.numero) - parseInt(b.numero))
+          .map((ex) => (
+            <div key={ex.numero} className="exercise-item">
+              <div className="exercise-header">
+                <strong>Exercice {ex.numero}</strong>
+                {ex.points && <span className="exercise-points">/ {ex.points}</span>}
+              </div>
+              <div className="exercise-content">{ex.contenu}</div>
+            </div>
+          ))}
+      </div>
+    )}
   </div>
 );
 
@@ -190,6 +211,8 @@ const WordTemplate = () => {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null); // {_localId, nom}
+
 
   const selected = models.find((m) => m._localId === selectedLocalId) || null;
 
@@ -260,8 +283,6 @@ const WordTemplate = () => {
       return;
     }
 
-    if (!window.confirm('Supprimer ce modèle ?')) return;
-
     const target = models.find((m) => m._localId === localId);
 
     if (target?._id) {
@@ -321,6 +342,7 @@ const WordTemplate = () => {
         taille: selected.taille,
         margeH: parseFloat(selected.margeH) || 2,
         margeV: parseFloat(selected.margeV) || 2,
+        exercices: selected.exercices || [],
       };
 
       const isNew = !selected._id;
@@ -377,24 +399,7 @@ const WordTemplate = () => {
             </p>
           </div>
 
-          {selected && (
-            <div className="wt-page-actions">
-              <button
-                className="wt-btn-secondary"
-                onClick={() => setShowPreview(true)}
-              >
-                Aperçu A4
-              </button>
 
-              <button
-                className="wt-btn-primary"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                {saving ? 'Sauvegarde...' : saved ? '✓ Sauvegardé' : 'Sauvegarder'}
-              </button>
-            </div>
-          )}
         </div>
 
         <div className="new-admin-body wt-body">
@@ -416,38 +421,44 @@ const WordTemplate = () => {
 
                 <div className="wt-model-list">
                   {models.map((m) => (
-                    <button
+                    <div
                       key={m._localId}
-                      type="button"
                       className={`wt-model-item ${
                         m._localId === selectedLocalId ? 'wt-model-item--active' : ''
                       }`}
-                      onClick={() => {
-                        setSelectedLocalId(m._localId);
-                        setSaved(false);
-                        setError('');
-                      }}
                     >
-                      <div className="wt-model-item__top">
-                        <span className="wt-model-item__name">{m.nom}</span>
-                        <span className="wt-model-badge">{m.langue}</span>
-                      </div>
+                      <button
+                        type="button"
+                        className="wt-model-item__selector"
+                        onClick={() => {
+                          setSelectedLocalId(m._localId);
+                          setSaved(false);
+                          setError('');
+                        }}
+                      >
+                        <div className="wt-model-item__top">
+                          <span className="wt-model-item__name">{m.nom}</span>
+                          <span className="wt-model-badge">{m.langue}</span>
+                        </div>
 
-                      <div className="wt-model-item__bottom">
-                        {MODEL_TYPES.find((t) => t.id === m.type)?.label || m.type}
-                      </div>
-                    </button>
+                        <div className="wt-model-item__bottom">
+                          {MODEL_TYPES.find((t) => t.id === m.type)?.label || m.type}
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="wt-model-item__delete"
+                        onClick={() => setConfirmDelete({ _localId: m._localId, nom: m.nom })}
+                        aria-label={`Supprimer ${m.nom}`}
+                      >
+                        🗑
+                      </button>
+                    </div>
                   ))}
                 </div>
 
-                {selected && (
-                  <button
-                    className="wt-btn-delete"
-                    onClick={() => handleDelete(selected._localId)}
-                  >
-                    Supprimer ce modèle
-                  </button>
-                )}
+
               </aside>
 
               {selected && (
@@ -511,38 +522,16 @@ const WordTemplate = () => {
                     <div className="wt-grid wt-grid-2">
                       <div className="wt-field">
                         <label className="wt-label">Université (FR)</label>
-                        <input
-                          className="wt-input"
-                          value={selected.universiteFr}
-                          onChange={(e) => update('universiteFr', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="wt-field">
-                        <label className="wt-label">Université (AR)</label>
-                        <input
-                          className="wt-input"
-                          value={selected.universiteAr}
-                          onChange={(e) => update('universiteAr', e.target.value)}
-                        />
+                        <div className="wt-static-field">
+                          {selected.universiteFr}
+                        </div>
                       </div>
 
                       <div className="wt-field">
                         <label className="wt-label">Institut (FR)</label>
-                        <input
-                          className="wt-input"
-                          value={selected.institutFr}
-                          onChange={(e) => update('institutFr', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="wt-field">
-                        <label className="wt-label">Institut (AR)</label>
-                        <input
-                          className="wt-input"
-                          value={selected.institutAr}
-                          onChange={(e) => update('institutAr', e.target.value)}
-                        />
+                        <div className="wt-static-field">
+                          {selected.institutFr}
+                        </div>
                       </div>
 
                       <div className="wt-field">
@@ -554,14 +543,7 @@ const WordTemplate = () => {
                         />
                       </div>
 
-                      <div className="wt-field">
-                        <label className="wt-label">Département (AR)</label>
-                        <input
-                          className="wt-input"
-                          value={selected.departementAr}
-                          onChange={(e) => update('departementAr', e.target.value)}
-                        />
-                      </div>
+                     
                     </div>
                   </div>
 
@@ -779,12 +761,156 @@ const WordTemplate = () => {
                     </div>
                   </div>
 
+                  <div className="wt-card">
+                    <div className="wt-card-header">
+                      <div>
+                        <div className="wt-card-eyebrow">Contenu</div>
+                        <h3 className="wt-card-title">Exercices et questions</h3>
+                      </div>
+                      <button
+                        type="button"
+                        className="wt-btn-small"
+                        onClick={() => {
+                          const newExercice = {
+                            numero: '',
+                            contenu: '',
+                            points: '',
+                          };
+                          setModels((prev) =>
+                            prev.map((m) =>
+                              m._localId === selectedLocalId
+                                ? { ...m, exercices: [...(m.exercices || []), newExercice] }
+                                : m
+                            )
+                          );
+                          setSaved(false);
+                        }}
+                      >
+                        + Ajouter exercice
+                      </button>
+                    </div>
+
+                    <div className="wt-exercises-container">
+                      {selected.exercices?.map((ex, idx) => (
+                        <div key={idx} className="wt-exercise-card">
+                          <div className="wt-exercise-header">
+                            <label className="wt-label">Numéro</label>
+                            <button
+                              type="button"
+                              className="wt-btn-remove"
+                              onClick={() => {
+                                setModels((prev) =>
+                                  prev.map((m) =>
+                                    m._localId === selectedLocalId
+                                      ? {
+                                          ...m,
+                                          exercices: m.exercices.filter(
+                                            (_, i) => i !== idx
+                                          ),
+                                        }
+                                      : m
+                                  )
+                                );
+                                setSaved(false);
+                              }}
+                              title="Supprimer cet exercice"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          <input
+                            className="wt-input wt-input-numero"
+                            type="number"
+                            placeholder="Ex: 1, 2, 3..."
+                            min="1"
+                            value={ex.numero}
+                            onChange={(e) => {
+                              const newExercices = [...(selected.exercices || [])];
+                              newExercices[idx] = { ...ex, numero: e.target.value };
+                              setModels((prev) =>
+                                prev.map((m) =>
+                                  m._localId === selectedLocalId
+                                    ? { ...m, exercices: newExercices }
+                                    : m
+                                )
+                              );
+                              setSaved(false);
+                            }}
+                          />
+                          <label className="wt-label" style={{ marginTop: '10px' }}>Contenu</label>
+                          <textarea
+                            className="wt-textarea"
+                            placeholder="Contenu de l'exercice..."
+                            value={ex.contenu}
+                            onChange={(e) => {
+                              const newExercices = [...(selected.exercices || [])];
+                              newExercices[idx] = { ...ex, contenu: e.target.value };
+                              setModels((prev) =>
+                                prev.map((m) =>
+                                  m._localId === selectedLocalId
+                                    ? { ...m, exercices: newExercices }
+                                    : m
+                                )
+                              );
+                              setSaved(false);
+                            }}
+                            rows="4"
+                          />
+                          <label className="wt-label" style={{ marginTop: '10px' }}>Points (optionnel)</label>
+                          <input
+                            className="wt-input wt-input-small"
+                            type="number"
+                            placeholder="Points"
+                            value={ex.points}
+                            onChange={(e) => {
+                              const newExercices = [...(selected.exercices || [])];
+                              newExercices[idx] = { ...ex, points: e.target.value };
+                              setModels((prev) =>
+                                prev.map((m) =>
+                                  m._localId === selectedLocalId
+                                    ? { ...m, exercices: newExercices }
+                                    : m
+                                )
+                              );
+                              setSaved(false);
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {(!selected.exercices || selected.exercices.length === 0) && (
+                      <div className="wt-empty-state">
+                        Aucun exercice ajouté. Cliquez sur "Ajouter exercice" pour commencer.
+                      </div>
+                    )}
+                  </div>
+
                   {error && <div className="wt-error">{error}</div>}
                 </section>
               )}
             </div>
           )}
         </div>
+
+        {selected && (
+          <div className="wt-footer-actions">
+            <button
+              className="wt-btn-secondary"
+              onClick={() => setShowPreview(true)}
+            >
+              Aperçu A4
+            </button>
+
+            <button
+              className="wt-btn-primary"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? 'Sauvegarde...' : saved ? '✓ Sauvegardé' : 'Sauvegarder'}
+            </button>
+          </div>
+        )}
       </main>
 
       {showPreview && selected && (
@@ -808,6 +934,29 @@ const WordTemplate = () => {
 
             <div className="preview-modal-content">
               <A4Preview config={selected} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDelete && (
+        <div className="confirmation-overlay" onClick={() => setConfirmDelete(null)}>
+          <div className="confirmation-dialog" onClick={(e) => e.stopPropagation()}>
+            <h3>Confirmer la suppression</h3>
+            <p>Supprimer le modèle "{confirmDelete.nom}" ?</p>
+            <div className="confirmation-actions">
+              <button className="btn-cancel" onClick={() => setConfirmDelete(null)}>
+                Annuler
+              </button>
+              <button
+                className="btn-confirm"
+                onClick={() => {
+                  handleDelete(confirmDelete._localId);
+                  setConfirmDelete(null);
+                }}
+              >
+                Supprimer
+              </button>
             </div>
           </div>
         </div>

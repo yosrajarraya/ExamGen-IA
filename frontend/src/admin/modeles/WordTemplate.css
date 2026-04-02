@@ -61,10 +61,19 @@
 }
 
 .wt-page-actions {
+  display: none;
+}
+
+.wt-footer-actions {
   display: flex;
-  align-items: center;
+  justify-content: flex-end;
   gap: 10px;
-  flex-shrink: 0;
+  padding: 16px 20px;
+  border-top: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.95);
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
 }
 
 /* ══════════════════════════════════════════════
@@ -161,17 +170,56 @@
 ══════════════════════════════════════════════ */
 .wt-model-item {
   width: 100%;
-  text-align: left;
   border: 1px solid #e5edf6;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   border-radius: 18px;
-  padding: 14px 14px 12px;
-  cursor: pointer;
+  padding: 0;
   transition: .18s ease;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.wt-model-item__selector {
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  padding: 14px;
+  cursor: pointer;
+}
+
+.wt-model-item__delete {
+  border: none;
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  margin-right: 10px;
+}
+
+.wt-model-item__delete:hover {
+  background: #fecaca;
+}
+
+.wt-model-item__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px;
 }
+
+.wt-model-item__bottom {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
 
 .wt-model-item:hover {
   transform: translateY(-1px);
@@ -774,4 +822,238 @@
     width: 98vw;
     border-radius: 18px;
   }
+}
+
+/* ══════════════════════════════════════════════
+   STATIC FIELDS
+══════════════════════════════════════════════ */
+.wt-static-field {
+  width: 100%;
+  min-width: 0;
+  height: 46px;
+  padding: 0 14px;
+  font-size: 14px;
+  color: #0f172a;
+  background: #f1f5f9;
+  border: 1px solid #dbe4ee;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  font-family: 'Inter', sans-serif;
+}
+
+.confirmation-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2500;
+}
+
+.confirmation-dialog {
+  width: min(430px, 90vw);
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.35);
+  padding: 20px;
+}
+
+.confirmation-dialog h3 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  color: #1f2937;
+}
+
+.confirmation-dialog p {
+  margin: 0 0 18px;
+  color: #475569;
+}
+
+.confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.confirmation-actions .btn-cancel,
+.confirmation-actions .btn-confirm {
+  border: none;
+  border-radius: 10px;
+  padding: 9px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.confirmation-actions .btn-cancel {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.confirmation-actions .btn-confirm {
+  background: #dc2626;
+  color: white;
+}
+
+.confirmation-actions .btn-confirm:hover {
+  background: #b91c1c;
+}
+/* ══════════════════════════════════════════════
+   EXERCICES / QUESTIONS
+══════════════════════════════════════════════ */
+.wt-exercises-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.wt-exercise-card {
+  padding: 14px;
+  border: 1px solid #dbe4ee;
+  border-radius: 14px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wt-exercise-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.wt-exercise-header .wt-label {
+  margin: 0;
+}
+
+.wt-textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #0f172a;
+  background: white;
+  border: 1px solid #dbe4ee;
+  border-radius: 10px;
+  outline: none;
+  transition: .18s ease;
+  font-family: 'Inter', sans-serif;
+  resize: vertical;
+}
+
+.wt-textarea::placeholder {
+  color: #94a3b8;
+}
+
+.wt-textarea:hover {
+  border-color: #cbd5e1;
+}
+
+.wt-textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59,130,246,.12);
+}
+
+.wt-input-small {
+  max-width: 150px;
+}
+
+.wt-input-numero {
+  max-width: 120px;
+  margin-bottom: 10px;
+}
+
+.wt-btn-small {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: .18s ease;
+}
+
+.wt-btn-small:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(37,99,235,.2);
+}
+
+.wt-btn-remove {
+  padding: 4px 8px;
+  font-size: 14px;
+  color: #dc2626;
+  background: #fee2e2;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: .18s ease;
+}
+
+.wt-btn-remove:hover {
+  background: #fecaca;
+}
+
+.wt-empty-state {
+  padding: 20px;
+  text-align: center;
+  color: #64748b;
+  font-size: 14px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+}
+
+/* ══════════════════════════════════════════════
+   EXERCICES DANS L'APERÇU A4
+══════════════════════════════════════════════ */
+.exam-exercises-block {
+  margin: 20px 18px 0;
+  padding: 14px 18px;
+  border-top: 2.5px solid #111827;
+}
+
+.exercises-title {
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  color: #111827;
+}
+
+.exercise-item {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+.exercise-item:last-child {
+  border-bottom: none;
+}
+
+.exercise-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.exercise-points {
+  font-weight: 600;
+  color: #666;
+}
+
+.exercise-content {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
