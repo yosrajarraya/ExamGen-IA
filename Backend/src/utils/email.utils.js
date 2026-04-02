@@ -71,7 +71,7 @@ function generatePassword(length = 10) {
   return password;
 }
 
-async function sendTeacherCredentialsEmail({ to, nomComplet, email, motDePasse }) {
+async function sendTeacherCredentialsEmail({ to, nomComplet, email, motDePasse, prenom, nom, password }) {
   const transporter = getTransporter();
   const config = readMailConfig();
 
@@ -83,26 +83,36 @@ async function sendTeacherCredentialsEmail({ to, nomComplet, email, motDePasse }
     };
   }
 
+  const finalName = nomComplet || `${prenom || ''} ${nom || ''}`.trim() || 'Enseignant';
+  const finalEmail = email || to || '';
+  const finalPassword = motDePasse || password || '';
+  const appUrl = process.env.APP_URL || 'http://localhost:5173/enseignant/login';
+
   try {
     await transporter.sendMail({
       from: config.from,
-      to,
+      to: finalEmail,
       subject: 'Vos accès enseignant - ExamGen-IA',
-      text: `Bonjour ${nomComplet},
+      text: `Bonjour ${finalName},
 
 Votre compte enseignant est créé.
 
-Email: ${email}
-Mot de passe: ${motDePasse}
+Email: ${finalEmail}
+Mot de passe: ${finalPassword}
+
+Accédez à l'application : ${appUrl}
 
 Connectez-vous sur l'espace enseignant et changez votre mot de passe après la première connexion.
 `,
       html: `
-        <p>Bonjour ${nomComplet},</p>
+        <p>Bonjour ${finalName},</p>
         <p>Votre compte enseignant est créé.</p>
         <p>
-          <strong>Email:</strong> ${email}<br/>
-          <strong>Mot de passe:</strong> ${motDePasse}
+          <strong>Email:</strong> ${finalEmail}<br/>
+          <strong>Mot de passe:</strong> ${finalPassword}
+        </p>
+        <p>
+          <strong>Accès à l'application :</strong> <a href="${appUrl}" target="_blank" rel="noopener noreferrer">${appUrl}</a>
         </p>
         <p>Connectez-vous sur l'espace enseignant et changez votre mot de passe après la première connexion.</p>
       `,

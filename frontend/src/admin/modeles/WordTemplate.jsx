@@ -41,7 +41,7 @@ const makeDefault = () => ({
   actif: true,
   langue: 'Français',
 
-  universiteFr: 'Institut Informatique de Tunis',
+  universiteFr: 'Université Nord-Américaine Privée',
   institutFr: 'Institut International de Technologie',
   departementFr: 'Département Informatique',
   universiteAr: '',
@@ -190,6 +190,8 @@ const WordTemplate = () => {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null); // {_localId, nom}
+
 
   const selected = models.find((m) => m._localId === selectedLocalId) || null;
 
@@ -259,8 +261,6 @@ const WordTemplate = () => {
       setError('Gardez au moins un modèle.');
       return;
     }
-
-    if (!window.confirm('Supprimer ce modèle ?')) return;
 
     const target = models.find((m) => m._localId === localId);
 
@@ -377,24 +377,7 @@ const WordTemplate = () => {
             </p>
           </div>
 
-          {selected && (
-            <div className="wt-page-actions">
-              <button
-                className="wt-btn-secondary"
-                onClick={() => setShowPreview(true)}
-              >
-                Aperçu A4
-              </button>
 
-              <button
-                className="wt-btn-primary"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                {saving ? 'Sauvegarde...' : saved ? '✓ Sauvegardé' : 'Sauvegarder'}
-              </button>
-            </div>
-          )}
         </div>
 
         <div className="new-admin-body wt-body">
@@ -416,38 +399,44 @@ const WordTemplate = () => {
 
                 <div className="wt-model-list">
                   {models.map((m) => (
-                    <button
+                    <div
                       key={m._localId}
-                      type="button"
                       className={`wt-model-item ${
                         m._localId === selectedLocalId ? 'wt-model-item--active' : ''
                       }`}
-                      onClick={() => {
-                        setSelectedLocalId(m._localId);
-                        setSaved(false);
-                        setError('');
-                      }}
                     >
-                      <div className="wt-model-item__top">
-                        <span className="wt-model-item__name">{m.nom}</span>
-                        <span className="wt-model-badge">{m.langue}</span>
-                      </div>
+                      <button
+                        type="button"
+                        className="wt-model-item__selector"
+                        onClick={() => {
+                          setSelectedLocalId(m._localId);
+                          setSaved(false);
+                          setError('');
+                        }}
+                      >
+                        <div className="wt-model-item__top">
+                          <span className="wt-model-item__name">{m.nom}</span>
+                          <span className="wt-model-badge">{m.langue}</span>
+                        </div>
 
-                      <div className="wt-model-item__bottom">
-                        {MODEL_TYPES.find((t) => t.id === m.type)?.label || m.type}
-                      </div>
-                    </button>
+                        <div className="wt-model-item__bottom">
+                          {MODEL_TYPES.find((t) => t.id === m.type)?.label || m.type}
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="wt-model-item__delete"
+                        onClick={() => setConfirmDelete({ _localId: m._localId, nom: m.nom })}
+                        aria-label={`Supprimer ${m.nom}`}
+                      >
+                        🗑
+                      </button>
+                    </div>
                   ))}
                 </div>
 
-                {selected && (
-                  <button
-                    className="wt-btn-delete"
-                    onClick={() => handleDelete(selected._localId)}
-                  >
-                    Supprimer ce modèle
-                  </button>
-                )}
+
               </aside>
 
               {selected && (
@@ -511,38 +500,16 @@ const WordTemplate = () => {
                     <div className="wt-grid wt-grid-2">
                       <div className="wt-field">
                         <label className="wt-label">Université (FR)</label>
-                        <input
-                          className="wt-input"
-                          value={selected.universiteFr}
-                          onChange={(e) => update('universiteFr', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="wt-field">
-                        <label className="wt-label">Université (AR)</label>
-                        <input
-                          className="wt-input"
-                          value={selected.universiteAr}
-                          onChange={(e) => update('universiteAr', e.target.value)}
-                        />
+                        <div className="wt-static-field">
+                          {selected.universiteFr}
+                        </div>
                       </div>
 
                       <div className="wt-field">
                         <label className="wt-label">Institut (FR)</label>
-                        <input
-                          className="wt-input"
-                          value={selected.institutFr}
-                          onChange={(e) => update('institutFr', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="wt-field">
-                        <label className="wt-label">Institut (AR)</label>
-                        <input
-                          className="wt-input"
-                          value={selected.institutAr}
-                          onChange={(e) => update('institutAr', e.target.value)}
-                        />
+                        <div className="wt-static-field">
+                          {selected.institutFr}
+                        </div>
                       </div>
 
                       <div className="wt-field">
@@ -554,14 +521,7 @@ const WordTemplate = () => {
                         />
                       </div>
 
-                      <div className="wt-field">
-                        <label className="wt-label">Département (AR)</label>
-                        <input
-                          className="wt-input"
-                          value={selected.departementAr}
-                          onChange={(e) => update('departementAr', e.target.value)}
-                        />
-                      </div>
+                     
                     </div>
                   </div>
 
@@ -785,6 +745,25 @@ const WordTemplate = () => {
             </div>
           )}
         </div>
+
+        {selected && (
+          <div className="wt-footer-actions">
+            <button
+              className="wt-btn-secondary"
+              onClick={() => setShowPreview(true)}
+            >
+              Aperçu A4
+            </button>
+
+            <button
+              className="wt-btn-primary"
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? 'Sauvegarde...' : saved ? '✓ Sauvegardé' : 'Sauvegarder'}
+            </button>
+          </div>
+        )}
       </main>
 
       {showPreview && selected && (
@@ -808,6 +787,29 @@ const WordTemplate = () => {
 
             <div className="preview-modal-content">
               <A4Preview config={selected} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmDelete && (
+        <div className="confirmation-overlay" onClick={() => setConfirmDelete(null)}>
+          <div className="confirmation-dialog" onClick={(e) => e.stopPropagation()}>
+            <h3>Confirmer la suppression</h3>
+            <p>Supprimer le modèle "{confirmDelete.nom}" ?</p>
+            <div className="confirmation-actions">
+              <button className="btn-cancel" onClick={() => setConfirmDelete(null)}>
+                Annuler
+              </button>
+              <button
+                className="btn-confirm"
+                onClick={() => {
+                  handleDelete(confirmDelete._localId);
+                  setConfirmDelete(null);
+                }}
+              >
+                Supprimer
+              </button>
             </div>
           </div>
         </div>

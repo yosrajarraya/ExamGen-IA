@@ -1,0 +1,150 @@
+/* ImportEnseignantsExcel.css */
+
+.import-modal {
+  max-width: 600px;
+  width: 90vw;
+}
+
+.import-info {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.info-section h3 {
+  margin: 0 0 12px 0;
+  color: #1e293b;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.info-section p {
+  margin: 0 0 12px 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.info-section ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #475569;
+}
+
+.info-section li {
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.template-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.template-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.template-btn:hover {
+  background: #2563eb;
+}
+
+.template-note {
+  margin: 8px 0 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.file-input {
+  width: 100%;
+  padding: 12px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.file-input:hover {
+  border-color: #94a3b8;
+}
+
+.file-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.file-info {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  color: #0369a1;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.preview-section {
+  margin-top: 20px;
+  padding: 16px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+}
+
+.preview-section h4 {
+  margin: 0 0 12px 0;
+  color: #1e293b;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.preview-content {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.preview-item {
+  padding: 8px 12px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #475569;
+}
+
+.preview-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .import-modal {
+    width: 95vw;
+    margin: 20px;
+  }
+
+  .import-info {
+    padding: 16px;
+  }
+
+  .info-section ul {
+    padding-left: 16px;
+  }
+}

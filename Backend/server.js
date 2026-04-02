@@ -18,6 +18,17 @@ app.get('/', (req, res) => {
 app.use('/api/admin/auth',        require('./src/admin/routes/auth.admin.routes'));
 app.use('/api/admin/enseignants', require('./src/admin/routes/enseignant.admin.routes'));
 
+// Route pour télécharger le template Excel
+app.get('/api/admin/templates/enseignants-template', (req, res) => {
+  const filePath = './templates/enseignants-template.xlsx';
+  res.download(filePath, 'template-enseignants.xlsx', (err) => {
+    if (err) {
+      console.error('Erreur lors du téléchargement du template:', err);
+      res.status(500).json({ message: 'Erreur lors du téléchargement du template' });
+    }
+  });
+});
+
 // ── Routes Enseignant ─────────────────────────────────────────────────────────
 app.use('/api/enseignant/auth',   require('./src/enseignant/routes/auth.enseignant.routes'));
 app.use('/api/enseignant',        require('./src/enseignant/routes/enseignant.routes'));
