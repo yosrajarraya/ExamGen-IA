@@ -35,13 +35,28 @@ export const getWordTemplates = async () => {
   return response.data;
 };
 
-export const addQuestionToBank = async (text) => {
-  const response = await api.post('/enseignant/questions/bank', { text });
+export const addQuestionToBank = async (text, matiere = '', niveau = '', anneeUniversitaire = '') => {
+  const response = await api.post('/enseignant/questions/bank', { 
+    text,
+    matiere,
+    niveau,
+    anneeUniversitaire
+  });
   return response.data;
 };
 
 export const getQuestionBank = async () => {
   const response = await api.get('/enseignant/questions/bank');
+  return response.data;
+};
+
+export const getFilteredQuestions = async (matiere, niveau, annee) => {
+  const params = new URLSearchParams();
+  if (matiere) params.append('matiere', matiere);
+  if (niveau) params.append('niveau', niveau);
+  if (annee) params.append('annee', annee);
+
+  const response = await api.get(`/enseignant/questions/filtered?${params.toString()}`);
   return response.data;
 };
 
@@ -55,6 +70,11 @@ export const deleteQuestionBankItem = async (id) => {
   return response.data;
 };
 
+export const copyQuestionBankItem = async (id) => {
+  const response = await api.post(`/enseignant/questions/bank/${id}/copy`);
+  return response.data;
+};
+
 export const addExamToBank = async (payload) => {
   const response = await api.post('/enseignant/exams/bank', payload);
   return response.data;
@@ -62,6 +82,16 @@ export const addExamToBank = async (payload) => {
 
 export const getExamBank = async () => {
   const response = await api.get('/enseignant/exams/bank');
+  return response.data;
+};
+
+export const getFilteredExams = async (matiere, niveau, annee) => {
+  const params = new URLSearchParams();
+  if (matiere) params.append('matiere', matiere);
+  if (niveau) params.append('niveau', niveau);
+  if (annee) params.append('annee', annee);
+
+  const response = await api.get(`/enseignant/exams/filtered?${params.toString()}`);
   return response.data;
 };
 
@@ -74,5 +104,10 @@ export const downloadExamBankFile = async (id) => {
 
 export const deleteExamBankItem = async (id) => {
   const response = await api.delete(`/enseignant/exams/bank/${id}`);
+  return response.data;
+};
+
+export const copyExamBankItem = async (id) => {
+  const response = await api.post(`/enseignant/exams/bank/${id}/copy`);
   return response.data;
 };

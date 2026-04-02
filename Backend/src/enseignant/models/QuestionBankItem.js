@@ -7,6 +7,24 @@ const questionBankItemSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    matiere: {
+      type: String,
+      trim: true,
+      default: '',
+      index: true,
+    },
+    niveau: {
+      type: String,
+      trim: true,
+      default: '',
+      index: true,
+    },
+    anneeUniversitaire: {
+      type: String,
+      trim: true,
+      default: '',
+      index: true,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Enseignant',

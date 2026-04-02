@@ -1,5 +1,4 @@
 const bcrypt = require('bcryptjs');
-const XLSX = require('xlsx');
 const Enseignant = require('../../enseignant/models/Enseignant');
 
 // ✅ generatePassword était manquant dans l'import — c'était la cause du bug
@@ -16,12 +15,6 @@ const createEnseignant = async (req, res) => {
 
     if (!Prenom || !Nom || !Email) {
       return res.status(400).json({ message: 'Prenom, Nom et Email sont obligatoires' });
-    }
-
-    // Validation du format email simple
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(Email)) {
-      return res.status(400).json({ message: 'Veuillez entrer une adresse email valide' });
     }
 
     const existingEnseignant = await Enseignant.findOne({ Email: Email.toLowerCase() });
@@ -136,12 +129,6 @@ const updateEnseignant = async (req, res) => {
       return res.status(400).json({ message: 'Prenom, Nom et Email sont obligatoires' });
     }
 
-    // Validation du format email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(Email)) {
-      return res.status(400).json({ message: 'Veuillez entrer une adresse email valide' });
-    }
-
     const enseignant = await Enseignant.findById(req.params.id);
     if (!enseignant) {
       return res.status(404).json({ message: 'Enseignant introuvable' });
@@ -176,104 +163,4 @@ const updateEnseignant = async (req, res) => {
   }
 };
 
-/**
- * POST /api/admin/enseignants/import-excel
- */
-const importEnseignantsExcel = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'Aucun fichier fourni' });
-    }
-
-    // Lire le fichier Excel
-    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
-    const data = XLSX.utils.sheet_to_json(worksheet);
-
-    if (!data || data.length === 0) {
-      return res.status(400).json({ message: 'Le fichier Excel est vide ou invalide' });
-    }
-
-    let imported = 0;
-    let errors = [];
-
-    for (let i = 0; i < data.length; i++) {
-      const row = data[i];
-      const rowNumber = i + 2; // +2 car Excel commence à 1 et il y a l'en-tête
-
-      try {
-        // Validation des champs obligatoires
-        const prenom = row['Prénom'] || row.Prenom;
-        const nom = row['Nom'] || row.Nom;
-        const email = row['Email'] || row.Email;
-
-        if (!prenom || !nom || !email) {
-          errors.push(`Ligne ${rowNumber}: Prénom, Nom et Email sont obligatoires`);
-          continue;
-        }
-
-        // Validation du format email
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-          errors.push(`Ligne ${rowNumber}: L'email "${email}" n'est pas au bon format`);
-          continue;
-        }
-
-        // Vérifier si l'enseignant existe déjà
-        const existingEnseignant = await Enseignant.findOne({ Email: email.toLowerCase() });
-        if (existingEnseignant) {
-          errors.push(`Ligne ${rowNumber}: L'email ${email} est déjà utilisé`);
-          continue;
-        }
-
-        // Générer le mot de passe
-        const generatedPassword = generatePassword(12);
-        const hashedPassword = await bcrypt.hash(generatedPassword, 10);
-
-        // Créer l'enseignant
-        const newEnseignant = new Enseignant({
-          Prenom: prenom,
-          Nom: nom,
-          Email: email.toLowerCase(),
-          Password: hashedPassword,
-          Telephone: row['Téléphone'] || row.Telephone || '',
-          Grade: row['Grade'] || row.Grade || '',
-          Departement: row['Département'] || row.Departement || '',
-          Specialite: row['Spécialité'] || row.Specialite || '',
-          Active: true,
-        });
-
-        await newEnseignant.save();
-
-        // Envoyer l'email avec les identifiants
-        try {
-          await sendTeacherCredentials({
-            to: email,
-            nomComplet: `${prenom} ${nom}`,
-            email: email,
-            motDePasse: generatedPassword,
-          });
-        } catch (emailError) {
-          console.error(`Erreur envoi email pour ${email}:`, emailError);
-          // Ne pas échouer l'importation pour autant
-        }
-
-        imported++;
-      } catch (error) {
-        errors.push(`Ligne ${rowNumber}: ${error.message}`);
-      }
-    }
-
-    return res.status(200).json({
-      message: `Importation terminée: ${imported} enseignants importés`,
-      imported,
-      errors: errors.length > 0 ? errors : undefined,
-    });
-  } catch (error) {
-    console.error('Erreur lors de l\'importation Excel:', error);
-    return res.status(500).json({ message: 'Erreur lors de l\'importation: ' + error.message });
-  }
-};
-
-module.exports = { createEnseignant, getEnseignants, toggleActive, resetPassword, deleteEnseignant, updateEnseignant, importEnseignantsExcel };
+module.exports = { createEnseignant, getEnseignants, toggleActive, resetPassword, deleteEnseignant, updateEnseignant };

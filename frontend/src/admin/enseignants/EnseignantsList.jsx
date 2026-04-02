@@ -8,7 +8,6 @@ import {
   deleteEnseignant,
 } from '../../api/admin/Enseignant.api';
 import CreateEnseignant from './CreateEnseignant';
-import ImportEnseignantsExcel from './ImportEnseignantsExcel';
 import './EnseignantsList.css';
 
 const Toast = ({ message }) =>
@@ -31,9 +30,7 @@ const EnseignantsList = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [toast, setToast] = useState('');
   const [showCreate, setShowCreate] = useState(false);
-  const [showImport, setShowImport] = useState(false);
   const [editingEnseignant, setEditingEnseignant] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null); // { id, nom }
   const [search, setSearch] = useState('');
   const [filterStatut, setFilterStatut] = useState('tous');
   const [filterDept, setFilterDept] = useState('tous');
@@ -67,21 +64,12 @@ const EnseignantsList = () => {
   };
 
   const handleDelete = async (id, nom) => {
-    setConfirmDelete({ id, nom });
-  };
-
-  const confirmDeleteEnseignant = async () => {
-    if (!confirmDelete) return;
-
+    if (!window.confirm(`Confirmer la suppression de ${nom} ?`)) return;
     try {
-      await deleteEnseignant(confirmDelete.id);
-      setEnseignants((prev) => prev.filter((e) => e._id !== confirmDelete.id));
+      await deleteEnseignant(id);
+      setEnseignants((prev) => prev.filter((e) => e._id !== id));
       showToast('Enseignant supprimé');
-    } catch {
-      showToast('Erreur lors de la suppression');
-    } finally {
-      setConfirmDelete(null);
-    }
+    } catch { showToast('Erreur lors de la suppression'); }
   };
 
   const openEditModal = (ens) => {
@@ -120,14 +108,9 @@ const EnseignantsList = () => {
             <h1 className="new-topbar-title">Bonjour, {adminName}</h1>
             <p className="new-topbar-sub">Statistiques globales et gestion des comptes enseignants.</p>
           </div>
-          <div className="new-topbar-actions">
-            <button className="new-btn-secondary" onClick={() => setShowImport(true)}>
-              📊 Importer fichier Excel
-            </button>
-            <button className="new-btn-primary" onClick={() => setShowCreate(true)}>
-              + Nouveau compte enseignant
-            </button>
-          </div>
+          <button className="new-btn-primary" onClick={() => setShowCreate(true)}>
+            + Nouveau compte enseignant
+          </button>
         </div>
 
         <div className="new-admin-body">
@@ -201,16 +184,6 @@ const EnseignantsList = () => {
         </div>
       </main>
 
-      <ImportEnseignantsExcel
-        isOpen={showImport}
-        onClose={() => setShowImport(false)}
-        onImported={async () => {
-          setShowImport(false);
-          await fetchEnseignants();
-        }}
-        showToast={showToast}
-      />
-
       <CreateEnseignant
         isOpen={showCreate}
         onClose={() => setShowCreate(false)}
@@ -229,22 +202,6 @@ const EnseignantsList = () => {
         }}
         showToast={showToast}
       />
-
-      {confirmDelete && (
-        <div
-          className="confirmation-overlay"
-          onClick={() => setConfirmDelete(null)}
-        >
-          <div className="confirmation-dialog" onClick={(e) => e.stopPropagation()}>
-            <h3>Confirmer la suppression</h3>
-            <p>Supprimer l'enseignant "{confirmDelete.nom}" ?</p>
-            <div className="confirmation-actions">
-              <button className="btn-cancel" onClick={() => setConfirmDelete(null)}>Annuler</button>
-              <button className="btn-confirm" onClick={confirmDeleteEnseignant}>Supprimer</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <Toast message={toast} />
     </div>
