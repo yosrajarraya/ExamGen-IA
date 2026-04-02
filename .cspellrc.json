@@ -1,0 +1,35 @@
+{
+  "version": "0.2",
+  "language": "en,fr",
+  "words": [
+    "enseignant",
+    "Enseignant",
+    "matiere",
+    "niveau",
+    "annee",
+    "filiere",
+    "duree",
+    "titre",
+    "statut",
+    "brouillon",
+    "Brouillon",
+    "docx",
+    "Modèles",
+    "Modèles",
+    "Bibliothèque",
+    "quesitons",
+    "continuer",
+    "Continuer",
+    "Retour",
+    "Réinitialiser",
+    "Rechercher",
+    "Télécharger"
+  ],
+  "ignoreWords": [
+    "enseignant",
+    "Enseignant",
+    "matiere",
+    "niveau",
+    "annee"
+  ]
+}
