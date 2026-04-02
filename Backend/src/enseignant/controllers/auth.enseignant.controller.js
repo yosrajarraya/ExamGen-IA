@@ -11,7 +11,12 @@ const loginEnseignant = async (req, res) => {
       return res.status(400).json({ message: 'Email et mot de passe requis' });
     }
 
-    const enseignant = await Enseignant.findOne({ Email: email.toLowerCase().trim() });
+    // Nettoyer l'email
+    const cleanEmail = String(email || '').toLowerCase().trim();
+    // Nettoyer le mot de passe (trim des espaces)
+    const cleanPassword = String(password || '').trim();
+
+    const enseignant = await Enseignant.findOne({ Email: cleanEmail });
 
     if (!enseignant) {
       return res.status(404).json({ message: 'Utilisateur introuvable' });
@@ -23,7 +28,7 @@ const loginEnseignant = async (req, res) => {
       });
     }
 
-    const passwordValide = await bcrypt.compare(password, enseignant.Password);
+    const passwordValide = await bcrypt.compare(cleanPassword, enseignant.Password);
 
     if (!passwordValide) {
       return res.status(401).json({ message: 'Mot de passe incorrect' });

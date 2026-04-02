@@ -80,10 +80,7 @@ const updateTemplate = async (req, res) => {
       return res.status(404).json({ message: 'Modèle introuvable' });
     }
 
-    res.status(200).json({
-      message: 'Modèle mis à jour avec succès',
-      template,
-    });
+    res.status(200).json(template);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
