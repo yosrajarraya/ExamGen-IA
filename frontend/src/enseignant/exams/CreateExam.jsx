@@ -1,9 +1,10 @@
 ﻿import { useState, useEffect } from 'react';
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, VerticalAlign } from 'docx';
+import { useLocation } from 'react-router-dom';
 import useAuth from '../../context/useAuth';
 import Sidebar from '../../components/sidebar/Sidebar';
 import { enseignantNavItems, buildEnseignantProfile } from '../../components/sidebar/sidebarConfigs';
-import { addQuestionToBank, addExamToBank, getExamBank, getFilteredExams, getFilteredQuestions, copyQuestionBankItem, copyExamBankItem, getWordTemplates } from '../../api/enseignant/Enseignant.api';
+import { addQuestionToBank, addExamToBank, getExamBank, getExamBankItem, getFilteredExams, getFilteredQuestions, copyQuestionBankItem, copyExamBankItem, getWordTemplates } from '../../api/enseignant/Enseignant.api';
 import './CreateExam.css';
 
 const tabs = ['Bibliothèque', 'Modèles', 'Questions', 'Export'];
@@ -21,7 +22,7 @@ const readStoredQuestions = () => {
     return parsed.filter((item) => item && typeof item === 'object').map((item) => {
       const text = String(item.text || '').trim();
       if (!text) return null;
-      return { id: String(item.id || makeId()), text, editText: text, isEditing: false, savedToBank: Boolean(item.savedToBank) };
+      return { id: String(item.id || makeId()), text, editText: text, isEditing: false, savedToBank: Boolean(item.savedToBank), selected: item.selected !== false };
     }).filter(Boolean);
   } catch {
     return [];
@@ -30,6 +31,7 @@ const readStoredQuestions = () => {
 
 const CreateExam = () => {
   const { user, logout } = useAuth();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('Bibliothèque');
   const [filter, setFilter] = useState({
     matiere: '',
@@ -81,6 +83,7 @@ const CreateExam = () => {
   const [exportError, setExportError] = useState('');
   const [isSavingExam, setIsSavingExam] = useState(false);
   const [isSavingQuestion, setIsSavingQuestion] = useState(false);
+  const [editingExamId, setEditingExamId] = useState(null);
 
   // Load all exams and questions on component mount
   useEffect(() => {
@@ -179,6 +182,61 @@ const CreateExam = () => {
     };
     loadAllData();
   }, []);
+
+  // Handle loading a copied exam for editing
+  useEffect(() => {
+    const loadCopiedExam = async () => {
+      const params = new URLSearchParams(location.search);
+      const examIdToEdit = params.get('editExam');
+      
+      if (!examIdToEdit || editingExamId) return;
+      
+      console.log('[LOAD-COPIED-EXAM] Loading exam ID:', examIdToEdit);
+      
+      try {
+        // Fetch the exam from the API
+        const response = await getExamBankItem(examIdToEdit);
+        const examToEdit = response.exam;
+        
+        if (!examToEdit) {
+          console.error('[LOAD-COPIED-EXAM] Exam not found in response');
+          setError('Examen introuvable');
+          return;
+        }
+        
+        console.log('[LOAD-COPIED-EXAM] Loaded exam:', examToEdit);
+        setEditingExamId(examIdToEdit);
+        
+        // Populate exam form with the loaded exam data
+        setExamForm({
+          titre: examToEdit.title || '',
+          filiere: examToEdit.filiere || '',
+          matiere: examToEdit.matiere || '',
+          niveau: examToEdit.niveau || '',
+          type: examToEdit.type || '',
+          duree: examToEdit.duree || '',
+          noteTotale: String(examToEdit.noteTotale || ''),
+          statut: examToEdit.status || 'Brouillon',
+          templateId: examToEdit.templateId || null,
+        });
+        
+        // Clear previous questions and let user add new ones
+        setQuestions([]);
+        localStorage.removeItem(LOCAL_QUESTIONS_KEY);
+        
+        // Switch to Questions tab for editing
+        setActiveTab('Questions');
+        
+        // Show success message
+        setSuccessMessage(`Examen "${examToEdit.title}" chargé pour modification. Vous pouvez maintenant ajouter des questions.`);
+      } catch (err) {
+        console.error('[LOAD-COPIED-EXAM] Error:', err);
+        setError('Erreur lors du chargement de l\'examen');
+      }
+    };
+    
+    loadCopiedExam();
+  }, [location]);
 
   // Auto-clear success message after 3 seconds
   useEffect(() => {
@@ -280,7 +338,7 @@ const CreateExam = () => {
       await addQuestionToBank(value);
       
       // Add to local state with savedToBank flag already true
-      setQuestions((prev) => [...prev, { id: makeId(), text: value, editText: value, isEditing: false, savedToBank: true }]);
+      setQuestions((prev) => [...prev, { id: makeId(), text: value, editText: value, isEditing: false, savedToBank: true, selected: true }]);
       setQuestionDraft('');
     } catch (err) {
       console.error('Error saving question:', err);
@@ -302,6 +360,18 @@ const CreateExam = () => {
       })
     );
   };
+
+  // Auto-save question when editing is turned off
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // Sauvegarder automatiquement les questions
+      const questionsToSave = questions.filter(q => q.text && q.text.trim());
+      if (questionsToSave.length > 0) {
+        localStorage.setItem(LOCAL_QUESTIONS_KEY, JSON.stringify(questionsToSave));
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [questions]);
 
   const startQuestionEdit = (id) => {
     setQuestions((prev) => prev.map((item) => (item.id === id ? { ...item, isEditing: true, editText: item.text } : item)));
@@ -336,6 +406,7 @@ const CreateExam = () => {
         editText: result.question.text, 
         isEditing: false,
         savedToBank: true,
+        selected: true,
         copiedFrom: result.question.createdByName
       }]);
       setSuccessMessage(`Question copiée de ${result.question.createdByName}`);
@@ -348,29 +419,25 @@ const CreateExam = () => {
   const handleCopyExam = async (examId) => {
     try {
       console.log('[COPY-EXAM] Copying exam:', examId);
+      
       const result = await copyExamBankItem(examId);
       console.log('[COPY-EXAM] Copy result:', result);
       
-      setSuccessMessage(`Examen copié de ${result.exam.createdByName}`);
+      // Extract copy exam ID from result
+      const copiedExamId = result.exam?.id || result.exam?._id || result.exam?.ID;
+      if (!copiedExamId) {
+        setError('Erreur: Impossible d\'obtenir l\'ID de la copie');
+        return;
+      }
 
-      // Re-load exam data from MongoDB
-      console.log('[COPY-EXAM] Reloading all exams...');
-      const examsData = await getExamBank();
-      console.log('[COPY-EXAM] Updated exams response:', examsData);
-
-      const mesExamsArray = Array.isArray(examsData?.mesExamens)
-        ? examsData.mesExamens.filter(e => e && typeof e === 'object')
-        : [];
-      const autresExamsArray = Array.isArray(examsData?.autresExamens)
-        ? examsData.autresExamens.filter(e => e && typeof e === 'object')
-        : [];
-
-      console.log('[COPY-EXAM] Updated counts - Mine:', mesExamsArray.length, 'Others:', autresExamsArray.length);
-
-      setMesExamens(mesExamsArray);
-      setAutresExamens(autresExamsArray);
-      setFilteredMesExamens(mesExamsArray);
-      setFilteredAutresExamens(autresExamsArray);
+      console.log('[COPY-EXAM] Opening copied exam in new tab:', copiedExamId);
+      
+      // Open the copied exam in a NEW tab for editing
+      const newTabUrl = `/enseignant/exams/create?editExam=${copiedExamId}`;
+      window.open(newTabUrl, '_blank');
+      
+      // Show success message on current page
+      setSuccessMessage(`Examen de ${result.exam?.createdByName} copié avec succès. S'ouvre dans un nouvel onglet...`);
     } catch (err) {
       console.error('[COPY-EXAM] Error:', err);
       setError('Erreur lors de la copie de l\'examen');
@@ -419,9 +486,13 @@ const CreateExam = () => {
       console.log('[SAVE-EXAM] Starting exam save with', questions.length, 'questions');
       console.log('[SAVE-EXAM] Exam form:', examForm);
 
-      // Get valid questions
-      const validQuestions = questions.map((item) => String(item?.text || '').trim()).filter(Boolean);
-      console.log('[SAVE-EXAM] Valid questions count:', validQuestions.length);
+      // Get valid questions (only selected ones)
+      const validQuestions = questions
+        .filter((item) => item.selected !== false)  // Inclure seulement les cochées
+        .map((item) => String(item?.text || '').trim())
+        .filter(Boolean);
+      
+      console.log('[SAVE-EXAM] Valid questions count:', validQuestions.length, 'Total questions:', questions.length);
 
       // Get selected template if any
       const selectedTemplateData = examForm.templateId 
@@ -1285,6 +1356,7 @@ const CreateExam = () => {
                           <textarea 
                             value={q.editText} 
                             onChange={(e) => updateQuestionEdit(q.id, e.target.value)}
+                            onBlur={() => saveQuestion(q.id)}
                             className="question-edit-textarea"
                           />
                         ) : (
@@ -1292,21 +1364,42 @@ const CreateExam = () => {
                         )}
                       </div>
                       <div className="question-actions">
-                        <button 
-                          type="button" 
-                          className={`btn-action edit-btn ${q.isEditing ? 'save' : ''}`}
-                          onClick={() => (q.isEditing ? saveQuestion(q.id) : startQuestionEdit(q.id))}
-                        >
-                          {q.isEditing ? 'Enregistrer' : 'Modifier'}
-                        </button>
-                        {q.isEditing && (
-                          <button 
-                            type="button" 
-                            className="btn-action cancel-btn"
-                            onClick={() => cancelQuestionEdit(q.id)}
-                          >
-                            Annuler
-                          </button>
+                        <div className="question-checkbox-wrapper">
+                          <input
+                            type="checkbox"
+                            id={`check-${q.id}`}
+                            checked={q.selected !== false}
+                            onChange={(e) => {
+                              setQuestions((prev) => 
+                                prev.map((item) => 
+                                  item.id === q.id ? { ...item, selected: e.target.checked } : item
+                                )
+                              );
+                            }}
+                            className="question-checkbox"
+                          />
+                          <label htmlFor={`check-${q.id}`} className="checkbox-label">Inclure</label>
+                        </div>
+                        {q.isEditing ? (
+                          <>
+                            <button 
+                              type="button" 
+                              className="btn-action cancel-btn"
+                              onClick={() => cancelQuestionEdit(q.id)}
+                            >
+                              Annuler
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button 
+                              type="button" 
+                              className="btn-action edit-btn"
+                              onClick={() => startQuestionEdit(q.id)}
+                            >
+                              Modifier
+                            </button>
+                          </>
                         )}
                         {!q.savedToBank && !q.isEditing && (
                           <button 
@@ -1316,9 +1409,6 @@ const CreateExam = () => {
                           >
                             Ajouter à la Banque
                           </button>
-                        )}
-                        {q.savedToBank && (
-                          <span className="badge-saved">Enregistrée</span>
                         )}
                         <button 
                           type="button" 
@@ -1330,6 +1420,86 @@ const CreateExam = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+
+            <div className="questions-available-section">
+              <h3>Questions Disponibles dans la Banque</h3>
+              
+              {/* Mes Questions */}
+              {filteredMesQuestions.length > 0 && (
+                <div className="questions-bank-subsection">
+                  <h4 style={{ color: '#16a34a', marginBottom: '12px' }}>Mes Questions ({filteredMesQuestions.length})</h4>
+                  <ul className="questions-bank-list">
+                    {filteredMesQuestions.map((q) => (
+                      <li key={q.id} className="questions-bank-item">
+                        <div className="questions-bank-text">
+                          <strong>Q:</strong> {q.text}
+                          <small style={{ display: 'block', marginTop: '4px', color: '#7a8fa3' }}>
+                            {q.matiere && `Matière: ${q.matiere}`}
+                            {q.niveau && ` | Niveau: ${q.niveau}`}
+                          </small>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-add-to-exam"
+                          onClick={() => {
+                            // Ajouter la question à la liste de l'examen
+                            setQuestions((prev) => [...prev, { 
+                              id: q.id, 
+                              text: q.text, 
+                              editText: q.text, 
+                              isEditing: false,
+                              savedToBank: true,
+                              selected: true,
+                              fromBank: true
+                            }]);
+                          }}
+                        >
+                          Ajouter
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Autres Questions */}
+              {filteredAutresQuestions.length > 0 && (
+                <div className="questions-bank-subsection">
+                  <h4 style={{ color: '#2a70b1', marginBottom: '12px' }}>Questions d'Autres Professeurs ({filteredAutresQuestions.length})</h4>
+                  <ul className="questions-bank-list">
+                    {filteredAutresQuestions.map((q) => (
+                      <li key={q.id} className="questions-bank-item">
+                        <div className="questions-bank-text">
+                          <strong>Q:</strong> {q.text}
+                          <small style={{ display: 'block', marginTop: '4px', color: '#7a8fa3' }}>
+                            Par {q.createdByName || q.createdByEmail || 'Professeur'}
+                            {q.matiere && ` | Matière: ${q.matiere}`}
+                            {q.niveau && ` | Niveau: ${q.niveau}`}
+                          </small>
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-add-to-exam btn-copy"
+                          onClick={() => {
+                            // Copier la question d'un autre professeur
+                            handleCopyQuestion(q.id);
+                          }}
+                        >
+                          📋 Copier
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {filteredMesQuestions.length === 0 && filteredAutresQuestions.length === 0 && (
+                <div className="questions-empty-state">
+                  <p>Aucune question disponible dans la banque.</p>
+                  <p className="hint">Créez des questions en utilisant le formulaire ci-dessus.</p>
                 </div>
               )}
             </div>
@@ -1379,7 +1549,7 @@ const CreateExam = () => {
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
                       {selectedTemplate === template._id && (
-                        <span style={{ fontSize: '20px' }}>✓</span>
+                        <span style={{ fontSize: '20px', color: '#10b981', fontWeight: 'bold' }}>●</span>
                       )}
                       <h3 style={{ margin: '0', fontSize: '16px', fontWeight: '700', color: '#173b66', flex: 1 }}>
                         {template.nom || 'Modèle Sans Titre'}

@@ -140,10 +140,6 @@ const LoginAdmin = () => {
               />
               Se souvenir de moi
             </label>
-
-            <a href="/admin/forgot-password" className="lien-oublie">
-              Mot de passe oublié ?
-            </a>
           </div>
 
           <button type="submit" className="btn-connexion" disabled={loading}>
@@ -162,7 +158,7 @@ const LoginAdmin = () => {
         <div className="auth-footer">
           <div className="separateur">ou</div>
           <p>Vous êtes enseignant ? <a href="/enseignant/login">Accédez à votre espace</a></p>
-          <p>Problème ? <a href="mailto:support@iit.tn">Contacter le support</a></p>
+          <p>Problème ? <a href="https://iit.tn/contact-3/" target="_blank" rel="noopener noreferrer">Contacter le support</a></p>
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useAuth from '../../context/useAuth';
 import Sidebar from '../../components/sidebar/Sidebar';
 import { enseignantNavItems, buildEnseignantProfile } from '../../components/sidebar/sidebarConfigs';
-import { downloadExamBankFile, getExamBank, deleteExamBankItem } from '../../api/enseignant/Enseignant.api';
+import { downloadExamBankFile, getExamBank, deleteExamBankItem, copyExamBankItem } from '../../api/enseignant/Enseignant.api';
 import './ExamBank.css';
 
 const normalizeStatus = (value) => String(value || '').trim().toLowerCase();
@@ -36,7 +36,7 @@ const filterExamList = (items, query, status) => {
 };
 
 /**
- * ✅ Extrait un ID string fiable depuis n'importe quelle forme Mongoose/JSON :
+ * Extrait un ID string fiable depuis n'importe quelle forme Mongoose/JSON :
  *   - string normale : "69c4595e..."
  *   - ObjectId sérialisé : { $oid: "69c4595e..." }
  *   - ObjectId Mongoose brut : objet avec .toString()
@@ -118,7 +118,7 @@ const ExamBank = () => {
       )
     ) return;
 
-    // ✅ Extraire l'ID de manière fiable avant l'appel API
+// Extraire l'ID de manière fiable avant l'appel API
     const id = toId(exam.id);
 
     if (!id) {
@@ -128,13 +128,38 @@ const ExamBank = () => {
 
     try {
       await deleteExamBankItem(id);
-      // ✅ Retirer l'examen de la liste locale avec comparaison normalisée
+      // Retirer l'examen de la liste locale avec comparaison normalisée
       setMesExamens((prev) => prev.filter((item) => toId(item.id) !== id));
       setActionError('');
       setActionMessage('Examen supprimé avec succès.');
     } catch (err) {
       setActionMessage('');
       setActionError(err?.response?.data?.message || 'Impossible de supprimer cet examen');
+    }
+  };
+
+  const handleCopyExam = async (exam) => {
+    try {
+      const examId = toId(exam.id);
+      console.log('[COPY-EXAM] Starting copy for exam:', examId);
+      
+      const result = await copyExamBankItem(examId);
+      console.log('[COPY-EXAM] Copy result:', result);
+      
+      // Récupérer l'ID de l'examen copié
+      const copiedExamId = result.exam?.id || result.exam?._id || result.id || examId;
+      console.log('[COPY-EXAM] Copied exam ID:', copiedExamId);
+      
+      // Open the copied exam in a NEW tab for editing
+      const newTabUrl = `/enseignant/exams/create?editExam=${copiedExamId}`;
+      window.open(newTabUrl, '_blank');
+      
+      // Show success message on current page
+      setActionMessage(`Examen "${exam.title}" copié avec succès. S'ouvre dans un nouvel onglet pour modification...`);
+    } catch (err) {
+      console.error('[COPY-EXAM] Error:', err);
+      setActionMessage('');
+      setActionError(err?.response?.data?.message || 'Erreur lors de la copie de l\'examen');
     }
   };
 
@@ -191,49 +216,45 @@ const ExamBank = () => {
           ) : myFiltered.length === 0 ? (
             <div className="exam-bank-empty">Aucun examen dans mes sauvegardes.</div>
           ) : (
-            <div className="exam-bank-table-wrapper">
-              <table className="exam-bank-table">
-                <thead>
-                  <tr>
-                    <th>Examen</th>
-                    <th>Filiere</th>
-                    <th>Statut</th>
-                    <th>Pts</th>
-                    <th>Q.</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {myFiltered.map((exam) => (
-                    <tr key={toId(exam.id)} className="exam-bank-row">
-                      <td className="exam-bank-cell-title">
-                        <div className="exam-bank-title-block">
-                          <span className="exam-bank-exam-name">{exam.title || 'Examen sans titre'}</span>
-                          {formatDuration(exam.duree) !== '-' && (
-                            <span className="exam-bank-exam-duration">{formatDuration(exam.duree)}</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="exam-bank-cell">{exam.filiere || '—'}</td>
-                      <td className="exam-bank-cell">
-                        <span className={`exam-bank-badge exam-bank-badge-${String(exam.status || '').toLowerCase().replace(/\s+/g, '-')}`}>
-                          {exam.status || '—'}
-                        </span>
-                      </td>
-                      <td className="exam-bank-cell exam-bank-cell-number">{Number(exam.noteTotale) || 0}</td>
-                      <td className="exam-bank-cell exam-bank-cell-number">{Number(exam.questionsCount) || 0}</td>
-                      <td className="exam-bank-cell exam-bank-cell-action">
-                        <button type="button" className="exam-bank-btn-download" onClick={() => handleDownload(exam)}>
-                          Telecharger
-                        </button>
-                        <button type="button" className="exam-bank-btn-delete" onClick={() => handleDelete(exam)}>
-                          Supprimer
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="exam-bank-cards-grid">
+              {myFiltered.map((exam) => (
+                <div key={toId(exam.id)} className="exam-bank-card">
+                  <div className="exam-bank-card-header">
+                    <h3 className="exam-bank-card-title">{exam.title || 'Examen sans titre'}</h3>
+                    <span className={`exam-bank-badge exam-bank-badge-${String(exam.status || '').toLowerCase().replace(/\s+/g, '-')}`}>
+                      {exam.status || '—'}
+                    </span>
+                  </div>
+
+                  <div className="exam-bank-card-content">
+                    <div className="exam-bank-card-row">
+                      <span className="exam-bank-card-label">Filière</span>
+                      <span className="exam-bank-card-value">{exam.filiere || '—'}</span>
+                    </div>
+                    <div className="exam-bank-card-row">
+                      <span className="exam-bank-card-label">Durée</span>
+                      <span className="exam-bank-card-value">{formatDuration(exam.duree)} min</span>
+                    </div>
+                    <div className="exam-bank-card-row">
+                      <span className="exam-bank-card-label">Points totaux</span>
+                      <span className="exam-bank-card-value">{Number(exam.noteTotale) || 0}</span>
+                    </div>
+                    <div className="exam-bank-card-row">
+                      <span className="exam-bank-card-label">Questions</span>
+                      <span className="exam-bank-card-value">{Number(exam.questionsCount) || 0}</span>
+                    </div>
+                  </div>
+
+                  <div className="exam-bank-card-actions">
+                    <button type="button" className="exam-bank-btn-action exam-bank-btn-download" onClick={() => handleDownload(exam)}>
+                      Télécharger
+                    </button>
+                    <button type="button" className="exam-bank-btn-action exam-bank-btn-delete" onClick={() => handleDelete(exam)}>
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </section>
@@ -247,38 +268,40 @@ const ExamBank = () => {
           ) : othersFiltered.length === 0 ? (
             <div className="exam-bank-empty">Aucun examen disponible pour le moment.</div>
           ) : (
-            <div className="exam-bank-table-wrapper">
-              <table className="exam-bank-table">
-                <thead>
-                  <tr>
-                    <th>Examen</th>
-                    <th>Filiere</th>
-                    <th>Auteur</th>
-                    <th>Pts</th>
-                    <th>Q.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {othersFiltered.map((exam) => (
-                    <tr key={toId(exam.id)} className="exam-bank-row">
-                      <td className="exam-bank-cell-title">
-                        <div className="exam-bank-title-block">
-                          <span className="exam-bank-exam-name">{exam.title || 'Examen sans titre'}</span>
-                          {formatDuration(exam.duree) !== '-' && (
-                            <span className="exam-bank-exam-duration">{formatDuration(exam.duree)}</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="exam-bank-cell">{exam.filiere || '—'}</td>
-                      <td className="exam-bank-cell exam-bank-cell-author">
-                        {exam.createdByName || exam.createdByEmail || 'Professeur'}
-                      </td>
-                      <td className="exam-bank-cell exam-bank-cell-number">{Number(exam.noteTotale) || 0}</td>
-                      <td className="exam-bank-cell exam-bank-cell-number">{Number(exam.questionsCount) || 0}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="exam-bank-cards-grid">
+              {othersFiltered.map((exam) => (
+                <div key={toId(exam.id)} className="exam-bank-card exam-bank-card-other">
+                  <div className="exam-bank-card-header">
+                    <h3 className="exam-bank-card-title">{exam.title || 'Examen sans titre'}</h3>
+                    <span className="exam-bank-badge-author">par {exam.createdByName || exam.createdByEmail || 'Professeur'}</span>
+                  </div>
+
+                  <div className="exam-bank-card-content">
+                    <div className="exam-bank-card-row">
+                      <span className="exam-bank-card-label">Filière</span>
+                      <span className="exam-bank-card-value">{exam.filiere || '—'}</span>
+                    </div>
+                    <div className="exam-bank-card-row">
+                      <span className="exam-bank-card-label">Durée</span>
+                      <span className="exam-bank-card-value">{formatDuration(exam.duree)} min</span>
+                    </div>
+                    <div className="exam-bank-card-row">
+                      <span className="exam-bank-card-label">Points totaux</span>
+                      <span className="exam-bank-card-value">{Number(exam.noteTotale) || 0}</span>
+                    </div>
+                    <div className="exam-bank-card-row">
+                      <span className="exam-bank-card-label">Questions</span>
+                      <span className="exam-bank-card-value">{Number(exam.questionsCount) || 0}</span>
+                    </div>
+                  </div>
+
+                  <div className="exam-bank-card-actions">
+                    <button type="button" className="exam-bank-btn-action exam-bank-btn-copy" onClick={() => handleCopyExam(exam)}>
+                      Copier cet examen
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </section>

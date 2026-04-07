@@ -154,30 +154,44 @@
 .teacher-stats-grid {
   margin-top: 16px;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
 }
 
 .teacher-stat-card {
-  background: #fff;
-  border: 1px solid #e5e9f5;
-  border-radius: 14px;
-  padding: 16px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e0e6f2;
+  border-radius: 16px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(15, 42, 78, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.teacher-stat-card:hover {
+  border-color: #d0d8e8;
+  box-shadow: 0 8px 20px rgba(15, 42, 78, 0.12);
+  transform: translateY(-2px);
 }
 
 .teacher-stat-value {
-  font-size: 52px;
+  font-size: 56px;
   font-weight: 800;
   line-height: 1;
+  background: linear-gradient(135deg, currentColor 0%, currentColor 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .teacher-stat-label {
-  color: #607089;
-  font-size: 14px;
+  color: #64748b;
+  font-size: 13px;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .teacher-stat-value.blue { color: #2380e0; }
@@ -186,23 +200,32 @@
 .teacher-stat-value.orange { color: #ce7d1f; }
 
 .teacher-content-grid {
-  margin-top: 14px;
+  margin-top: 20px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 20px;
 }
 
 .teacher-panel {
-  background: #fff;
-  border: 1px solid #e5e9f5;
-  border-radius: 14px;
-  padding: 16px;
+  background: #ffffff;
+  border: 1px solid #e0e6f2;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 2px 8px rgba(15, 42, 78, 0.06);
+  transition: all 0.3s ease;
+}
+
+.teacher-panel:hover {
+  border-color: #d0d8e8;
+  box-shadow: 0 8px 24px rgba(15, 42, 78, 0.1);
 }
 
 .teacher-panel h3 {
-  margin: 0 0 12px;
-  font-size: 22px;
-  color: #1a2f52;
+  margin: 0 0 20px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f2a4e;
+  letter-spacing: -0.3px;
 }
 
 .teacher-empty {
@@ -215,36 +238,61 @@
   background: transparent;
   color: #2380e0;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 14px;
   cursor: pointer;
   padding: 0;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.teacher-link-btn:hover {
+  color: #1b5fb5;
+  gap: 8px;
 }
 
 .teacher-actions-col {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .teacher-primary-action,
 .teacher-secondary-action {
   border-radius: 12px;
   border: 1px solid #d7deef;
-  padding: 12px;
-  font-size: 16px;
+  padding: 14px 16px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
 }
 
 .teacher-primary-action {
-  background: #2380e0;
+  background: linear-gradient(135deg, #2380e0 0%, #1b5fb5 100%);
   border-color: #2380e0;
   color: #fff;
+  box-shadow: 0 4px 12px rgba(35, 128, 224, 0.2);
+}
+
+.teacher-primary-action:hover {
+  box-shadow: 0 8px 20px rgba(35, 128, 224, 0.3);
+  transform: translateY(-2px);
 }
 
 .teacher-secondary-action {
   background: #fff;
-  color: #1f3557;
+  color: #0f2a4e;
+  border-color: #e0e6f2;
+}
+
+.teacher-secondary-action:hover {
+  background: #f8fafc;
+  border-color: #d0d8e8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(15, 42, 78, 0.08);
 }
 
 .teacher-footer {
@@ -260,6 +308,47 @@
   border-radius: 999px;
   margin-right: 6px;
   background: #22c55e;
+}
+
+.teacher-exams-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.teacher-exam-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #e0e6f2;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.teacher-exam-item:hover {
+  background: #eff2f9;
+  border-color: #d0d8e8;
+  transform: translateX(4px);
+}
+
+.teacher-exam-icon {
+  font-size: 16px;
+  opacity: 0.8;
+}
+
+.teacher-exam-name {
+  color: #334155;
+  font-size: 14px;
+  font-weight: 500;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 1024px) {

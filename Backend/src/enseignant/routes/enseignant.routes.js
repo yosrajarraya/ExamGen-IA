@@ -23,6 +23,7 @@ const {
 const {
   addExamToBank,
   getExamBank,
+  getExamBankItemById,
   getFilteredExams,
   downloadExamBankFile,
   deleteExamBankItem,
@@ -45,8 +46,9 @@ router.delete("/questions/bank/:id", deleteQuestionBankItem); // Supprimer ma qu
 router.post("/questions/bank/:id/copy", copyQuestionBankItem); // Copier une question
 router.post("/exams/bank", addExamToBank); // Ajouter examen exporté à la banque
 router.get("/exams/bank", getExamBank); // Récupérer banque d'examens
-router.get("/exams/filtered", getFilteredExams); // Récupérer examens filtrés
 router.get("/exams/bank/:id/download", downloadExamBankFile); // Télécharger un .docx
+router.get("/exams/bank/:id", getExamBankItemById); // Récupérer un examen spécifique
+router.get("/exams/filtered", getFilteredExams); // Récupérer examens filtrés
 router.delete("/exams/bank/:id", deleteExamBankItem); // Supprimer mon examen
 router.post("/exams/bank/:id/copy", copyExamBankItem); // Copier un examen
 

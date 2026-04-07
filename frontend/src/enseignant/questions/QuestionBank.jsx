@@ -6,6 +6,7 @@ import {
   getQuestionBank,
   updateQuestionBankItem,
   deleteQuestionBankItem,
+  copyQuestionBankItem,
 } from '../../api/enseignant/Enseignant.api';
 import '../exams/CreateExam.css';
 
@@ -104,6 +105,25 @@ const QuestionBank = () => {
     } catch (err) {
       setActionMessage('');
       setActionError(err?.response?.data?.message || 'Impossible de supprimer la question');
+    }
+  };
+
+  const handleCopyQuestion = async (question) => {
+    try {
+      const result = await copyQuestionBankItem(question.id);
+      setMesQuestions((prev) => [...prev, {
+        id: result.question.id,
+        text: result.question.text,
+        isEditing: false,
+        savedToBank: true,
+        createdAt: result.question.createdAt,
+        copiedFrom: question.createdByName || question.createdByEmail,
+      }]);
+      setActionError('');
+      setActionMessage(`Question copiée de ${question.createdByName || question.createdByEmail}`);
+    } catch (err) {
+      setActionMessage('');
+      setActionError(err?.response?.data?.message || 'Erreur lors de la copie de la question');
     }
   };
 
@@ -225,6 +245,9 @@ const QuestionBank = () => {
                       <strong>{`Q${index + 1}`}</strong> - {item.text}
                       <small>{`Par ${item.createdByName || item.createdByEmail || 'Professeur'} - ${formatDate(item.createdAt)}`}</small>
                     </span>
+                  </div>
+                  <div className="question-item-actions">
+                    <button type="button" className="question-link-btn" onClick={() => handleCopyQuestion(item)}>Copier</button>
                   </div>
                 </li>
               ))}

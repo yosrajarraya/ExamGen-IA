@@ -274,9 +274,42 @@ const copyExamBankItem = async (req, res) => {
   }
 };
 
+const getExamBankItemById = async (req, res) => {
+  try {
+    const exam = await ExamBankItem.findById(req.params.id);
+    if (!exam) {
+      return res.status(404).json({ message: "Examen introuvable" });
+    }
+
+    return res.status(200).json({
+      message: "Examen récupéré avec succès",
+      exam: {
+        id: exam._id.toString(),
+        title: exam.title || exam.fileName || "Examen sans titre",
+        filiere: exam.filiere,
+        matiere: exam.matiere,
+        niveau: exam.niveau,
+        anneeUniversitaire: exam.anneeUniversitaire,
+        type: exam.type,
+        duree: exam.duree,
+        noteTotale: exam.noteTotale,
+        questionsCount: exam.questionsCount,
+        status: exam.status,
+        createdBy: exam.createdBy?.toString(),
+        createdByName: exam.createdByName,
+        createdByEmail: exam.createdByEmail,
+        createdAt: exam.createdAt,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   addExamToBank,
   getExamBank,
+  getExamBankItemById,
   getFilteredExams,
   downloadExamBankFile,
   deleteExamBankItem,

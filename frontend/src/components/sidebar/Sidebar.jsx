@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import iitLogo from '../../assets/iit2.png';
 import './Sidebar.css';
 
 /**
@@ -30,10 +31,7 @@ const Sidebar = ({
       {/* ── Logo ── */}
       <div className="app-sidebar-logo">
         <div className="app-sidebar-logo-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-          </svg>
+          <img src={iitLogo} alt="IIT Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
         <div>
           <div className="app-sidebar-logo-name">{appName}</div>
