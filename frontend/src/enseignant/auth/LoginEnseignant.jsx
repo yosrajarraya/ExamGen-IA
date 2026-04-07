@@ -157,7 +157,7 @@ const LoginEnseignant = () => {
         <div className="auth-footer">
           <div className="separateur">ou</div>
           <p>Vous êtes administrateur ? <a href="/">Accédez à l'espace admin</a></p>
-          <p>Problème ? <a href="mailto:support@iit.tn">Contacter le support</a></p>
+          <p>Problème ? <a href="https://iit.tn/contact-3/" target="_blank" rel="noopener noreferrer">Contacter le support</a></p>
         </div>
       </div>
     </div>

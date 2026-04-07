@@ -85,6 +85,11 @@ export const getExamBank = async () => {
   return response.data;
 };
 
+export const getExamBankItem = async (id) => {
+  const response = await api.get(`/enseignant/exams/bank/${id}`);
+  return response.data;
+};
+
 export const getFilteredExams = async (matiere, niveau, annee) => {
   const params = new URLSearchParams();
   if (matiere) params.append('matiere', matiere);

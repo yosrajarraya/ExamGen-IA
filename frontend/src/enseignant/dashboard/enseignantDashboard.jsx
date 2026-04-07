@@ -19,7 +19,6 @@ function TeacherDashboard() {
         { label: 'Examens', value: 0, color: 'blue' },
         { label: 'Questions', value: 0, color: 'violet' },
         { label: 'Exports', value: 0, color: 'green' },
-        { label: 'Requetes IA', value: 0, color: 'orange' },
       ];
     }
 
@@ -27,7 +26,6 @@ function TeacherDashboard() {
       { label: 'Examens', value: profil.stats.examens || 0, color: 'blue' },
       { label: 'Questions', value: profil.stats.questions || 0, color: 'violet' },
       { label: 'Exports', value: profil.stats.exports || 0, color: 'green' },
-      { label: 'Requetes IA', value: profil.stats.requetesIA || 0, color: 'orange' },
     ];
   }, [profil]);
 
@@ -135,15 +133,20 @@ function TeacherDashboard() {
           <article className="teacher-panel">
             <h3>Examens recents</h3>
             {recentExams.length === 0 ? (
-              <p className="teacher-empty">Aucun examen recent pour le moment.</p>
+              <p className="teacher-empty">Aucun examen créé pour le moment.</p>
             ) : (
-              <ul>
-                {recentExams.map((exam) => (
-                  <li key={exam}>{exam}</li>
+              <ul className="teacher-exams-list">
+                {recentExams.map((exam, idx) => (
+                  <li key={idx} className="teacher-exam-item">
+                    <span className="teacher-exam-icon">📄</span>
+                    <span className="teacher-exam-name">{exam}</span>
+                  </li>
                 ))}
               </ul>
             )}
-            <button className="teacher-link-btn">Voir tous les examens</button>
+            <button className="teacher-link-btn" onClick={() => navigate('/enseignant/exams/bank')}>
+              Voir tous les examens →
+            </button>
           </article>
 
           <article className="teacher-panel">
@@ -152,11 +155,8 @@ function TeacherDashboard() {
               <button className="teacher-primary-action" onClick={() => navigate('/enseignant/exams/create')}>
                 + Creer un nouvel examen
               </button>
-              <button className="teacher-secondary-action" onClick={() => navigate('/enseignant/modeles-word')}>
+              <button className="teacher-secondary-action" onClick={() => navigate('/enseignant/questions/bank')}>
                 Consulter la banque de questions
-              </button>
-              <button className="teacher-secondary-action" onClick={() => navigate('/enseignant/modeles-word')}>
-                Assistant IA
               </button>
             </div>
           </article>

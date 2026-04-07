@@ -91,14 +91,25 @@ const EnseignantsList = () => {
   const totalEns = enseignants.length;
   const actifs   = enseignants.filter((e) => e.Active).length;
   const inactifs  = enseignants.filter((e) => !e.Active).length;
-  const depts    = new Set(enseignants.map((e) => e.Departement).filter(Boolean)).size;
-  const allDepts = [...new Set(enseignants.map((e) => e.Departement).filter(Boolean))];
+  
+  // Créer une liste de départements uniques insensibles à la casse
+  const deptMap = new Map(); // { lowercase: originalValue }
+  enseignants.forEach((e) => {
+    if (e.Departement) {
+      const key = e.Departement.toLowerCase();
+      if (!deptMap.has(key)) {
+        deptMap.set(key, e.Departement);
+      }
+    }
+  });
+  const depts = deptMap.size;
+  const allDepts = Array.from(deptMap.values());
 
   const filtered = enseignants.filter((e) => {
     const q = search.toLowerCase();
     const matchSearch = !q || e.Nom?.toLowerCase().includes(q) || e.Prenom?.toLowerCase().includes(q) || e.Email?.toLowerCase().includes(q) || e.Departement?.toLowerCase().includes(q) || e.Grade?.toLowerCase().includes(q);
     const matchStatut = filterStatut === 'tous' || (filterStatut === 'actif' && e.Active) || (filterStatut === 'inactif' && !e.Active);
-    const matchDept = filterDept === 'tous' || e.Departement === filterDept;
+    const matchDept = filterDept === 'tous' || e.Departement?.toLowerCase() === filterDept.toLowerCase();
     return matchSearch && matchStatut && matchDept;
   });
 
