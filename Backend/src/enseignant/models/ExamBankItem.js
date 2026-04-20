@@ -7,10 +7,17 @@ const examBankItemSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    Departement: {
+      type: String,
+      trim: true,
+      default: '',
+      index: true,
+    },
     filiere: {
       type: String,
       trim: true,
       default: '',
+      index: true,
     },
     matiere: {
       type: String,

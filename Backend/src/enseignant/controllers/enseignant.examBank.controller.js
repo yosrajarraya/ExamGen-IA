@@ -1,11 +1,90 @@
-const mongoose = require("mongoose");
-const Enseignant = require("../models/Enseignant");
-const ExamBankItem = require("../models/ExamBankItem");
+const mongoose = require('mongoose');
+const Enseignant = require('../models/Enseignant');
+const ExamBankItem = require('../models/ExamBankItem');
+
+const normalize = (value) => String(value || '').trim().toLowerCase();
+
+const getTeacherDepartement = async (teacherId) => {
+  const teacher = await Enseignant.findById(teacherId).select('Departement');
+  return String(teacher?.Departement || '').trim();
+};
+
+const getExamDepartement = (exam) => String(exam?.Departement || exam?.filiere || '').trim();
+
+const normalizeExam = (item) => ({
+  id: item._id.toString(),
+  title: item.title || item.fileName || 'Examen sans titre',
+  Departement: item.Departement || item.filiere || '',
+  filiere: item.Departement || item.filiere || '',
+  matiere: item.matiere,
+  niveau: item.niveau,
+  anneeUniversitaire: item.anneeUniversitaire,
+  type: item.type,
+  duree: item.duree,
+  status: item.status || 'Exporte',
+  noteTotale: Number(item.noteTotale) || 0,
+  questionsCount: Number(item.questionsCount) || 0,
+  createdBy: item.createdBy.toString(),
+  createdByName: item.createdByName,
+  createdByEmail: item.createdByEmail,
+  createdAt: item.createdAt,
+});
+
+const buildAccessQuery = (teacherId, teacherDepartement) => {
+  if (!teacherDepartement) {
+    return { createdBy: teacherId };
+  }
+
+  return {
+    $or: [
+      { createdBy: teacherId },
+      { Departement: teacherDepartement },
+      { filiere: teacherDepartement },
+    ],
+  };
+};
+
+const buildScopedQuery = async (req, extraFilters = {}) => {
+  const teacherDepartement = await getTeacherDepartement(req.user.id);
+  const accessQuery = buildAccessQuery(req.user.id, teacherDepartement);
+  const filters = Object.entries(extraFilters).filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '');
+
+  if (filters.length === 0) {
+    return { teacherDepartement, query: accessQuery };
+  }
+
+  return {
+    teacherDepartement,
+    query: {
+      $and: [
+        accessQuery,
+        ...filters.map(([field, value]) => ({ [field]: String(value).trim() })),
+      ],
+    },
+  };
+};
+
+const canAccessExam = (exam, teacherId, teacherDepartement) => {
+  if (!exam) {
+    return false;
+  }
+
+  if (String(exam.createdBy) === String(teacherId)) {
+    return true;
+  }
+
+  if (!teacherDepartement) {
+    return false;
+  }
+
+  return normalize(getExamDepartement(exam)) === normalize(teacherDepartement);
+};
 
 const addExamToBank = async (req, res) => {
   try {
     const {
       title,
+      Departement,
       filiere,
       matiere,
       niveau,
@@ -41,9 +120,13 @@ const addExamToBank = async (req, res) => {
       return res.status(400).json({ message: "Contenu du fichier invalide" });
     }
 
+    const teacherDepartement = await getTeacherDepartement(req.user.id);
+    const cleanDepartement = String(Departement || filiere || teacherDepartement || '').trim();
+
     const created = await ExamBankItem.create({
       title: String(title || "").trim(),
-      filiere: String(filiere || "").trim(),
+      Departement: cleanDepartement,
+      filiere: cleanDepartement,
       matiere: String(matiere || "").trim(),
       niveau: String(niveau || "").trim(),
       type: String(type || "").trim(),
@@ -66,16 +149,7 @@ const addExamToBank = async (req, res) => {
 
     return res.status(201).json({
       message: "Examen sauvegardé dans la banque avec succès",
-      exam: {
-        id: created._id.toString(),
-        title: created.title,
-        filiere: created.filiere,
-        status: created.status,
-        noteTotale: created.noteTotale,
-        questionsCount: created.questionsCount,
-        duree: created.duree,
-        createdAt: created.createdAt,
-      },
+      exam: normalizeExam(created),
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -84,28 +158,13 @@ const addExamToBank = async (req, res) => {
 
 const getExamBank = async (req, res) => {
   try {
-    const items = await ExamBankItem.find().sort({ createdAt: -1 });
+    const { query } = await buildScopedQuery(req);
+    const items = await ExamBankItem.find(query).sort({ createdAt: -1 });
     const mesExamens = [];
     const autresExamens = [];
 
     items.forEach((item) => {
-      const normalized = {
-        id: item._id.toString(),
-        title: item.title || item.fileName || "Examen sans titre",
-        filiere: item.filiere,
-        matiere: item.matiere,
-        niveau: item.niveau,
-        anneeUniversitaire: item.anneeUniversitaire,
-        type: item.type,
-        duree: item.duree,
-        status: item.status || "Exporte",
-        noteTotale: Number(item.noteTotale) || 0,
-        questionsCount: Number(item.questionsCount) || 0,
-        createdBy: item.createdBy.toString(),
-        createdByName: item.createdByName,
-        createdByEmail: item.createdByEmail,
-        createdAt: item.createdAt,
-      };
+      const normalized = normalizeExam(item);
 
       if (String(item.createdBy) === String(req.user.id)) {
         mesExamens.push(normalized);
@@ -123,40 +182,18 @@ const getExamBank = async (req, res) => {
 const getFilteredExams = async (req, res) => {
   try {
     const { matiere, niveau, annee } = req.query;
-    const query = {};
-
-    if (matiere && String(matiere).trim()) {
-      query.matiere = String(matiere).trim();
-    }
-    if (niveau && String(niveau).trim()) {
-      query.niveau = String(niveau).trim();
-    }
-    if (annee && String(annee).trim()) {
-      query.anneeUniversitaire = String(annee).trim();
-    }
+    const { query } = await buildScopedQuery(req, {
+      matiere,
+      niveau,
+      anneeUniversitaire: annee,
+    });
 
     const items = await ExamBankItem.find(query).sort({ createdAt: -1 });
     const mesExamens = [];
     const autresExamens = [];
 
     items.forEach((item) => {
-      const normalized = {
-        id: item._id.toString(),
-        title: item.title || item.fileName || "Examen sans titre",
-        filiere: item.filiere,
-        matiere: item.matiere,
-        niveau: item.niveau,
-        anneeUniversitaire: item.anneeUniversitaire,
-        type: item.type,
-        duree: item.duree,
-        status: item.status || "Exporte",
-        noteTotale: Number(item.noteTotale) || 0,
-        questionsCount: Number(item.questionsCount) || 0,
-        createdBy: item.createdBy.toString(),
-        createdByName: item.createdByName,
-        createdByEmail: item.createdByEmail,
-        createdAt: item.createdAt,
-      };
+      const normalized = normalizeExam(item);
 
       if (String(item.createdBy) === String(req.user.id)) {
         mesExamens.push(normalized);
@@ -173,8 +210,12 @@ const getFilteredExams = async (req, res) => {
 
 const downloadExamBankFile = async (req, res) => {
   try {
+    const teacherDepartement = await getTeacherDepartement(req.user.id);
     const exam = await ExamBankItem.findById(req.params.id).select("+fileData");
     if (!exam) return res.status(404).json({ message: "Examen introuvable" });
+    if (!canAccessExam(exam, req.user.id, teacherDepartement)) {
+      return res.status(403).json({ message: "Vous n'avez pas accès à cet examen" });
+    }
     res.setHeader(
       "Content-Type",
       exam.fileMimeType ||
@@ -219,9 +260,14 @@ const deleteExamBankItem = async (req, res) => {
 
 const copyExamBankItem = async (req, res) => {
   try {
+    const teacherDepartement = await getTeacherDepartement(req.user.id);
     const sourceExam = await ExamBankItem.findById(req.params.id).select("+fileData");
     if (!sourceExam) {
       return res.status(404).json({ message: "Examen introuvable" });
+    }
+
+    if (!canAccessExam(sourceExam, req.user.id, teacherDepartement)) {
+      return res.status(403).json({ message: "Vous n'avez pas accès à cet examen" });
     }
 
     const enseignant = await Enseignant.findById(req.user.id).select(
@@ -232,7 +278,8 @@ const copyExamBankItem = async (req, res) => {
 
     const copiedExam = await ExamBankItem.create({
       title: sourceExam.title,
-      filiere: sourceExam.filiere,
+      Departement: sourceExam.Departement || sourceExam.filiere || teacherDepartement,
+      filiere: sourceExam.Departement || sourceExam.filiere || teacherDepartement,
       matiere: sourceExam.matiere,
       niveau: sourceExam.niveau,
       type: sourceExam.type,
@@ -252,22 +299,7 @@ const copyExamBankItem = async (req, res) => {
 
     return res.status(201).json({
       message: "Examen copié avec succès",
-      exam: {
-        id: copiedExam._id.toString(),
-        title: copiedExam.title || copiedExam.fileName || "Examen sans titre",
-        filiere: copiedExam.filiere,
-        matiere: copiedExam.matiere,
-        niveau: copiedExam.niveau,
-        type: copiedExam.type,
-        duree: copiedExam.duree,
-        noteTotale: copiedExam.noteTotale,
-        questionsCount: copiedExam.questionsCount,
-        status: copiedExam.status,
-        createdBy: copiedExam.createdBy.toString(),
-        createdByName: copiedExam.createdByName,
-        createdByEmail: copiedExam.createdByEmail,
-        createdAt: copiedExam.createdAt,
-      },
+      exam: normalizeExam(copiedExam),
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -276,30 +308,19 @@ const copyExamBankItem = async (req, res) => {
 
 const getExamBankItemById = async (req, res) => {
   try {
+    const teacherDepartement = await getTeacherDepartement(req.user.id);
     const exam = await ExamBankItem.findById(req.params.id);
     if (!exam) {
       return res.status(404).json({ message: "Examen introuvable" });
     }
 
+    if (!canAccessExam(exam, req.user.id, teacherDepartement)) {
+      return res.status(403).json({ message: "Vous n'avez pas accès à cet examen" });
+    }
+
     return res.status(200).json({
       message: "Examen récupéré avec succès",
-      exam: {
-        id: exam._id.toString(),
-        title: exam.title || exam.fileName || "Examen sans titre",
-        filiere: exam.filiere,
-        matiere: exam.matiere,
-        niveau: exam.niveau,
-        anneeUniversitaire: exam.anneeUniversitaire,
-        type: exam.type,
-        duree: exam.duree,
-        noteTotale: exam.noteTotale,
-        questionsCount: exam.questionsCount,
-        status: exam.status,
-        createdBy: exam.createdBy?.toString(),
-        createdByName: exam.createdByName,
-        createdByEmail: exam.createdByEmail,
-        createdAt: exam.createdAt,
-      },
+      exam: normalizeExam(exam),
     });
   } catch (error) {
     return res.status(500).json({ message: error.message });

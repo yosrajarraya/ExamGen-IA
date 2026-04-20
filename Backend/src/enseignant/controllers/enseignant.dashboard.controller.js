@@ -41,6 +41,7 @@ const getDashboard = async (req, res) => {
         nomComplet: `${enseignant.Prenom} ${enseignant.Nom}`.trim(),
         email: enseignant.Email,
         grade: enseignant.Grade,
+        departement: enseignant.Departement,
       },
       stats: {
         examens: examsCount,

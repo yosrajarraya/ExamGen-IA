@@ -95,6 +95,26 @@
   box-shadow: 0 0 0 3px rgba(37,99,235,.1);
 }
 
+.modal-form select {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #111827;
+  background: white;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.modal-form select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+}
+
 .modal-form input:not([type="checkbox"])::placeholder {
   color: #9ca3af;
 }

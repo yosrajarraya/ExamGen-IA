@@ -16,16 +16,15 @@ function TeacherDashboard() {
   const quickStats = useMemo(() => {
     if (!profil?.stats) {
       return [
-        { label: 'Examens', value: 0, color: 'blue' },
-        { label: 'Questions', value: 0, color: 'violet' },
-        { label: 'Exports', value: 0, color: 'green' },
+        { label: 'Examens',   value: 0, color: 'blue'   },
+        { label: 'Questions', value: 0, color: 'violet'  },
+        { label: 'Exports',   value: 0, color: 'green'   },
       ];
     }
-
     return [
-      { label: 'Examens', value: profil.stats.examens || 0, color: 'blue' },
-      { label: 'Questions', value: profil.stats.questions || 0, color: 'violet' },
-      { label: 'Exports', value: profil.stats.exports || 0, color: 'green' },
+      { label: 'Examens',   value: profil.stats.examens   || 0, color: 'blue'   },
+      { label: 'Questions', value: profil.stats.questions || 0, color: 'violet'  },
+      { label: 'Exports',   value: profil.stats.exports   || 0, color: 'green'   },
     ];
   }, [profil]);
 
@@ -36,6 +35,8 @@ function TeacherDashboard() {
     [user?.Prenom, user?.Nom].filter(Boolean).join(' ').trim() ||
     user?.Email ||
     'Enseignant';
+
+  const prenom = user?.Prenom || nomComplet.split(' ')[0] || 'Enseignant';
 
   const seDeconnecter = useCallback(() => {
     logout();
@@ -72,6 +73,7 @@ function TeacherDashboard() {
             'Enseignant',
           email: remoteProfile.email || user?.Email || '',
           grade: remoteProfile.grade || user?.Grade || '',
+          departement: remoteProfile.departement || user?.Departement || '',
           stats: payload.stats || { examens: 0, questions: 0, exports: 0, requetesIA: 0 },
           recentExams: Array.isArray(payload.recentExams) ? payload.recentExams : [],
         };
@@ -83,7 +85,6 @@ function TeacherDashboard() {
           seDeconnecter();
           return;
         }
-
         setErreur(
           error?.response?.data?.message || 'Impossible de charger votre tableau de bord.'
         );
@@ -98,10 +99,15 @@ function TeacherDashboard() {
   if (chargement) {
     return (
       <div className="teacher-shell loading-shell">
-        <div className="teacher-loading-card">Chargement du dashboard enseignant...</div>
+        <div className="teacher-loading-card">Chargement du tableau de bord…</div>
       </div>
     );
   }
+
+  // Heure de la journée pour le message d'accueil
+  const heure = new Date().getHours();
+  const salutation =
+    heure < 12 ? 'Bonjour' : heure < 18 ? 'Bon après-midi' : 'Bonsoir';
 
   return (
     <div className="teacher-shell">
@@ -113,13 +119,31 @@ function TeacherDashboard() {
       />
 
       <main className="teacher-main">
-        <header className="teacher-main-header">
-          <h2>Bonjour, {nomComplet}</h2>
-          <button className="teacher-logout" onClick={seDeconnecter}>Se deconnecter</button>
+
+        {/* ── En-tête ── */}
+        <header className="teacher-header">
+          <div className="teacher-header-left">
+            <p className="teacher-header-greeting">Tableau de bord</p>
+            <h1 className="teacher-header-title">
+              {salutation}, <span>{prenom}</span>
+            </h1>
+            <p className="teacher-header-sub">
+              {profil?.grade ? `${profil.grade} · ` : ''}
+              {profil?.departement ? `${profil.departement} · ` : ''}
+              {new Date().toLocaleDateString('fr-FR', {
+                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+              })}
+            </p>
+          </div>
+          <div className="teacher-header-badge">
+            Session active
+          </div>
         </header>
 
+        {/* ── Erreur ── */}
         {erreur && <p className="teacher-alert-error">{erreur}</p>}
 
+        {/* ── Stats ── */}
         <section className="teacher-stats-grid">
           {quickStats.map((stat) => (
             <article className="teacher-stat-card" key={stat.label}>
@@ -129,9 +153,12 @@ function TeacherDashboard() {
           ))}
         </section>
 
+        {/* ── Contenu ── */}
         <section className="teacher-content-grid">
+
+          {/* Examens récents */}
           <article className="teacher-panel">
-            <h3>Examens recents</h3>
+            <h3>Examens récents</h3>
             {recentExams.length === 0 ? (
               <p className="teacher-empty">Aucun examen créé pour le moment.</p>
             ) : (
@@ -144,27 +171,41 @@ function TeacherDashboard() {
                 ))}
               </ul>
             )}
-            <button className="teacher-link-btn" onClick={() => navigate('/enseignant/exams/bank')}>
+            <button
+              className="teacher-link-btn"
+              onClick={() => navigate('/enseignant/exams/bank')}
+            >
               Voir tous les examens →
             </button>
           </article>
 
+          {/* Actions rapides */}
           <article className="teacher-panel">
             <h3>Actions rapides</h3>
             <div className="teacher-actions-col">
-              <button className="teacher-primary-action" onClick={() => navigate('/enseignant/exams/create')}>
-                + Creer un nouvel examen
+              <button
+                className="teacher-primary-action"
+                onClick={() => navigate('/enseignant/exams/create')}
+              >
+                + Créer un nouvel examen
               </button>
-              <button className="teacher-secondary-action" onClick={() => navigate('/enseignant/questions/bank')}>
+              <button
+                className="teacher-secondary-action"
+                onClick={() => navigate('/enseignant/questions/bank')}
+              >
                 Consulter la banque de questions
               </button>
             </div>
           </article>
+
         </section>
 
+        {/* ── Footer ── */}
         <footer className="teacher-footer">
-          <span><i className="teacher-dot" />Connecte en tant que Professeur a Session active</span>
+          <i className="teacher-dot" />
+          Connecté en tant que Professeur · Session active
         </footer>
+
       </main>
     </div>
   );

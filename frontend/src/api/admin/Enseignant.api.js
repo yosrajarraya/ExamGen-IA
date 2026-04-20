@@ -8,6 +8,11 @@ export const getEnseignants = async () => {
   return response.data;
 };
 
+export const getDepartements = async () => {
+  const response = await api.get('/admin/enseignants/departements');
+  return response.data;
+};
+
 /**
  * Créer un enseignant
  */

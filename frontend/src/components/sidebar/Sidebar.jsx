@@ -2,16 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import iitLogo from '../../assets/iit2.png';
 import './Sidebar.css';
 
-/**
- * Sidebar universel — utilisé par admin ET enseignant.
- *
- * Props :
- *  - appName    : string (défaut "ExamGen-IA")
- *  - roleLabel  : string  ex. "Administration" | "Espace enseignant"
- *  - navItems   : array  (depuis sidebarConfigs)
- *  - profile    : { name, email, avatar }
- *  - onLogout   : function
- */
+
 const Sidebar = ({
   appName = 'ExamGen-IA',
   roleLabel,

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getProfil, updateProfil, changePassword } from '../../api/enseignant/Enseignant.api';
+import { getProfil, updateProfil, changePassword, getDepartements } from '../../api/enseignant/Enseignant.api';
 import useAuth from '../../context/useAuth';
 import Sidebar from '../../components/sidebar/Sidebar';
 import { enseignantNavItems, buildEnseignantProfile } from '../../components/sidebar/sidebarConfigs';
@@ -13,6 +13,7 @@ const Profil = () => {
   const [profil, setProfil] = useState(null);
   const [pageLoading, setPageLoading] = useState(true);
   const [toast, setToast] = useState('');
+  const [departements, setDepartements] = useState([]);
 
   const [editForm, setEditForm] = useState({ Telephone: '', Grade: '', Departement: '', Specialite: '' });
   const [editLoading, setEditLoading] = useState(false);
@@ -29,6 +30,8 @@ const Profil = () => {
   useEffect(() => {
     const fetchProfil = async () => {
       try {
+        const departementsData = await getDepartements().catch(() => []);
+        setDepartements(Array.isArray(departementsData) ? departementsData : []);
         const data = await getProfil();
         setProfil(data);
         setEditForm({ Telephone: data.Telephone || '', Grade: data.Grade || '', Departement: data.Departement || '', Specialite: data.Specialite || '' });
@@ -80,12 +83,6 @@ const Profil = () => {
       />
 
       <main className="new-admin-main">
-        <div className="new-topbar">
-          <div>
-            <h1 className="new-topbar-title">Mon profil</h1>
-            <p className="new-topbar-sub">Gérez vos informations personnelles et votre mot de passe</p>
-          </div>
-        </div>
 
         <div className="new-admin-body">
           <div className="profil-identity-card">
@@ -93,6 +90,7 @@ const Profil = () => {
             <div className="profil-identity-info">
               <h2 className="profil-identity-name">{profil?.Prenom} {profil?.Nom}</h2>
               <p className="profil-identity-email">{profil?.Email}</p>
+              <p className="profil-identity-departement">Département : {profil?.Departement || '—'}</p>
               <span className={`new-badge ${profil?.Active ? 'new-badge-active' : 'new-badge-inactive'}`}>
                 {profil?.Active ? 'Compte actif' : 'Compte désactivé'}
               </span>
@@ -106,7 +104,21 @@ const Profil = () => {
                 {[['Telephone','Téléphone','2X XXX XXX'],['Grade','Grade','Maître Assistant'],['Departement','Département','Informatique'],['Specialite','Spécialité','Algorithmique']].map(([field, label, placeholder]) => (
                   <div className="profil-form-group" key={field}>
                     <label>{label}</label>
-                    <input type="text" value={editForm[field]} onChange={(e) => setEditForm({ ...editForm, [field]: e.target.value })} placeholder={placeholder} />
+                    {field === 'Departement' ? (
+                      <select value={editForm[field]} onChange={(e) => setEditForm({ ...editForm, [field]: e.target.value })}>
+                        <option value="">Sélectionner un département</option>
+                        {departements.map((departement) => (
+                          <option key={departement.id} value={departement.name}>
+                            {departement.name}
+                          </option>
+                        ))}
+                        {editForm[field] && !departements.some((departement) => departement.name === editForm[field]) && (
+                          <option value={editForm[field]}>{editForm[field]}</option>
+                        )}
+                      </select>
+                    ) : (
+                      <input type="text" value={editForm[field]} onChange={(e) => setEditForm({ ...editForm, [field]: e.target.value })} placeholder={placeholder} />
+                    )}
                   </div>
                 ))}
                 {editError && <div className="profil-form-error">{editError}</div>}

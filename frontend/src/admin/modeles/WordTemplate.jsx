@@ -4,6 +4,9 @@ import Sidebar from '../../components/sidebar/Sidebar';
 import { adminNavItems, buildAdminProfile } from '../../components/sidebar/sidebarConfigs';
 import './WordTemplate.css';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const WORD_TEMPLATE_ENDPOINT = `${API_BASE}/admin/word-template`;
+
 const LANGUAGES = ['Français', 'Arabe', 'Bilingue'];
 const FONTS = ['Arial', 'Times New Roman', 'Calibri', 'Georgia', 'Helvetica', 'Cambria'];
 const SIZES = ['10pt', '11pt', '12pt', '13pt', '14pt'];
@@ -213,6 +216,14 @@ const WordTemplate = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null); // {_localId, nom}
 
+  const getAuthHeaders = (isJson = false) => {
+    const token = localStorage.getItem('token');
+    return {
+      ...(isJson ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  };
+
 
   const selected = models.find((m) => m._localId === selectedLocalId) || null;
 
@@ -220,9 +231,8 @@ const WordTemplate = () => {
     (async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch('http://localhost:5000/api/admin/word-template', {
-          headers: { Authorization: `Bearer ${token}` },
+        const res = await fetch(WORD_TEMPLATE_ENDPOINT, {
+          headers: getAuthHeaders(),
         });
 
         if (!res.ok) throw new Error();
@@ -242,6 +252,7 @@ const WordTemplate = () => {
         const def = makeDefault();
         setModels([def]);
         setSelectedLocalId(def._localId);
+        setError('Impossible de charger les modèles depuis le serveur. Mode local activé.');
       } finally {
         setLoading(false);
       }
@@ -269,6 +280,18 @@ const WordTemplate = () => {
     setSaved(false);
   }, [selectedLocalId]);
 
+  const updateExercices = useCallback((updater) => {
+    setModels((prev) =>
+      prev.map((m) => {
+        if (m._localId !== selectedLocalId) return m;
+        const currentExercices = Array.isArray(m.exercices) ? m.exercices : [];
+        return { ...m, exercices: updater(currentExercices) };
+      })
+    );
+    setSaved(false);
+    setError('');
+  }, [selectedLocalId]);
+
   const handleCreate = () => {
     const m = makeDefault();
     setModels((prev) => [...prev, m]);
@@ -287,13 +310,18 @@ const WordTemplate = () => {
 
     if (target?._id) {
       try {
-        const token = localStorage.getItem('token');
-        await fetch(`http://localhost:5000/api/admin/word-template/${target._id}`, {
+        const res = await fetch(`${WORD_TEMPLATE_ENDPOINT}/${target._id}`, {
           method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
+          headers: getAuthHeaders(),
         });
+
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          throw new Error(d.message || 'Suppression impossible');
+        }
       } catch (err) {
-        console.error(err);
+        setError(err.message || 'Erreur lors de la suppression');
+        return;
       }
     }
 
@@ -307,6 +335,16 @@ const WordTemplate = () => {
 
   const handleSave = async () => {
     if (!selected) return;
+
+    if (!selected.nom?.trim()) {
+      setError('Le nom du modèle est obligatoire.');
+      return;
+    }
+
+    if (!selected.titreExamen?.trim()) {
+      setError("Le titre de l'examen est obligatoire.");
+      return;
+    }
 
     setSaving(true);
     setError('');
@@ -347,15 +385,12 @@ const WordTemplate = () => {
 
       const isNew = !selected._id;
       const url = isNew
-        ? 'http://localhost:5000/api/admin/word-template'
-        : `http://localhost:5000/api/admin/word-template/${selected._id}`;
+        ? WORD_TEMPLATE_ENDPOINT
+        : `${WORD_TEMPLATE_ENDPOINT}/${selected._id}`;
 
       const res = await fetch(url, {
         method: isNew ? 'POST' : 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: getAuthHeaders(true),
         body: JSON.stringify(payload),
       });
 
@@ -508,6 +543,20 @@ const WordTemplate = () => {
                           ))}
                         </select>
                       </div>
+
+                      <div className="wt-field">
+                        <label className="wt-label">Modèle actif</label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', height: '46px' }}>
+                          <input
+                            type="checkbox"
+                            checked={!!selected.actif}
+                            onChange={(e) => update('actif', e.target.checked)}
+                          />
+                          <span style={{ fontSize: '14px', color: '#334155' }}>
+                            {selected.actif ? 'Actif' : 'Inactif'}
+                          </span>
+                        </label>
+                      </div>
                     </div>
                   </div>
 
@@ -542,6 +591,37 @@ const WordTemplate = () => {
                           onChange={(e) => update('departementFr', e.target.value)}
                         />
                       </div>
+
+                      {selected.langue !== 'Français' && (
+                        <>
+                          <div className="wt-field">
+                            <label className="wt-label">Université (AR)</label>
+                            <input
+                              className="wt-input"
+                              value={selected.universiteAr || ''}
+                              onChange={(e) => update('universiteAr', e.target.value)}
+                            />
+                          </div>
+
+                          <div className="wt-field">
+                            <label className="wt-label">Institut (AR)</label>
+                            <input
+                              className="wt-input"
+                              value={selected.institutAr || ''}
+                              onChange={(e) => update('institutAr', e.target.value)}
+                            />
+                          </div>
+
+                          <div className="wt-field">
+                            <label className="wt-label">Département (AR)</label>
+                            <input
+                              className="wt-input"
+                              value={selected.departementAr || ''}
+                              onChange={(e) => update('departementAr', e.target.value)}
+                            />
+                          </div>
+                        </>
+                      )}
 
                      
                     </div>
@@ -776,14 +856,7 @@ const WordTemplate = () => {
                             contenu: '',
                             points: '',
                           };
-                          setModels((prev) =>
-                            prev.map((m) =>
-                              m._localId === selectedLocalId
-                                ? { ...m, exercices: [...(m.exercices || []), newExercice] }
-                                : m
-                            )
-                          );
-                          setSaved(false);
+                          updateExercices((currentExercices) => [...currentExercices, newExercice]);
                         }}
                       >
                         + Ajouter exercice
@@ -799,19 +872,9 @@ const WordTemplate = () => {
                               type="button"
                               className="wt-btn-remove"
                               onClick={() => {
-                                setModels((prev) =>
-                                  prev.map((m) =>
-                                    m._localId === selectedLocalId
-                                      ? {
-                                          ...m,
-                                          exercices: m.exercices.filter(
-                                            (_, i) => i !== idx
-                                          ),
-                                        }
-                                      : m
-                                  )
+                                updateExercices((currentExercices) =>
+                                  currentExercices.filter((_, i) => i !== idx)
                                 );
-                                setSaved(false);
                               }}
                               title="Supprimer cet exercice"
                             >
@@ -825,16 +888,11 @@ const WordTemplate = () => {
                             min="1"
                             value={ex.numero}
                             onChange={(e) => {
-                              const newExercices = [...(selected.exercices || [])];
-                              newExercices[idx] = { ...ex, numero: e.target.value };
-                              setModels((prev) =>
-                                prev.map((m) =>
-                                  m._localId === selectedLocalId
-                                    ? { ...m, exercices: newExercices }
-                                    : m
+                              updateExercices((currentExercices) =>
+                                currentExercices.map((item, i) =>
+                                  i === idx ? { ...item, numero: e.target.value } : item
                                 )
                               );
-                              setSaved(false);
                             }}
                           />
                           <label className="wt-label" style={{ marginTop: '10px' }}>Contenu</label>
@@ -843,16 +901,11 @@ const WordTemplate = () => {
                             placeholder="Contenu de l'exercice..."
                             value={ex.contenu}
                             onChange={(e) => {
-                              const newExercices = [...(selected.exercices || [])];
-                              newExercices[idx] = { ...ex, contenu: e.target.value };
-                              setModels((prev) =>
-                                prev.map((m) =>
-                                  m._localId === selectedLocalId
-                                    ? { ...m, exercices: newExercices }
-                                    : m
+                              updateExercices((currentExercices) =>
+                                currentExercices.map((item, i) =>
+                                  i === idx ? { ...item, contenu: e.target.value } : item
                                 )
                               );
-                              setSaved(false);
                             }}
                             rows="4"
                           />
@@ -863,16 +916,11 @@ const WordTemplate = () => {
                             placeholder="Points"
                             value={ex.points}
                             onChange={(e) => {
-                              const newExercices = [...(selected.exercices || [])];
-                              newExercices[idx] = { ...ex, points: e.target.value };
-                              setModels((prev) =>
-                                prev.map((m) =>
-                                  m._localId === selectedLocalId
-                                    ? { ...m, exercices: newExercices }
-                                    : m
+                              updateExercices((currentExercices) =>
+                                currentExercices.map((item, i) =>
+                                  i === idx ? { ...item, points: e.target.value } : item
                                 )
                               );
-                              setSaved(false);
                             }}
                           />
                         </div>

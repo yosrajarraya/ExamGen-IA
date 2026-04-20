@@ -8,6 +8,11 @@ export const getProfil = async () => {
   return response.data;
 };
 
+export const getDepartements = async () => {
+  const response = await api.get('/enseignant/departements');
+  return response.data;
+};
+
 /**
  * Mettre à jour les informations du profil
  * @param {{ Telephone, Grade, Departement, Specialite }} data
