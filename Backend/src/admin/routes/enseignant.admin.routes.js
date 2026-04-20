@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const requireAdmin = require('../middleware/requireAdmin');
+const { getDepartements } = require('../controllers/departement.controller');
 const {
   createEnseignant,
   getEnseignants,
@@ -29,6 +30,8 @@ const upload = multer({
 
 // Toutes ces routes nécessitent d'être connecté en tant qu'admin
 router.use(requireAdmin);
+
+router.get('/departements', getDepartements); // Lister les départements définis en base
 
 router.post('/create', createEnseignant);           // Créer un enseignant
 router.post('/import-excel', upload.single('file'), importEnseignantsExcel); // Importer via Excel

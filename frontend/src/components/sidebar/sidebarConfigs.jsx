@@ -1,8 +1,4 @@
-/* ══════════════════════════════════════════════════════════
-   sidebarConfigs.jsx
-   Toute la configuration de la sidebar en un seul endroit.
-   Importez ce dont vous avez besoin dans chaque page.
-   ══════════════════════════════════════════════════════════ */
+
 
 /* ── Nav items Admin ── */
 export const adminNavItems = [

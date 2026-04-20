@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createEnseignant, updateEnseignant } from '../../api/admin/Enseignant.api';
+import { createEnseignant, updateEnseignant, getDepartements } from '../../api/admin/Enseignant.api';
 import './CreateEnseignant.css';
 
 const EMPTY_FORM = {
@@ -17,9 +17,21 @@ const CreateEnseignant = ({ isOpen, onClose, onCreated, onError, showToast, mode
   const [form, setForm] = useState(EMPTY_FORM);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [departements, setDepartements] = useState([]);
 
   useEffect(() => {
     if (!isOpen) return;
+
+    const loadDepartements = async () => {
+      try {
+        const data = await getDepartements();
+        setDepartements(Array.isArray(data) ? data : []);
+      } catch {
+        setDepartements([]);
+      }
+    };
+
+    loadDepartements();
 
     if (mode === 'edit' && initialData) {
       setForm({
@@ -149,12 +161,17 @@ const CreateEnseignant = ({ isOpen, onClose, onCreated, onError, showToast, mode
           <div className="form-row">
             <div className="form-group">
               <label>Département</label>
-              <input
-                type="text"
-                value={form.Departement}
-                onChange={set('Departement')}
-                placeholder="Informatique"
-              />
+              <select value={form.Departement} onChange={set('Departement')}>
+                <option value="">Sélectionner un département</option>
+                {departements.map((departement) => (
+                  <option key={departement.id} value={departement.name}>
+                    {departement.name}
+                  </option>
+                ))}
+                {form.Departement && !departements.some((departement) => departement.name === form.Departement) && (
+                  <option value={form.Departement}>{form.Departement}</option>
+                )}
+              </select>
             </div>
             <div className="form-group">
               <label>Spécialité</label>
@@ -170,12 +187,12 @@ const CreateEnseignant = ({ isOpen, onClose, onCreated, onError, showToast, mode
           {/* Checkbox */}
           <div className="form-group form-check">
             <label>
-              <input
+              {/* <input
                 type="checkbox"
                 checked={form.Active}
                 onChange={(e) => setForm({ ...form, Active: e.target.checked })}
               />
-              Compte actif immédiatement
+              Compte actif immédiatement */}
             </label>
           </div>
 

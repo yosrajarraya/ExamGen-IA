@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { verifyToken } = require("../../middleware/auth.middleware");
+const { getDepartements } = require("../../admin/controllers/departement.controller");
 const {
   getProfil,
   updateProfil,
@@ -32,6 +33,8 @@ const {
 
 // Toutes ces routes nécessitent d'être connecté en tant qu'enseignant
 router.use(verifyToken);
+
+router.get('/departements', getDepartements); // Lister les départements définis en base
 
 router.get("/dashboard", getDashboard); // Tableau de bord enseignant
 router.get("/word-template", getWordTemplates); // Lister les modèles Word admin

@@ -8,253 +8,287 @@ import {
   deleteQuestionBankItem,
   copyQuestionBankItem,
 } from '../../api/enseignant/Enseignant.api';
-import '../exams/CreateExam.css';
+import './QuestionBank.css';
 
-const formatDate = (isoDate) => {
-  try {
-    return new Date(isoDate).toLocaleString();
-  } catch {
-    return '';
-  }
+const formatDate = (iso) => {
+  try { return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }); }
+  catch { return '—'; }
 };
 
+/* ── small sub-components ── */
+const Badge = ({ children, variant = 'default' }) => (
+  <span className={`qb-badge qb-badge--${variant}`}>{children}</span>
+);
+
+const EmptyState = ({ message, hint }) => (
+  <div className="qb-empty">
+    <div className="qb-empty-icon">?</div>
+    <p className="qb-empty-msg">{message}</p>
+    {hint && <p className="qb-empty-hint">{hint}</p>}
+  </div>
+);
+
+const Toast = ({ message, type }) => (
+  message ? <div className={`qb-toast qb-toast--${type}`}>{message}</div> : null
+);
+
+/* ── QuestionCard (mes questions) ── */
+const MyQuestionCard = ({ item, index, editingId, editingText, onStartEdit, onSaveEdit, onCancelEdit, onEditChange, onDelete }) => {
+  const isEditing = editingId === item.id;
+
+  return (
+    <div className={`qb-card ${isEditing ? 'qb-card--editing' : ''}`}>
+      <div className="qb-card-num">{index + 1}</div>
+
+      <div className="qb-card-body">
+        {isEditing ? (
+          <textarea
+            className="qb-edit-textarea"
+            value={editingText}
+            onChange={(e) => onEditChange(e.target.value)}
+            autoFocus
+            rows={3}
+          />
+        ) : (
+          <p className="qb-card-text">{item.text}</p>
+        )}
+        <span className="qb-card-date">Ajoutée le {formatDate(item.createdAt)}</span>
+        {item.copiedFrom && <Badge variant="copy">Copiée de {item.copiedFrom}</Badge>}
+      </div>
+
+      <div className="qb-card-actions">
+        {isEditing ? (
+          <>
+            <button className="qb-btn qb-btn--save" onClick={onSaveEdit}>Enregistrer</button>
+            <button className="qb-btn qb-btn--ghost" onClick={onCancelEdit}>Annuler</button>
+          </>
+        ) : (
+          <>
+            <button className="qb-btn qb-btn--edit" onClick={() => onStartEdit(item)}>Modifier</button>
+            <button className="qb-btn qb-btn--danger" onClick={() => onDelete(item.id)}>Supprimer</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ── QuestionCard (autres profs) ── */
+const OtherQuestionCard = ({ item, index, onCopy }) => (
+  <div className="qb-card qb-card--other">
+    <div className="qb-card-num qb-card-num--other">{index + 1}</div>
+
+    <div className="qb-card-body">
+      <p className="qb-card-text">{item.text}</p>
+      <div className="qb-card-meta">
+        <span className="qb-card-author">
+          <span className="qb-author-dot" />
+          {item.createdByName || item.createdByEmail || 'Professeur'}
+        </span>
+        <span className="qb-card-date">{formatDate(item.createdAt)}</span>
+      </div>
+    </div>
+
+    <div className="qb-card-actions">
+      <button className="qb-btn qb-btn--copy" onClick={() => onCopy(item)}>
+        Copier dans ma banque
+      </button>
+    </div>
+  </div>
+);
+
+/* ── Main component ── */
 const QuestionBank = () => {
   const { user, logout } = useAuth();
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [mesQuestions, setMesQuestions] = useState([]);
   const [autresQuestions, setAutresQuestions] = useState([]);
+
   const [editingId, setEditingId] = useState('');
   const [editingText, setEditingText] = useState('');
-  const [actionMessage, setActionMessage] = useState('');
-  const [actionError, setActionError] = useState('');
-  const [search, setSearch] = useState('');
-  const [scope, setScope] = useState('tous');
 
+  const [toast, setToast] = useState({ message: '', type: 'success' });
+  const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState('mes'); // 'mes' | 'autres'
+
+  /* load */
   const loadQuestionBank = async () => {
     try {
-      setLoading(true);
-      setError('');
+      setLoading(true); setError('');
       const data = await getQuestionBank();
       setMesQuestions(Array.isArray(data?.mesQuestions) ? data.mesQuestions : []);
       setAutresQuestions(Array.isArray(data?.autresQuestions) ? data.autresQuestions : []);
     } catch (err) {
       setError(err?.response?.data?.message || 'Impossible de charger la banque de questions');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
+  useEffect(() => { loadQuestionBank(); }, []);
+
+  /* auto-clear toast */
   useEffect(() => {
-    loadQuestionBank();
-  }, []);
+    if (!toast.message) return;
+    const t = setTimeout(() => setToast({ message: '', type: 'success' }), 3500);
+    return () => clearTimeout(t);
+  }, [toast.message]);
 
-  useEffect(() => {
-    if (!actionMessage && !actionError) return undefined;
+  const showToast = (message, type = 'success') => setToast({ message, type });
 
-    const timer = setTimeout(() => {
-      setActionMessage('');
-      setActionError('');
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, [actionMessage, actionError]);
-
-  const startEdit = (item) => {
-    setActionMessage('');
-    setActionError('');
-    setEditingId(item.id);
-    setEditingText(item.text || '');
-  };
-
-  const cancelEdit = () => {
-    setEditingId('');
-    setEditingText('');
-  };
-
+  /* edit handlers */
+  const startEdit = (item) => { setEditingId(item.id); setEditingText(item.text || ''); };
+  const cancelEdit = () => { setEditingId(''); setEditingText(''); };
   const saveEdit = async () => {
-    const clean = String(editingText || '').trim();
-    if (!clean) {
-      setActionError('Le texte de la question est requis.');
-      return;
-    }
-
+    const clean = editingText.trim();
+    if (!clean) { showToast('Le texte est requis.', 'error'); return; }
     try {
       await updateQuestionBankItem(editingId, clean);
-      setMesQuestions((prev) =>
-        prev.map((item) => (item.id === editingId ? { ...item, text: clean } : item))
-      );
-      setActionError('');
-      setActionMessage('Question modifiée avec succès.');
-      cancelEdit();
-    } catch (err) {
-      setActionMessage('');
-      setActionError(err?.response?.data?.message || 'Impossible de modifier la question');
-    }
+      setMesQuestions(prev => prev.map(q => q.id === editingId ? { ...q, text: clean } : q));
+      showToast('Question modifiée.'); cancelEdit();
+    } catch (err) { showToast(err?.response?.data?.message || 'Erreur de modification', 'error'); }
   };
 
+  /* delete */
   const removeQuestion = async (id) => {
+    if (!window.confirm('Supprimer cette question définitivement ?')) return;
     try {
       await deleteQuestionBankItem(id);
-      setMesQuestions((prev) => prev.filter((item) => item.id !== id));
-      if (editingId === id) {
-        cancelEdit();
-      }
-      setActionError('');
-      setActionMessage('Question supprimée avec succès.');
-    } catch (err) {
-      setActionMessage('');
-      setActionError(err?.response?.data?.message || 'Impossible de supprimer la question');
-    }
+      setMesQuestions(prev => prev.filter(q => q.id !== id));
+      if (editingId === id) cancelEdit();
+      showToast('Question supprimée.');
+    } catch (err) { showToast(err?.response?.data?.message || 'Erreur de suppression', 'error'); }
   };
 
-  const handleCopyQuestion = async (question) => {
+  /* copy */
+  const handleCopy = async (question) => {
     try {
       const result = await copyQuestionBankItem(question.id);
-      setMesQuestions((prev) => [...prev, {
+      setMesQuestions(prev => [...prev, {
         id: result.question.id,
         text: result.question.text,
-        isEditing: false,
-        savedToBank: true,
         createdAt: result.question.createdAt,
         copiedFrom: question.createdByName || question.createdByEmail,
       }]);
-      setActionError('');
-      setActionMessage(`Question copiée de ${question.createdByName || question.createdByEmail}`);
-    } catch (err) {
-      setActionMessage('');
-      setActionError(err?.response?.data?.message || 'Erreur lors de la copie de la question');
-    }
+      showToast(`Question copiée de ${question.createdByName || 'ce professeur'}.`);
+      setActiveTab('mes');
+    } catch (err) { showToast(err?.response?.data?.message || 'Erreur de copie', 'error'); }
   };
 
-  const query = String(search || '').trim().toLowerCase();
-
-  const filteredMesQuestions = mesQuestions.filter((item) => {
-    if (!query) return true;
-    return String(item?.text || '').toLowerCase().includes(query);
-  });
-
-  const filteredAutresQuestions = autresQuestions.filter((item) => {
-    if (!query) return true;
-    const text = String(item?.text || '').toLowerCase();
-    const author = String(item?.createdByName || item?.createdByEmail || '').toLowerCase();
-    return text.includes(query) || author.includes(query);
-  });
+  /* filter */
+  const q = search.trim().toLowerCase();
+  const filteredMes = mesQuestions.filter(i =>
+    !q || i.text?.toLowerCase().includes(q)
+  );
+  const filteredAutres = autresQuestions.filter(i =>
+    !q || i.text?.toLowerCase().includes(q) ||
+    (i.createdByName || '').toLowerCase().includes(q)
+  );
 
   return (
-    <div className="exam-create-layout">
-      <Sidebar
-        roleLabel="Espace enseignant"
-        navItems={enseignantNavItems}
-        profile={buildEnseignantProfile(user)}
-        onLogout={logout}
-      />
+    <div className="qb-layout">
+      <Sidebar roleLabel="Espace enseignant" navItems={enseignantNavItems} profile={buildEnseignantProfile(user)} onLogout={logout} />
 
-      <main className="exam-create-main">
-        <header className="exam-create-header">
-          <h1>Banque de questions</h1>
-          <button className="exam-btn-logout" type="button" onClick={logout}>Se deconnecter</button>
+      <main className="qb-main">
+        {/* Header */}
+        <header className="qb-header">
+          <div>
+            <p className="qb-header-eyebrow">ExamGen — IA</p>
+            <h1 className="qb-header-title">Banque de <span>questions</span></h1>
+            <p className="qb-header-sub">
+              {filteredMes.length} question{filteredMes.length !== 1 ? 's' : ''} personnelle{filteredMes.length !== 1 ? 's' : ''} · {filteredAutres.length} partagée{filteredAutres.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <button className="qb-btn-logout" onClick={logout}>Se déconnecter</button>
         </header>
 
-        <section className="exam-card">
-          <div className="sources-url-row">
-            <input
-              type="text"
-              className="sources-url-input"
-              placeholder="Rechercher une question, un auteur..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <select
-              className="question-bank-filter-select"
-              value={scope}
-              onChange={(e) => setScope(e.target.value)}
-            >
-              <option value="tous">Tous</option>
-              <option value="mes">Mes questions</option>
-              <option value="autres">Questions d'autres profs</option>
-            </select>
+        {/* Search bar */}
+        <div className="qb-search-bar">
+          <span className="qb-search-icon">⌕</span>
+          <input
+            className="qb-search-input"
+            type="text"
+            placeholder="Rechercher une question, un auteur…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="qb-search-clear" onClick={() => setSearch('')}>✕</button>
+          )}
+        </div>
+
+        {/* Tabs */}
+        <div className="qb-tabs">
+          <button
+            className={`qb-tab ${activeTab === 'mes' ? 'qb-tab--active' : ''}`}
+            onClick={() => setActiveTab('mes')}
+          >
+            Mes questions
+            <span className="qb-tab-count">{filteredMes.length}</span>
+          </button>
+          <button
+            className={`qb-tab ${activeTab === 'autres' ? 'qb-tab--active' : ''}`}
+            onClick={() => setActiveTab('autres')}
+          >
+            Autres professeurs
+            <span className="qb-tab-count">{filteredAutres.length}</span>
+          </button>
+        </div>
+
+        {/* Error */}
+        {error && <div className="qb-alert qb-alert--error">{error}</div>}
+
+        {/* Content */}
+        {loading ? (
+          <div className="qb-loading">
+            <div className="qb-loading-dots"><span /><span /><span /></div>
+            <p>Chargement de la banque…</p>
           </div>
-        </section>
-
-        {scope !== 'autres' && (
-        <section className="exam-card">
-          <h2 className="sources-title">Mes questions</h2>
-
-          {loading ? (
-            <div className="sources-placeholder">Chargement...</div>
-          ) : error ? (
-            <div className="exam-config-error">{error}</div>
-          ) : filteredMesQuestions.length === 0 ? (
-            <div className="sources-placeholder">Aucune question enregistrée pour le moment.</div>
-          ) : (
-            <ul className="sources-list">
-              {filteredMesQuestions.map((item, index) => (
-                <li key={item.id} className="sources-item">
-                  <div className="sources-item-select">
-                    {editingId === item.id ? (
-                      <textarea
-                        className="question-item-textarea"
-                        value={editingText}
-                        onChange={(e) => setEditingText(e.target.value)}
-                      />
-                    ) : (
-                      <span>
-                        <strong>{`Q${index + 1}`}</strong> - {item.text}
-                        <small>{`Ajoutée le ${formatDate(item.createdAt)}`}</small>
-                      </span>
-                    )}
-                  </div>
-                  <div className="question-item-actions">
-                    {editingId === item.id ? (
-                      <>
-                        <button type="button" className="question-link-btn" onClick={saveEdit}>Enregistrer</button>
-                        <button type="button" className="question-link-btn" onClick={cancelEdit}>Annuler</button>
-                      </>
-                    ) : (
-                      <button type="button" className="question-link-btn" onClick={() => startEdit(item)}>Modifier</button>
-                    )}
-                    <button type="button" className="question-link-btn danger" onClick={() => removeQuestion(item.id)}>Supprimer</button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {actionMessage && <p className="question-action-success">{actionMessage}</p>}
-          {actionError && <p className="question-action-error">{actionError}</p>}
-        </section>
+        ) : activeTab === 'mes' ? (
+          <div className="qb-list">
+            {filteredMes.length === 0 ? (
+              <EmptyState
+                message={search ? 'Aucun résultat pour cette recherche.' : 'Vous navez pas encore de question.'}
+                hint={search ? 'Essayez dautres mots-clés.' : 'Créez des questions depuis longlet "Création dexamen".'}
+              />
+            ) : (
+              filteredMes.map((item, i) => (
+                <MyQuestionCard
+                  key={item.id}
+                  item={item}
+                  index={i}
+                  editingId={editingId}
+                  editingText={editingText}
+                  onStartEdit={startEdit}
+                  onSaveEdit={saveEdit}
+                  onCancelEdit={cancelEdit}
+                  onEditChange={setEditingText}
+                  onDelete={removeQuestion}
+                />
+              ))
+            )}
+          </div>
+        ) : (
+          <div className="qb-list">
+            {filteredAutres.length === 0 ? (
+              <EmptyState
+                message={search ? 'Aucun résultat.' : 'Aucune question partagée pour le moment.'}
+                hint="Les questions des autres professeurs apparaîtront ici."
+              />
+            ) : (
+              filteredAutres.map((item, i) => (
+                <OtherQuestionCard
+                  key={item.id}
+                  item={item}
+                  index={i}
+                  onCopy={handleCopy}
+                />
+              ))
+            )}
+          </div>
         )}
 
-        {scope !== 'mes' && (
-        <section className="exam-card">
-          <h2 className="sources-title">Anciennes questions d'autres profs</h2>
-
-          {loading ? (
-            <div className="sources-placeholder">Chargement...</div>
-          ) : error ? (
-            <div className="exam-config-error">{error}</div>
-          ) : filteredAutresQuestions.length === 0 ? (
-            <div className="sources-placeholder">Aucune question disponible pour le moment.</div>
-          ) : (
-            <ul className="sources-list">
-              {filteredAutresQuestions.map((item, index) => (
-                <li key={item.id} className="sources-item">
-                  <div className="sources-item-select">
-                    <span>
-                      <strong>{`Q${index + 1}`}</strong> - {item.text}
-                      <small>{`Par ${item.createdByName || item.createdByEmail || 'Professeur'} - ${formatDate(item.createdAt)}`}</small>
-                    </span>
-                  </div>
-                  <div className="question-item-actions">
-                    <button type="button" className="question-link-btn" onClick={() => handleCopyQuestion(item)}>Copier</button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-        )}
+        <Toast message={toast.message} type={toast.type} />
       </main>
     </div>
   );

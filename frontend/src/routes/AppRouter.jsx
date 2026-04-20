@@ -76,7 +76,7 @@ const AppRouter = () => {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route
-            path="/"
+            path="/admin/login"
             element={
               <PublicRoute>
                 <LoginAdmin />
@@ -85,7 +85,7 @@ const AppRouter = () => {
           />
 
           <Route
-            path="/enseignant/login"
+            path="/"
             element={
               <PublicRoute>
                 <LoginEnseignant />
