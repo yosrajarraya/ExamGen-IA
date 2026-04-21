@@ -214,3 +214,158 @@
   .qb-row-actions { grid-column: 1 / -1; flex-wrap: wrap; }
   .qb-modal { max-width: 100%; }
 }
+/* ══════════════════════════════════
+   TABLE LAYOUT (like ExamBank)
+   ══════════════════════════════════ */
+
+.qb-table-wrap {
+  background: var(--qb-card);
+  border: 1.5px solid var(--qb-border);
+  border-radius: var(--qb-radius);
+  overflow: hidden;
+  box-shadow: var(--qb-shadow-sm);
+  animation: qbUp .4s var(--qb-ease) .16s both;
+}
+
+.qb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .875rem;
+}
+
+/* Header row */
+.qb-thead-tr {
+  background: var(--qb-navy);
+}
+.qb-th {
+  padding: 13px 16px;
+  text-align: left;
+  font-size: .72rem;
+  font-weight: 600;
+  color: rgba(232, 220, 196, 0.75);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  white-space: nowrap;
+}
+.qb-th--num     { width: 56px; }
+.qb-th--text    { }
+.qb-th--author  { width: 160px; }
+.qb-th--date    { width: 130px; }
+.qb-th--actions { width: 260px; text-align: right; }
+
+/* Body rows */
+.qb-tr {
+  border-bottom: 1px solid var(--qb-border);
+  transition: background .18s var(--qb-ease);
+}
+.qb-tr:last-child { border-bottom: none; }
+.qb-tr:hover { background: var(--qb-elevated); }
+.qb-tr--other { border-left: 3px solid var(--qb-blue-mid); }
+.qb-tr--other:hover { background: #f5f8ff; }
+
+.qb-td {
+  padding: 13px 16px;
+  vertical-align: middle;
+  color: var(--qb-text-body);
+}
+.qb-td--num { width: 56px; }
+.qb-td--text { }
+.qb-td--author { width: 160px; }
+.qb-td--date { width: 130px; font-size: .78rem; color: var(--qb-text-muted); white-space: nowrap; }
+.qb-td--actions { width: 260px; text-align: right; white-space: nowrap; }
+
+/* Number bubble */
+.qb-num-bubble {
+  width: 34px; height: 34px;
+  background: var(--qb-navy);
+  color: #e8dcc4;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--qb-font-d);
+  font-size: .88rem; font-weight: 600;
+  flex-shrink: 0;
+}
+.qb-num-bubble--other {
+  background: var(--qb-blue-mid);
+  color: #fff;
+}
+
+/* Question text in table */
+.qb-question-text {
+  font-size: .875rem;
+  color: var(--qb-text-body);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+/* Author in table */
+.qb-author-name {
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--qb-blue);
+}
+
+/* Actions in table */
+.qb-td--actions .qb-btn { margin-left: 5px; }
+.qb-td--actions .qb-btn:first-child { margin-left: 0; }
+.qb-td--actions { display: flex; justify-content: flex-end; align-items: center; gap: 5px; flex-wrap: nowrap; }
+
+/* Footer with count + pagination */
+.qb-table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 4px 0;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.qb-count-label {
+  font-size: .78rem;
+  color: var(--qb-text-muted);
+}
+
+/* Pagination */
+.qb-pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.qb-page-btn {
+  padding: 7px 14px;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--qb-text-body);
+  background: var(--qb-card);
+  border: 1.5px solid var(--qb-border);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all .18s var(--qb-ease);
+  font-family: var(--qb-font);
+}
+.qb-page-btn:hover:not(:disabled) { background: var(--qb-elevated); border-color: var(--qb-border-h); }
+.qb-page-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.qb-page-nums { display: flex; gap: 4px; }
+.qb-page-num {
+  width: 32px; height: 32px;
+  padding: 0;
+  font-size: .78rem; font-weight: 600;
+  color: var(--qb-text-muted);
+  background: var(--qb-card);
+  border: 1.5px solid var(--qb-border);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all .18s var(--qb-ease);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--qb-font);
+}
+.qb-page-num:hover { background: var(--qb-elevated); border-color: var(--qb-border-h); }
+.qb-page-num--active {
+  background: var(--qb-navy);
+  border-color: var(--qb-navy);
+  color: #f0e8d0;
+}
+
+/* ── Keep existing .qb-card classes for backward compat (unused now) ── */
+.qb-card { display: none; }

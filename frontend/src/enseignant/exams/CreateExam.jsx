@@ -1,11 +1,12 @@
 ﻿import { useState, useEffect } from 'react';
-import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle } from 'docx';
+import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, HeightRule, TableLayoutType } from 'docx';
 import { useLocation } from 'react-router-dom';
 import useAuth from '../../context/useAuth';
 import Sidebar from '../../components/sidebar/Sidebar';
 import { enseignantNavItems, buildEnseignantProfile } from '../../components/sidebar/sidebarConfigs';
 import {
   addExamToBank,
+  addQuestionToBank,
   getExamBank,
   getExamBankItem,
   getFilteredExams,
@@ -236,102 +237,267 @@ const CreateExam = () => {
         ? allTemplates.find(t => t._id === examForm.templateId)
         : null;
 
-      /* Build docx children */
+
+      /* ══════════════════════════════════════════════════════════════
+         Build docx — structure identique à l'aperçu admin ExamPreview
+         ══════════════════════════════════════════════════════════════ */
       const docChildren = [];
 
-      if (selectedTpl) {
-        docChildren.push(
-          new Table({
+      const tpl = selectedTpl;
+
+      /* helpers borders */
+      const bSingle = { style: BorderStyle.SINGLE, size: 6, color: '000000' };
+      const bNone   = { style: BorderStyle.NONE,   size: 0, color: 'FFFFFF' };
+      const bordersAll  = { top: bSingle, bottom: bSingle, left: bSingle, right: bSingle };
+      const bordersNone = { top: bNone,   bottom: bNone,   left: bNone,   right: bNone   };
+
+      /* valeurs depuis le template sélectionné (ou examForm si pas de tpl) */
+      const tplMatiere    = tpl?.matiere            || examForm.matiere  || '';
+      const tplDiscipline = tpl?.discipline         || examForm.filiere  || '';
+      const tplTeachers   = tpl?.enseignants        || '';
+      const tplDocs       = tpl?.documentsAutorises || '';
+      const tplAnnee      = tpl?.anneeUniversitaire || `${new Date().getFullYear()}-${new Date().getFullYear()+1}`;
+      const tplSemestre   = tpl?.semestre
+        ? tpl.semestre + (tpl.dateExamen ? ` (${tpl.dateExamen})` : '')
+        : '';
+      const tplDuree      = tpl?.duree || examForm.duree || '1h30';
+      const tplTitre      = tpl?.titreExamen || 'DEVOIR SURVEILLÉ';
+
+      const sec       = tpl?.sections;
+      const showNP    = !sec || sec.zoneNomPrenom;
+      const showGrp   = !sec || sec.zoneGroupe;
+      const showNote  = !sec || sec.blocNote;
+      const showComm  = !sec || sec.blocCommentaires;
+      const showSign  = !sec || sec.blocSignature;
+      const showNB    = !sec || sec.blocRemarques;
+
+      if (tpl) {
+        /* ── 1. EN-TÊTE UNIVERSITÉ (3 colonnes) ── */
+        docChildren.push(new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          borders: { top: bNone, bottom: bNone, left: bNone, right: bNone, insideH: bNone, insideV: bNone },
+          rows: [new TableRow({ children: [
+
+            /* Colonne gauche : texte anglais */
+            new TableCell({
+              width: { size: 27, type: WidthType.PERCENTAGE },
+              borders: bordersNone,
+              children: [
+                new Paragraph({ children: [new TextRun({ text: 'North American',                         size: 18 })] }),
+                new Paragraph({ children: [new TextRun({ text: 'Private University',                     size: 18 })] }),
+                new Paragraph({ children: [new TextRun({ text: 'SFAX | TUNISIA',                         size: 18 })] }),
+                new Paragraph({ children: [new TextRun({ text: 'TECHNOLOGY · BUSINESS · ARCHITECTURE',  size: 14, color: '888888' })] }),
+              ],
+            }),
+
+            /* Colonne centre : noms arabe / français */
+            new TableCell({
+              width: { size: 53, type: WidthType.PERCENTAGE },
+              borders: bordersNone,
+              children: [
+                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: tpl.universiteAr  || 'الجامعة الشمالية الأمريكية الخاصة', size: 18 })] }),
+                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: tpl.universiteFr  || 'Université Nord-Américaine Privée',   size: 18 })] }),
+                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: tpl.institutFr    || 'Institut International de Technologie',size: 18 })] }),
+                new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: tpl.departementFr || 'Département Informatique',             size: 18 })] }),
+              ],
+            }),
+
+            /* Colonne droite : encadré IIT */
+            new TableCell({
+              width: { size: 20, type: WidthType.PERCENTAGE },
+              borders: bordersAll,
+              children: [
+                new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 60 },
+                  children: [new TextRun({ text: 'IIT', bold: true, size: 32 })] }),
+                new Paragraph({ alignment: AlignmentType.CENTER,
+                  children: [new TextRun({ text: 'Institut International', size: 14, color: '444444' })] }),
+                new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 60 },
+                  children: [new TextRun({ text: 'de Technologie',         size: 14, color: '444444' })] }),
+              ],
+            }),
+
+          ]})],
+        }));
+
+        docChildren.push(new Paragraph({ text: '', spacing: { after: 120 } }));
+
+        /* ── 2. TITRE : DEVOIR SURVEILLÉ (2 cellules) ── */
+        docChildren.push(new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: [new TableRow({
+            height: { value: 550, rule: HeightRule.ATLEAST },
+            children: [
+              new TableCell({
+                width: { size: 68, type: WidthType.PERCENTAGE },
+                borders: bordersAll,
+                children: [new Paragraph({
+                  spacing: { before: 80, after: 80 },
+                  children: [new TextRun({ text: tplTitre, bold: true, size: 34, allCaps: true })],
+                })],
+              }),
+              new TableCell({
+                width: { size: 32, type: WidthType.PERCENTAGE },
+                borders: bordersAll,
+                children: [new Paragraph({ text: '' })],
+              }),
+            ],
+          })],
+        }));
+
+        /* ── 3. GRILLE MÉTA (2 colonnes, pas de bordure top car suite du titre) ── */
+        docChildren.push(new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: [new TableRow({ children: [
+
+            /* Colonne gauche */
+            new TableCell({
+              width: { size: 50, type: WidthType.PERCENTAGE },
+              borders: { top: bNone, bottom: bSingle, left: bSingle, right: bNone },
+              children: [
+                new Paragraph({ spacing: { before: 60, after: 40 }, children: [new TextRun({ text: 'Matière : ',           bold: true, size: 20 }), new TextRun({ text: tplMatiere,    size: 20 })] }),
+                new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Discipline : ',        bold: true, size: 20 }), new TextRun({ text: tplDiscipline, size: 20 })] }),
+                new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Enseignants : ',       bold: true, size: 20 }), new TextRun({ text: tplTeachers,   size: 20 })] }),
+                new Paragraph({ spacing: { before: 40, after: 60 }, children: [new TextRun({ text: 'Documents autorisés : ', bold: true, size: 20 }), new TextRun({ text: tplDocs,  size: 20 })] }),
+              ],
+            }),
+
+            /* Colonne droite */
+            new TableCell({
+              width: { size: 50, type: WidthType.PERCENTAGE },
+              borders: { top: bNone, bottom: bSingle, left: bSingle, right: bSingle },
+              children: [
+                new Paragraph({ spacing: { before: 60, after: 40 }, children: [new TextRun({ text: 'Année Universitaire : ',     bold: true, size: 20 }), new TextRun({ text: tplAnnee,    size: 20 })] }),
+                new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Semestre : ',                bold: true, size: 20 }), new TextRun({ text: tplSemestre, size: 20 })] }),
+                new Paragraph({ spacing: { before: 40, after: 60 }, children: [new TextRun({ text: "Feuille d'énoncé / Durée : ", bold: true, size: 20 }), new TextRun({ text: tplDuree,   size: 20 })] }),
+              ],
+            }),
+
+          ]})],
+        }));
+
+        /* ── 4. LIGNE ÉTUDIANT (Prénom & Nom | Groupe) ── */
+        if (showNP || showGrp) {
+          docChildren.push(new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [new TableRow({
+              height: { value: 480, rule: HeightRule.ATLEAST },
               children: [
                 new TableCell({
-                  width: { size: 60, type: WidthType.PERCENTAGE },
-                  children: [
-                    new Paragraph({ children: [new TextRun({ text: selectedTpl.universiteFr || '', bold: true, size: 20 })] }),
-                    new Paragraph({ children: [new TextRun({ text: selectedTpl.institutFr || '', bold: true, size: 18 })] }),
-                    new Paragraph({ children: [new TextRun({ text: selectedTpl.departementFr || '', size: 16 })] }),
-                  ],
+                  width: { size: 68, type: WidthType.PERCENTAGE },
+                  borders: { top: bNone, bottom: bSingle, left: bSingle, right: bNone },
+                  children: [new Paragraph({
+                    spacing: { before: 80, after: 80 },
+                    children: [new TextRun({ text: showNP ? 'Prénom & Nom :   _______________________________________' : '', size: 20 })],
+                  })],
                 }),
                 new TableCell({
-                  width: { size: 40, type: WidthType.PERCENTAGE },
-                  children: [new Paragraph({ children: [new TextRun({ text: selectedTpl.nom || '', bold: true, size: 22 })] })],
+                  width: { size: 32, type: WidthType.PERCENTAGE },
+                  borders: { top: bNone, bottom: bSingle, left: bSingle, right: bSingle },
+                  children: [new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    spacing: { before: 80, after: 80 },
+                    children: [new TextRun({ text: showGrp ? 'Groupe   ________' : '', size: 20 })],
+                  })],
                 }),
               ],
             })],
-          })
+          }));
+        }
+
+        docChildren.push(new Paragraph({ text: '', spacing: { after: 140 } }));
+
+        /* ── 5. CASES NOTE / COMMENTAIRES / SIGNATURE ── */
+        if (showNote || showComm || showSign) {
+          const boxes = [];
+          if (showNote) boxes.push('Note /20');
+          if (showComm) boxes.push('Commentaires');
+          if (showSign) boxes.push('Signature');
+          const pct = Math.floor(100 / boxes.length);
+
+          docChildren.push(new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [new TableRow({
+              height: { value: 1100, rule: HeightRule.ATLEAST },
+              children: boxes.map((label, idx) => new TableCell({
+                width: { size: pct, type: WidthType.PERCENTAGE },
+                borders: bordersAll,
+                children: [new Paragraph({
+                  spacing: { before: 80, after: 80 },
+                  children: [new TextRun({ text: label, bold: true, size: 20 })],
+                })],
+              })),
+            })],
+          }));
+        }
+
+        docChildren.push(new Paragraph({ text: '', spacing: { after: 140 } }));
+
+        /* ── 6. BLOC NB ── */
+        if (showNB) {
+          docChildren.push(new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [new TableRow({ children: [new TableCell({
+              borders: bordersAll,
+              children: [
+                new Paragraph({ spacing: { before: 80 },         children: [new TextRun({ text: 'NB.', bold: true, size: 20 })] }),
+                new Paragraph({ spacing: { before: 60, after: 40 }, children: [new TextRun({ text: '— Le barème est fourni à titre indicatif et peut être ajusté', size: 18 })] }),
+                new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: `— La durée de l'examen est de ${tplDuree}`, size: 18 })] }),
+                new Paragraph({ spacing: { before: 40, after: 80 }, children: [new TextRun({ text: "— Les ordinateurs, l'accès à Internet et l'utilisation d'IDE Python sont strictement interdits", size: 18 })] }),
+              ],
+            })]})],
+          }));
+        }
+
+        docChildren.push(new Paragraph({ text: '', spacing: { after: 300 } }));
+
+      } else {
+        /* Pas de template sélectionné → en-tête minimal */
+        docChildren.push(new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 200, after: 100 },
+          children: [new TextRun({ text: titre, bold: true, size: 32 })],
+        }));
+        [
+          examForm.matiere    && `Matière : ${examForm.matiere}`,
+          examForm.filiere    && `Filière : ${examForm.filiere}`,
+          examForm.niveau     && `Niveau : ${examForm.niveau}`,
+          examForm.type       && `Type : ${examForm.type}`,
+          examForm.duree      && `Durée : ${examForm.duree} min`,
+          examForm.noteTotale && `Barème : /${examForm.noteTotale}`,
+          `Date : ${new Date().toLocaleDateString('fr-FR')}`,
+        ].filter(Boolean).forEach(line =>
+          docChildren.push(new Paragraph({ spacing: { after: 80 }, children: [new TextRun({ text: line, size: 18 })] }))
         );
-        docChildren.push(new Paragraph({ text: '' }));
+        docChildren.push(new Paragraph({ text: '', spacing: { after: 200 } }));
       }
 
-      /* Title */
-      docChildren.push(new Paragraph({
-        children: [new TextRun({ text: titre, bold: true, size: 32 })],
-        alignment: 'center',
-        spacing: { before: 200, after: 100 },
-      }));
 
-      /* Meta */
-      const metaLines = [
-        examForm.matiere && `Matière : ${examForm.matiere}`,
-        examForm.filiere && `Filière : ${examForm.filiere}`,
-        examForm.niveau && `Niveau : ${examForm.niveau}`,
-        examForm.type && `Type : ${examForm.type}`,
-        examForm.duree && `Durée : ${examForm.duree} min`,
-        examForm.noteTotale && `Barème : /${examForm.noteTotale}`,
-        `Date : ${new Date().toLocaleDateString('fr-FR')}`,
-      ].filter(Boolean);
-
-      metaLines.forEach(line => docChildren.push(
-        new Paragraph({ children: [new TextRun({ text: line, size: 18 })], spacing: { after: 80 } })
-      ));
-
-      docChildren.push(new Paragraph({ text: '' }));
-
-      /* Student header */
-      docChildren.push(new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        rows: [new TableRow({
-          children: [
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: 'Nom & Prénom : ________________________', size: 20 })] })],
-              borders: { top: { style: BorderStyle.SINGLE, size: 6 }, bottom: { style: BorderStyle.SINGLE, size: 6 }, left: { style: BorderStyle.SINGLE, size: 6 }, right: { style: BorderStyle.SINGLE, size: 6 } },
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: 'Groupe : ________________', size: 20 })] })],
-              borders: { top: { style: BorderStyle.SINGLE, size: 6 }, bottom: { style: BorderStyle.SINGLE, size: 6 }, left: { style: BorderStyle.SINGLE, size: 6 }, right: { style: BorderStyle.SINGLE, size: 6 } },
-            }),
-          ],
-        })],
-      }));
-      docChildren.push(new Paragraph({ text: '' }));
-
-      /* Sections, exercises, questions */
+      /* ── SECTIONS / EXERCICES / QUESTIONS ── */
       sections.forEach((sec, si) => {
         docChildren.push(new Paragraph({
-          children: [new TextRun({ text: `${sec.title || `Partie ${si + 1}`}`, bold: true, size: 24 })],
-          spacing: { before: 240, after: 100 },
+          spacing: { before: 280, after: 100 },
+          children: [new TextRun({ text: sec.title || `Partie ${si + 1}`, bold: true, size: 24 })],
         }));
 
         sec.exercises.forEach((exo, ei) => {
           const exoPts = exo.points ? ` (${exo.points} pts)` : '';
           docChildren.push(new Paragraph({
-            children: [new TextRun({ text: `${exo.title || `Exercice ${ei + 1}`}${exoPts}`, bold: true, size: 22, underline: {} })],
             spacing: { before: 160, after: 80 },
+            children: [new TextRun({ text: `${exo.title || `Exercice ${ei + 1}`}${exoPts}`, bold: true, size: 22, underline: {} })],
           }));
 
           exo.questions.forEach((q, qi) => {
             const pts = q.points ? ` [${q.points} pts]` : '';
             docChildren.push(new Paragraph({
-              children: [new TextRun({ text: `${qi + 1}. ${q.text || ''}${pts}`, size: 20 })],
               spacing: { before: 100, after: 60 },
+              children: [new TextRun({ text: `${qi + 1}. ${q.text || ''}${pts}`, size: 20 })],
             }));
 
             if ((q.type === 'qcm' || q.type === 'vrai_faux') && q.options?.length) {
               q.options.forEach((opt, oi) => {
                 docChildren.push(new Paragraph({
-                  children: [new TextRun({ text: `   ${String.fromCharCode(97 + oi)}) ${opt.text || ''}`, size: 18 })],
                   spacing: { before: 40, after: 40 },
+                  children: [new TextRun({ text: `   ${String.fromCharCode(97 + oi)}) ${opt.text || ''}`, size: 18 })],
                 }));
               });
             }
@@ -339,8 +505,8 @@ const CreateExam = () => {
             if (['ouverte', 'calcul', 'definition'].includes(q.type)) {
               for (let li = 0; li < 3; li++) {
                 docChildren.push(new Paragraph({
-                  children: [new TextRun({ text: '         ___________________________________________', size: 16, color: 'AAAAAA' })],
                   spacing: { before: 40, after: 40 },
+                  children: [new TextRun({ text: '         ___________________________________________', size: 16, color: 'AAAAAA' })],
                 }));
               }
             }
@@ -372,6 +538,23 @@ const CreateExam = () => {
         anneeUniversitaire: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
         ...(examForm.templateId && { templateId: examForm.templateId }),
       });
+
+      /* ── Sauvegarder chaque question dans la banque de questions ── */
+      const questionSavePromises = sections.flatMap(sec =>
+        sec.exercises.flatMap(exo =>
+          exo.questions
+            .filter(q => q.text?.trim())
+            .map(q =>
+              addQuestionToBank(
+                q.text.trim(),
+                examForm.matiere.trim(),
+                examForm.niveau.trim(),
+                `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`
+              ).catch(() => {/* ignorer les erreurs individuelles */})
+            )
+        )
+      );
+      await Promise.all(questionSavePromises);
 
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
