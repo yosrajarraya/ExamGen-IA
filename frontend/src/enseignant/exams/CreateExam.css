@@ -1242,15 +1242,17 @@
   .status-grid { grid-template-columns: 1fr; }
   .bareme-summary { flex-direction: column; }
 }
-/* ====================== Modèles Word - Affichage Compact & Scalable ====================== */
+/* ====================== Modèles Word - Affichage Fidèle Admin ====================== */
+
+/* Grille 3 colonnes fixes */
 .templates-a4-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-  margin-bottom: 40px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 16px;
 }
 
-/* Carte du modèle */
+/* Carte conteneur */
 .a4-template-container {
   border: 2px solid var(--ce-border);
   border-radius: var(--ce-radius);
@@ -1266,7 +1268,7 @@
 .a4-template-container:hover {
   border-color: var(--ce-blue-mid);
   box-shadow: var(--ce-shadow-md);
-  transform: translateY(-4px);
+  transform: translateY(-3px);
 }
 
 .a4-template-container.selected {
@@ -1274,76 +1276,19 @@
   box-shadow: 0 0 0 4px rgba(13, 122, 85, 0.18);
 }
 
-/* Zone Aperçu A4 - plus petit et propre */
+/* Zone aperçu : fond blanc, s'adapte à la largeur du preview scalé */
 .a4-mini-wrapper {
-  padding: 16px 14px;
-  background: #f8f9fb;
+  background: #fff;
   border-bottom: 1px solid var(--ce-border);
   display: flex;
   justify-content: center;
-}
-
-.a4-sheet-mini {
-  width: 100%;
-  max-width: 235px;           /* Plus compact */
-  aspect-ratio: 210 / 297;
-  background: white;
-  border: 1px solid #d1d5db;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.07);
-  padding: 14px 16px;
-  font-size: 8.2px;
-  line-height: 1.35;
-  color: #1f2937;
+  align-items: flex-start;
   overflow: hidden;
+  padding: 0;
+  width: 100%;
 }
 
-/* En-tête très simplifié */
-.a4-header {
-  text-align: center;
-  margin-bottom: 10px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.a4-university {
-  font-size: 9.5px;
-  font-weight: 700;
-  color: #1e40af;
-}
-
-.a4-institut {
-  font-size: 8px;
-  color: #4b5563;
-}
-
-/* Titre */
-.a4-exam-title {
-  font-size: 11.5px;
-  font-weight: 700;
-  text-align: center;
-  margin: 10px 0 8px;
-  line-height: 1.3;
-}
-
-/* Informations ultra-compactes */
-.a4-info-row {
-  display: flex;
-  font-size: 8px;
-  margin-bottom: 4px;
-}
-
-.a4-label {
-  width: 78px;
-  font-weight: 600;
-  color: #374151;
-}
-
-.a4-value {
-  flex: 1;
-  color: #1f2937;
-}
-
-/* Info sous l'A4 */
+/* Barre info sous l'aperçu */
 .template-info-bar {
   padding: 14px 16px;
   background: var(--ce-bg-card);
@@ -1365,7 +1310,7 @@
 }
 
 .type-badge {
-  padding: 3px 9px;
+  padding: 3px 10px;
   border-radius: 999px;
   font-size: 0.73rem;
   font-weight: 600;
@@ -1376,27 +1321,83 @@
   color: var(--ce-text-muted);
 }
 
-.selected-indicator {
-  margin-top: 8px;
-  color: var(--ce-green);
+/* Pagination modèles */
+.tpl-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 0 4px;
+  flex-wrap: wrap;
+}
+
+.tpl-pagination__btn {
+  padding: 7px 16px;
+  font-size: 13px;
   font-weight: 600;
-  font-size: 0.84rem;
+  color: #334155;
+  background: white;
+  border: 1.5px solid #dbe4ee;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: .18s ease;
+}
+
+.tpl-pagination__btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.tpl-pagination__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tpl-pagination__pages {
+  display: flex;
+  gap: 4px;
+}
+
+.tpl-pagination__page {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  background: white;
+  border: 1.5px solid #dbe4ee;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: .18s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tpl-pagination__page:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.tpl-pagination__page--active {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border-color: #2563eb;
+  color: white;
+}
+
+.tpl-pagination-count {
+  text-align: center;
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 24px;
 }
 
 /* Responsive */
-@media (max-width: 1200px) {
-  .templates-a4-grid {
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  }
+@media (max-width: 1100px) {
+  .templates-a4-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (max-width: 768px) {
-  .templates-a4-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 16px;
-  }
-  
-  .a4-sheet-mini {
-    max-width: 210px;
-  }
+@media (max-width: 680px) {
+  .templates-a4-grid { grid-template-columns: 1fr; }
 }
