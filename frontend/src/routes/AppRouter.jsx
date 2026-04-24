@@ -1,35 +1,40 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
-import useAuth from '../context/useAuth';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import useAuth from "../context/useAuth";
 
-import ForgotPassword from '../enseignant/auth/ForgotPassword';
-import VerifyCode from '../enseignant/auth/VerifyCode';
-import ResetPassword from '../enseignant/auth/ResetPassword';
+import ForgotPassword from "../enseignant/auth/ForgotPassword";
+import VerifyCode from "../enseignant/auth/VerifyCode";
+import ResetPassword from "../enseignant/auth/ResetPassword";
 
-const LoginAdmin = lazy(() => import('../admin/auth/LoginAdmin'));
-const LoginEnseignant = lazy(() => import('../enseignant/auth/LoginEnseignant'));
-const EnseignantsList = lazy(() => import('../admin/enseignants/EnseignantsList'));
-const TeacherDashboard = lazy(() => import('../enseignant/dashboard/enseignantDashboard'));
-const CreateExam = lazy(() => import('../enseignant/exams/CreateExam'));
-const ExamBank = lazy(() => import('../enseignant/exams/ExamBank'));
-const QuestionBank = lazy(() => import('../enseignant/questions/QuestionBank'));
-const Profil = lazy(() => import('../enseignant/profil/Profil'));
-const WordTemplates = lazy(() => import('../enseignant/modeles/WordTemplates'));
-const WordTemplate = lazy(() => import('../admin/modeles/WordTemplate'));
+const LoginAdmin = lazy(() => import("../admin/auth/LoginAdmin"));
+const LoginEnseignant = lazy(
+  () => import("../enseignant/auth/LoginEnseignant"),
+);
+const EnseignantsList = lazy(
+  () => import("../admin/enseignants/EnseignantsList"),
+);
+const TeacherDashboard = lazy(
+  () => import("../enseignant/dashboard/enseignantDashboard"),
+);
+const CreateExam = lazy(() => import("../enseignant/exams/CreateExam"));
+const ExamBank = lazy(() => import("../enseignant/exams/ExamBank"));
+const QuestionBank = lazy(() => import("../enseignant/questions/QuestionBank"));
+const Profil = lazy(() => import("../enseignant/profil/Profil"));
+const WordTemplates = lazy(() => import("../enseignant/modeles/WordTemplates"));
+const WordTemplate = lazy(() => import("../admin/modeles/WordTemplate"));
 
 const PageLoader = () => (
-  <div
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      fontFamily: 'sans-serif',
-      color: '#6b7280',
-      fontSize: '14px',
-    }}
-  >
-    Chargement...
+  <div className="route-loader">
+    <div className="route-loader-card">
+      <h2 className="route-loader-title">ExamGen IA</h2>
+      <p className="route-loader-sub">Chargement de votre espace...</p>
+      <div className="route-loader-bars" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
+    </div>
   </div>
 );
 
@@ -42,7 +47,9 @@ const ProtectedRoute = ({ children, role }) => {
   if (role && user.role !== role) {
     return (
       <Navigate
-        to={user.role === 'admin' ? '/admin/enseignants' : '/enseignant/dashboard'}
+        to={
+          user.role === "admin" ? "/admin/enseignants" : "/enseignant/dashboard"
+        }
         replace
       />
     );
@@ -59,7 +66,9 @@ const PublicRoute = ({ children }) => {
   if (user) {
     return (
       <Navigate
-        to={user.role === 'admin' ? '/admin/enseignants' : '/enseignant/dashboard'}
+        to={
+          user.role === "admin" ? "/admin/enseignants" : "/enseignant/dashboard"
+        }
         replace
       />
     );
@@ -206,11 +215,11 @@ const AppRouter = () => {
             element={
               <Navigate
                 to={
-                  user?.role === 'admin'
-                    ? '/admin/enseignants'
-                    : user?.role === 'enseignant'
-                    ? '/enseignant/dashboard'
-                    : '/'
+                  user?.role === "admin"
+                    ? "/admin/enseignants"
+                    : user?.role === "enseignant"
+                      ? "/enseignant/dashboard"
+                      : "/"
                 }
                 replace
               />

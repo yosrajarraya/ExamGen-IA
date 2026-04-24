@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { addQuestionToBank, copyQuestionBankItem } from '../../../api/enseignant/Enseignant.api';
 
 /* ── helpers ── */
@@ -76,7 +77,7 @@ const McqOptions = ({ options, onChange, onAddOption, onRemoveOption }) => (
   </div>
 );
 
-const QuestionItem = ({ question, qIndex, onUpdate, onDelete }) => {
+const QuestionItem = ({ question, qIndex, onUpdate, onDelete, dragHandleProps }) => {
   const isQcm = question.type === 'qcm';
   const isVF = question.type === 'vrai_faux';
 
@@ -96,6 +97,7 @@ const QuestionItem = ({ question, qIndex, onUpdate, onDelete }) => {
   return (
     <div className="question-item">
       <div className="question-item-header">
+        <div className="drag-handle" {...dragHandleProps}>⠿</div>
         <span className="q-num-badge">{qIndex + 1}</span>
 
         <select
@@ -156,7 +158,7 @@ const QuestionItem = ({ question, qIndex, onUpdate, onDelete }) => {
   );
 };
 
-const ExerciseBlock = ({ exercise, exoIndex, onUpdateExo, onDeleteExo }) => {
+const ExerciseBlock = ({ exercise, exoIndex, onUpdateExo, onDeleteExo, dragHandleProps }) => {
   const updateQuestion = (qId, field, value) => {
     const newQs = exercise.questions.map(q => q.id === qId ? { ...q, [field]: value } : q);
     onUpdateExo(exercise.id, 'questions', newQs);
@@ -166,17 +168,13 @@ const ExerciseBlock = ({ exercise, exoIndex, onUpdateExo, onDeleteExo }) => {
     onUpdateExo(exercise.id, 'questions', exercise.questions.filter(q => q.id !== qId));
   };
 
-  const addQuestion = () => {
-    onUpdateExo(exercise.id, 'questions', [...exercise.questions, makeQuestion()]);
-  };
-
   const totalPts = exercise.questions.reduce((sum, q) => sum + (parseFloat(q.points) || 0), 0);
-  const exoPts = parseFloat(exercise.points) || 0;
 
   return (
     <div className="exercise-container">
       <div className="exercise-header">
         <div className="exercise-header-left">
+          <div className="drag-handle drag-handle-exo" {...dragHandleProps}>⠿</div>
           <span className="exercise-num">{exoIndex + 1}</span>
           <input
             type="text"
@@ -214,15 +212,31 @@ const ExerciseBlock = ({ exercise, exoIndex, onUpdateExo, onDeleteExo }) => {
       </div>
 
       <div className="exercise-body">
-        {exercise.questions.map((q, qi) => (
-          <QuestionItem
-            key={q.id}
-            question={q}
-            qIndex={qi}
-            onUpdate={updateQuestion}
-            onDelete={deleteQuestion}
-          />
-        ))}
+        <Droppable droppableId={`questions-${exercise.id}`} type="QUESTION">
+          {(provided) => (
+            <div {...provided.droppableProps} ref={provided.innerRef}>
+              {exercise.questions.map((q, qi) => (
+                <Draggable key={q.id} draggableId={q.id} index={qi}>
+                  {(provided) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                    >
+                      <QuestionItem
+                        question={q}
+                        qIndex={qi}
+                        onUpdate={updateQuestion}
+                        onDelete={deleteQuestion}
+                        dragHandleProps={provided.dragHandleProps}
+                      />
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
 
         <div className="add-btns-row">
           {QUESTION_TYPES.slice(0, 4).map(t => (
@@ -251,7 +265,7 @@ const ExerciseBlock = ({ exercise, exoIndex, onUpdateExo, onDeleteExo }) => {
   );
 };
 
-const SectionBlock = ({ section, sectionIndex, onUpdateSection, onDeleteSection }) => {
+const SectionBlock = ({ section, sectionIndex, onUpdateSection, onDeleteSection, dragHandleProps }) => {
   const updateExo = (exoId, field, value) => {
     const newExos = section.exercises.map(e => e.id === exoId ? { ...e, [field]: value } : e);
     onUpdateSection(section.id, 'exercises', newExos);
@@ -281,6 +295,7 @@ const SectionBlock = ({ section, sectionIndex, onUpdateSection, onDeleteSection 
         onClick={() => onUpdateSection(section.id, 'collapsed', !section.collapsed)}
       >
         <div className="section-header-left">
+          <div className="drag-handle drag-handle-section" {...dragHandleProps}>⠿</div>
           <span className="section-pill">Partie {sectionIndex + 1}</span>
           <input
             type="text"
@@ -313,15 +328,31 @@ const SectionBlock = ({ section, sectionIndex, onUpdateSection, onDeleteSection 
 
       {!section.collapsed && (
         <div className="section-body">
-          {section.exercises.map((exo, ei) => (
-            <ExerciseBlock
-              key={exo.id}
-              exercise={exo}
-              exoIndex={ei}
-              onUpdateExo={updateExo}
-              onDeleteExo={deleteExo}
-            />
-          ))}
+          <Droppable droppableId={`exercises-${section.id}`} type="EXERCISE">
+            {(provided) => (
+              <div {...provided.droppableProps} ref={provided.innerRef}>
+                {section.exercises.map((exo, ei) => (
+                  <Draggable key={exo.id} draggableId={exo.id} index={ei}>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                      >
+                        <ExerciseBlock
+                          exercise={exo}
+                          exoIndex={ei}
+                          onUpdateExo={updateExo}
+                          onDeleteExo={deleteExo}
+                          dragHandleProps={provided.dragHandleProps}
+                        />
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
           <button type="button" className="btn-add-exo" onClick={addExercise}>
             + Ajouter un exercice
           </button>
@@ -353,6 +384,45 @@ const QuestionsTab = ({
 
   const addSection = () => {
     setSections(prev => [...prev, makeSection(prev.length + 1)]);
+  };
+
+  const onDragEnd = (result) => {
+    const { source, destination, type } = result;
+    if (!destination) return;
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+
+    const newSections = [...sections];
+
+    if (type === 'SECTION') {
+      const [removed] = newSections.splice(source.index, 1);
+      newSections.splice(destination.index, 0, removed);
+      setSections(newSections);
+    } 
+    else if (type === 'EXERCISE') {
+      const sourceSecId = source.droppableId.replace('exercises-', '');
+      const destSecId = destination.droppableId.replace('exercises-', '');
+      
+      const sourceSec = newSections.find(s => s.id === sourceSecId);
+      const destSec = newSections.find(s => s.id === destSecId);
+      
+      const [removed] = sourceSec.exercises.splice(source.index, 1);
+      destSec.exercises.splice(destination.index, 0, removed);
+      setSections(newSections);
+    } 
+    else if (type === 'QUESTION') {
+      const sourceExoId = source.droppableId.replace('questions-', '');
+      const destExoId = destination.droppableId.replace('questions-', '');
+
+      let sourceExo, destExo;
+      for (const sec of newSections) {
+        if (!sourceExo) sourceExo = sec.exercises.find(e => e.id === sourceExoId);
+        if (!destExo) destExo = sec.exercises.find(e => e.id === destExoId);
+      }
+
+      const [removed] = sourceExo.questions.splice(source.index, 1);
+      destExo.questions.splice(destination.index, 0, removed);
+      setSections(newSections);
+    }
   };
 
   /* Bareme calculations */
@@ -434,23 +504,41 @@ const QuestionsTab = ({
         </div>
       )}
 
-      {/* Sections */}
-      {sections.length === 0 ? (
-        <div className="empty-state" style={{ marginBottom: '20px' }}>
-          <p>Aucune section pour le moment.</p>
-          <p className="hint">Ajoutez une partie pour organiser votre examen.</p>
-        </div>
-      ) : (
-        sections.map((sec, si) => (
-          <SectionBlock
-            key={sec.id}
-            section={sec}
-            sectionIndex={si}
-            onUpdateSection={updateSection}
-            onDeleteSection={deleteSection}
-          />
-        ))
-      )}
+      {/* Sections with DnD */}
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="all-sections" type="SECTION">
+          {(provided) => (
+            <div {...provided.droppableProps} ref={provided.innerRef}>
+              {sections.length === 0 ? (
+                <div className="empty-state" style={{ marginBottom: '20px' }}>
+                  <p>Aucune section pour le moment.</p>
+                  <p className="hint">Ajoutez une partie pour organiser votre examen.</p>
+                </div>
+              ) : (
+                sections.map((sec, si) => (
+                  <Draggable key={sec.id} draggableId={sec.id} index={si}>
+                    {(provided) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                      >
+                        <SectionBlock
+                          section={sec}
+                          sectionIndex={si}
+                          onUpdateSection={updateSection}
+                          onDeleteSection={deleteSection}
+                          dragHandleProps={provided.dragHandleProps}
+                        />
+                      </div>
+                    )}
+                  </Draggable>
+                ))
+              )}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
 
       <button type="button" className="btn-add-section" onClick={addSection}>
         + Ajouter une partie

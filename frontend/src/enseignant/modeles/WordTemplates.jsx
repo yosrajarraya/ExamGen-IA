@@ -96,10 +96,16 @@ const WordTemplates = () => {
         onLogout={logout}
       />
       <main className="profil-main">
-        <div className="profil-topbar">
-          <h1 className="profil-page-title">Modèles Word</h1>
-          <p>{templates.length} modèle{templates.length > 1 ? 's' : ''}</p>
-        </div>
+        <header className="teacher-header">
+          <div className="teacher-header-left">
+            <p className="teacher-header-greeting">Personnalisation</p>
+            <h1 className="teacher-header-title">Modèles <span>Word</span></h1>
+            <p className="teacher-header-sub">{templates.length} modèle{templates.length > 1 ? 's' : ''} disponible{templates.length > 1 ? 's' : ''} pour vos exports</p>
+          </div>
+          <div className="teacher-header-badge">
+            Aperçu disponible
+          </div>
+        </header>
 
         <div className="profil-content">
           {loading ? (

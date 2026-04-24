@@ -1,26 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
 :root {
-  --qb-bg:           #f5f7fc;
+  --qb-bg:           #f2efe6;
   --qb-card:         #ffffff;
-  --qb-elevated:     #f0f3fa;
-  --qb-border:       rgba(10, 22, 40, 0.08);
-  --qb-border-h:     rgba(10, 22, 40, 0.16);
-  --qb-navy:         #0a1628;
-  --qb-accent:       #c9a84c;
-  --qb-accent-soft:  rgba(201, 168, 76, 0.10);
-  --qb-blue:         #1e4fa8;
-  --qb-blue-mid:     #2563eb;
-  --qb-blue-soft:    rgba(37, 99, 235, 0.08);
-  --qb-green:        #0d7a55;
-  --qb-green-soft:   rgba(13, 122, 85, 0.09);
-  --qb-danger:       #c0334a;
-  --qb-danger-soft:  rgba(192, 51, 74, 0.08);
-  --qb-violet:       #6d4fc9;
-  --qb-violet-soft:  rgba(109, 79, 201, 0.08);
-  --qb-text-primary: #0d1f3c;
-  --qb-text-body:    #2a3f5f;
-  --qb-text-muted:   #6b7a99;
+  --qb-elevated:     #f7f3ea;
+  --qb-border:       rgba(15, 30, 46, 0.12);
+  --qb-border-h:     rgba(15, 30, 46, 0.24);
+  --qb-navy:         #122638;
+  --qb-accent:       #ff7a2f;
+  --qb-accent-soft:  rgba(255, 122, 47, 0.14);
+  --qb-blue:         #1f5fcf;
+  --qb-blue-mid:     #2f7bff;
+  --qb-blue-soft:    rgba(47, 123, 255, 0.12);
+  --qb-green:        #1b9a73;
+  --qb-green-soft:   rgba(27, 154, 115, 0.12);
+  --qb-danger:       #d9445d;
+  --qb-danger-soft:  rgba(217, 68, 93, 0.1);
+  --qb-violet:       #8754d8;
+  --qb-violet-soft:  rgba(135, 84, 216, 0.12);
+  --qb-text-primary: #162b3d;
+  --qb-text-body:    #30465c;
+  --qb-text-muted:   #687b8f;
   --qb-sidebar-w:    260px;
   --qb-radius:       14px;
   --qb-radius-sm:    9px;
@@ -45,7 +45,7 @@
 }
 .qb-main::after {
   content: ''; position: fixed; top: -100px; right: -60px; width: 340px; height: 340px;
-  background: radial-gradient(circle, rgba(201,168,76,.07), transparent 65%); pointer-events: none; z-index: 0;
+  background: radial-gradient(circle, rgba(255,122,47,.12), transparent 65%); pointer-events: none; z-index: 0;
 }
 .qb-main > * { position: relative; z-index: 1; }
 

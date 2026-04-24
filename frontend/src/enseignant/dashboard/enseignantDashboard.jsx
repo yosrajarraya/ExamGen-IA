@@ -180,21 +180,32 @@ function TeacherDashboard() {
           </article>
 
           {/* Actions rapides */}
-          <article className="teacher-panel">
+          <article className="teacher-panel actions-panel">
             <h3>Actions rapides</h3>
-            <div className="teacher-actions-col">
-              <button
-                className="teacher-primary-action"
+            <div className="teacher-quick-cards">
+              <div 
+                className="q-card q-primary"
                 onClick={() => navigate('/enseignant/exams/create')}
               >
-                + Créer un nouvel examen
-              </button>
-              <button
-                className="teacher-secondary-action"
+                <div className="q-card-icon">✨</div>
+                <div className="q-card-body">
+                  <h4>Créer un examen</h4>
+                  <p>Générez un sujet complet avec l'aide de l'IA</p>
+                </div>
+                <div className="q-card-arrow">→</div>
+              </div>
+
+              <div 
+                className="q-card q-secondary"
                 onClick={() => navigate('/enseignant/questions/bank')}
               >
-                Consulter la banque de questions
-              </button>
+                <div className="q-card-icon">📚</div>
+                <div className="q-card-body">
+                  <h4>Banque de questions</h4>
+                  <p>Gérez et organisez votre base de connaissances</p>
+                </div>
+                <div className="q-card-arrow">→</div>
+              </div>
             </div>
           </article>
 

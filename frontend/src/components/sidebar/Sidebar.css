@@ -7,17 +7,17 @@
 
 /* ── Variables ── */
 :root {
-  --sb-bg:           #0d1b2a;
-  --sb-bg-glass:     rgba(255, 255, 255, 0.035);
-  --sb-border:       rgba(255, 255, 255, 0.07);
-  --sb-accent:       #c9a84c;
-  --sb-accent-soft:  rgba(201, 168, 76, 0.12);
-  --sb-accent-glow:  rgba(201, 168, 76, 0.22);
-  --sb-text-primary: #e8eaf0;
-  --sb-text-muted:   #7a8499;
-  --sb-text-label:   #a0a9bc;
-  --sb-danger:       #e05c6a;
-  --sb-danger-soft:  rgba(224, 92, 106, 0.1);
+  --sb-bg:           #101f2e;
+  --sb-bg-glass:     rgba(255, 255, 255, 0.05);
+  --sb-border:       rgba(255, 255, 255, 0.1);
+  --sb-accent:       #ff7a2f;
+  --sb-accent-soft:  rgba(255, 122, 47, 0.16);
+  --sb-accent-glow:  rgba(255, 122, 47, 0.3);
+  --sb-text-primary: #f4f7fb;
+  --sb-text-muted:   #90a2b5;
+  --sb-text-label:   #b5c3d2;
+  --sb-danger:       #ff5d73;
+  --sb-danger-soft:  rgba(255, 93, 115, 0.12);
   --sb-radius:       12px;
   --sb-width:        260px;
   --sb-font-display: 'Playfair Display', Georgia, serif;

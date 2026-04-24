@@ -1,26 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
 :root {
-  --eb-bg:           #f5f7fc;
+  --eb-bg:           #f2efe6;
   --eb-card:         #ffffff;
-  --eb-elevated:     #f0f3fa;
-  --eb-border:       rgba(10, 22, 40, 0.08);
-  --eb-border-h:     rgba(10, 22, 40, 0.15);
-  --eb-navy:         #0a1628;
-  --eb-accent:       #c9a84c;
-  --eb-accent-soft:  rgba(201, 168, 76, 0.10);
-  --eb-blue:         #1e4fa8;
-  --eb-blue-mid:     #2563eb;
-  --eb-blue-soft:    rgba(37, 99, 235, 0.08);
-  --eb-green:        #0d7a55;
-  --eb-green-soft:   rgba(13, 122, 85, 0.09);
-  --eb-danger:       #c0334a;
-  --eb-danger-soft:  rgba(192, 51, 74, 0.08);
-  --eb-amber:        #b45309;
-  --eb-amber-soft:   rgba(180, 83, 9, 0.08);
-  --eb-text-primary: #0d1f3c;
-  --eb-text-body:    #2a3f5f;
-  --eb-text-muted:   #6b7a99;
+  --eb-elevated:     #f7f3ea;
+  --eb-border:       rgba(15, 30, 46, 0.12);
+  --eb-border-h:     rgba(15, 30, 46, 0.24);
+  --eb-navy:         #122638;
+  --eb-accent:       #ff7a2f;
+  --eb-accent-soft:  rgba(255, 122, 47, 0.14);
+  --eb-blue:         #1f5fcf;
+  --eb-blue-mid:     #2f7bff;
+  --eb-blue-soft:    rgba(47, 123, 255, 0.12);
+  --eb-green:        #1b9a73;
+  --eb-green-soft:   rgba(27, 154, 115, 0.12);
+  --eb-danger:       #d9445d;
+  --eb-danger-soft:  rgba(217, 68, 93, 0.1);
+  --eb-amber:        #b8620f;
+  --eb-amber-soft:   rgba(184, 98, 15, 0.12);
+  --eb-text-primary: #162b3d;
+  --eb-text-body:    #30465c;
+  --eb-text-muted:   #687b8f;
   --eb-sidebar-w:    260px;
   --eb-radius:       14px;
   --eb-radius-sm:    9px;
@@ -38,7 +38,7 @@
 .eb-layout { display: flex; min-height: 100vh; background: var(--eb-bg); font-family: var(--eb-font); color: var(--eb-text-body); }
 .eb-main { margin-left: var(--eb-sidebar-w); flex: 1; padding: 36px 44px 56px; position: relative; overflow-x: hidden; }
 .eb-main::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(10,22,40,.022) 1px, transparent 1px), linear-gradient(90deg, rgba(10,22,40,.022) 1px, transparent 1px); background-size: 44px 44px; pointer-events: none; z-index: 0; }
-.eb-main::after { content: ''; position: fixed; top: -100px; right: -60px; width: 340px; height: 340px; background: radial-gradient(circle, rgba(201,168,76,.07), transparent 65%); pointer-events: none; z-index: 0; }
+.eb-main::after { content: ''; position: fixed; top: -100px; right: -60px; width: 340px; height: 340px; background: radial-gradient(circle, rgba(255,122,47,.12), transparent 65%); pointer-events: none; z-index: 0; }
 .eb-main > * { position: relative; z-index: 1; }
 
 /* ── Header ── */

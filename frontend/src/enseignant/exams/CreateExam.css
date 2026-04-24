@@ -1,28 +1,28 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
 :root {
-  --ce-bg:            #f5f7fc;
+  --ce-bg:            #f2efe6;
   --ce-bg-card:       #ffffff;
-  --ce-bg-elevated:   #f0f3fa;
-  --ce-border:        rgba(10, 22, 40, 0.08);
-  --ce-border-hover:  rgba(10, 22, 40, 0.15);
-  --ce-accent:        #c9a84c;
-  --ce-accent-soft:   rgba(201, 168, 76, 0.10);
-  --ce-accent-glow:   rgba(201, 168, 76, 0.18);
-  --ce-blue:          #1e4fa8;
-  --ce-blue-soft:     rgba(30, 79, 168, 0.08);
-  --ce-blue-mid:      #2563eb;
-  --ce-violet:        #6d4fc9;
-  --ce-violet-soft:   rgba(109, 79, 201, 0.08);
-  --ce-green:         #0d7a55;
-  --ce-green-soft:    rgba(13, 122, 85, 0.09);
-  --ce-danger:        #c0334a;
-  --ce-danger-soft:   rgba(192, 51, 74, 0.08);
-  --ce-navy:          #0a1628;
-  --ce-text-primary:  #0d1f3c;
-  --ce-text-body:     #2a3f5f;
-  --ce-text-muted:    #6b7a99;
-  --ce-text-label:    #4a5a78;
+  --ce-bg-elevated:   #f7f3ea;
+  --ce-border:        rgba(15, 30, 46, 0.12);
+  --ce-border-hover:  rgba(15, 30, 46, 0.24);
+  --ce-accent:        #ff7a2f;
+  --ce-accent-soft:   rgba(255, 122, 47, 0.14);
+  --ce-accent-glow:   rgba(255, 122, 47, 0.22);
+  --ce-blue:          #1f5fcf;
+  --ce-blue-soft:     rgba(31, 95, 207, 0.12);
+  --ce-blue-mid:      #2f7bff;
+  --ce-violet:        #8754d8;
+  --ce-violet-soft:   rgba(135, 84, 216, 0.12);
+  --ce-green:         #1b9a73;
+  --ce-green-soft:    rgba(27, 154, 115, 0.12);
+  --ce-danger:        #d9445d;
+  --ce-danger-soft:   rgba(217, 68, 93, 0.1);
+  --ce-navy:          #122638;
+  --ce-text-primary:  #162b3d;
+  --ce-text-body:     #30465c;
+  --ce-text-muted:    #687b8f;
+  --ce-text-label:    #425d74;
   --ce-sidebar-w:     260px;
   --ce-radius:        14px;
   --ce-radius-sm:     9px;
@@ -76,7 +76,7 @@
   position: fixed;
   top: -100px; right: -60px;
   width: 360px; height: 360px;
-  background: radial-gradient(circle, rgba(201,168,76,0.07), transparent 65%);
+  background: radial-gradient(circle, rgba(255,122,47,0.12), transparent 65%);
   pointer-events: none;
   z-index: 0;
 }
@@ -133,7 +133,7 @@
   gap: 7px;
   padding: 7px 14px;
   background: var(--ce-accent-soft);
-  border: 1px solid rgba(201,168,76,0.20);
+  border: 1px solid rgba(255,122,47,0.22);
   border-radius: 999px;
   font-size: 0.72rem;
   font-weight: 500;
@@ -215,8 +215,8 @@
 
 .exam-tab.active {
   background: var(--ce-navy);
-  color: #f0e8d0;
-  box-shadow: 0 4px 12px rgba(10,22,40,0.18);
+  color: #fce8d5;
+  box-shadow: 0 4px 12px rgba(18,38,56,0.22);
 }
 
 .exam-tab.active::after {
@@ -332,7 +332,7 @@
 .exam-btn-primary {
   padding: 12px 22px;
   background: var(--ce-navy);
-  color: #f0e8d0;
+  color: #fce8d5;
   border: none;
   border-radius: var(--ce-radius-sm);
   font-family: var(--ce-font-body);
@@ -1100,6 +1100,53 @@
   letter-spacing: 0.07em;
 }
 
+/* Export top summary (Structure / Questions / Barème / Modèle) */
+.export-structure-summary {
+  background: var(--ce-bg-elevated);
+  border: 1.5px solid var(--ce-border);
+  border-radius: var(--ce-radius-sm);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.export-structure-stat {
+  min-width: 118px;
+}
+
+.export-structure-value {
+  font-size: 1.14rem;
+  font-weight: 700;
+  color: var(--ce-text-primary);
+  font-family: var(--ce-font-body);
+  line-height: 1.15;
+}
+
+.export-structure-value-blue {
+  color: var(--ce-blue);
+}
+
+.export-structure-value-accent {
+  color: var(--ce-accent);
+}
+
+.export-structure-value-template {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.export-structure-label {
+  margin-top: 3px;
+  font-size: 0.7rem;
+  color: var(--ce-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
 /* ── Export tab — status selector ── */
 .status-grid {
   display: grid;
@@ -1205,6 +1252,58 @@
   background: var(--ce-accent-soft);
 }
 
+/* ── Drag & Drop ── */
+.drag-handle {
+  cursor: grab;
+  color: var(--ce-text-muted);
+  font-size: 1.1rem;
+  padding: 0 4px;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.drag-handle:hover {
+  color: var(--ce-accent);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.drag-handle-section {
+  color: rgba(232,220,196,0.4);
+}
+
+.drag-handle-section:hover {
+  color: #e8dcc4;
+}
+
+.drag-handle-exo {
+  color: var(--ce-text-muted);
+}
+
+/* Visual feedback during drag */
+[data-rbd-draggable-context-id] {
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.section-container[data-rbd-draggable-id],
+.exercise-container[data-rbd-draggable-id],
+.question-item[data-rbd-draggable-id] {
+  /* Prevent background flickering */
+}
+
+/* Optional: style for when an item is being dragged */
+.q-is-dragging {
+  box-shadow: var(--ce-shadow-lg) !important;
+  border-color: var(--ce-accent) !important;
+  background: white !important;
+  z-index: 9999;
+}
+
 /* ── Empty state ── */
 .empty-state {
   text-align: center;
@@ -1241,6 +1340,19 @@
   .filter-form { grid-template-columns: 1fr; }
   .status-grid { grid-template-columns: 1fr; }
   .bareme-summary { flex-direction: column; }
+
+  .export-structure-summary {
+    gap: 16px;
+    padding: 14px;
+  }
+
+  .export-structure-stat {
+    min-width: 94px;
+  }
+
+  .export-structure-value {
+    font-size: 1.02rem;
+  }
 }
 /* ====================== Modèles Word - Affichage Fidèle Admin ====================== */
 

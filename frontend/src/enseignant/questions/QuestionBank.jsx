@@ -225,13 +225,16 @@ const QuestionBank = () => {
       <Sidebar roleLabel="Espace enseignant" navItems={enseignantNavItems} profile={buildEnseignantProfile(user)} onLogout={logout} />
 
       <main className="qb-main">
-        <header className="qb-header">
-          <div>
-            <p className="qb-header-eyebrow">ExamGen — IA</p>
-            <h1 className="qb-header-title">Banque de <span>questions</span></h1>
-            <p className="qb-header-sub">
+        <header className="teacher-header">
+          <div className="teacher-header-left">
+            <p className="teacher-header-greeting">Base de connaissances</p>
+            <h1 className="teacher-header-title">Banque de <span>questions</span></h1>
+            <p className="teacher-header-sub">
               {filteredMes.length} question{filteredMes.length !== 1 ? 's' : ''} personnelle{filteredMes.length !== 1 ? 's' : ''} · {filteredAutres.length} partagée{filteredAutres.length !== 1 ? 's' : ''}
             </p>
+          </div>
+          <div className="teacher-header-badge">
+            Consultation active
           </div>
         </header>
 

@@ -598,9 +598,16 @@ const CreateExam = () => {
 
       <main className="exam-create-main">
         {/* Header */}
-        <header className="exam-create-header">
-          <div className="exam-create-header-left">
-            <h2 className="eb-header-title">Création d'<span>examen</span></h2>
+        <header className="teacher-header">
+          <div className="teacher-header-left">
+            <p className="teacher-header-greeting">Conception</p>
+            <h1 className="teacher-header-title">
+              Création d'<span>examen</span>
+            </h1>
+            <p className="teacher-header-sub">Configurez votre sujet, ajoutez des questions et exportez en .docx</p>
+          </div>
+          <div className="teacher-header-badge">
+            Éditeur actif
           </div>
         </header>
 

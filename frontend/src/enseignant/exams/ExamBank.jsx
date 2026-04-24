@@ -274,16 +274,18 @@ const ExamBank = () => {
 
       <main className="eb-main">
         {/* Header */}
-        <header className="eb-header">
-          <div>
-            <h2 className="eb-header-title">Banque d'<span>examens</span></h2>
-            <p className="eb-header-sub">
+        <header className="teacher-header">
+          <div className="teacher-header-left">
+            <p className="teacher-header-greeting">Archives</p>
+            <h1 className="teacher-header-title">
+              Banque d'<span>examens</span>
+            </h1>
+            <p className="teacher-header-sub">
               {myFiltered.length} personnel{myFiltered.length !== 1 ? 's' : ''} · {othFiltered.length} partagé{othFiltered.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <button className="eb-btn-new" onClick={() => navigate('/enseignant/exams/create')}>+ Nouvel examen</button>
-            {/* <button className="eb-btn-logout" onClick={logout}>Se déconnecter</button> */}
+          <div className="teacher-header-actions">
+            <button className="btn-header-primary" onClick={() => navigate('/enseignant/exams/create')}>+ Nouvel examen</button>
           </div>
         </header>
 

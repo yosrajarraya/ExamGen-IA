@@ -1,15 +1,23 @@
 :root {
-  --bleu-fonce: #1a3a5c;
-  --bleu: #2e86c1;
-  --bleu-hover: #1a6fa8;
-  --fond: #f0f4f8;
+  --charbon: #111f2a;
+  --indigo-noir: #132c3c;
+  --caramel: #db6f30;
+  --caramel-fort: #b55018;
+  --ivoire: #f6f2e7;
   --blanc: #ffffff;
-  --texte: #2c3e50;
-  --texte-clair: #7f8c8d;
-  --rouge: #e74c3c;
-  --bordure: #dce3ea;
-  --rayon: 10px;
-  --transition: 0.2s ease;
+  --texte: #1a2a36;
+  --texte-clair: #667789;
+  --rouge: #d93f3f;
+  --bordure: rgba(26, 42, 54, 0.16);
+  --fond-verre: rgba(255, 255, 255, 0.75);
+  --rayon: 14px;
+  --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Alias conserves pour les autres fichiers. */
+  --bleu-fonce: var(--charbon);
+  --bleu: var(--caramel);
+  --bleu-hover: var(--caramel-fort);
+  --fond: var(--ivoire);
 }
 
 *,
@@ -21,11 +29,14 @@
 }
 
 body {
-  font-family: 'Segoe UI', sans-serif;
-  background: var(--fond);
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(219, 111, 48, 0.2), transparent 35%),
+    radial-gradient(circle at 90% 16%, rgba(17, 31, 42, 0.14), transparent 40%),
+    linear-gradient(140deg, #f2ecdc, #ece8de 48%, #e6e0d0);
   color: var(--texte);
   min-height: 100vh;
-  padding: 10px;
+  padding: 14px;
 }
 
 @keyframes float {
@@ -36,12 +47,15 @@ body {
 .auth-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  min-height: calc(100vh - 20px);
+  min-height: calc(100vh - 28px);
   max-width: 1320px;
   margin: 0 auto;
-  border-radius: 14px;
+  border-radius: 24px;
   overflow: hidden;
-  background: var(--blanc);
+  border: 1px solid var(--bordure);
+  box-shadow: 0 28px 70px rgba(17, 31, 42, 0.22);
+  background: rgba(255, 255, 255, 0.64);
+  backdrop-filter: blur(8px);
 }
 
 .auth-panneau-gauche {
@@ -56,40 +70,57 @@ body {
   padding: 60px 50px;
   position: relative;
   overflow: hidden;
+  isolation: isolate;
 }
 
 .auth-panneau-gauche::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(255,255,255,0.22);
+  background:
+    linear-gradient(160deg, rgba(17, 31, 42, 0.9), rgba(19, 44, 60, 0.78)),
+    radial-gradient(circle at 30% 20%, rgba(219, 111, 48, 0.35), transparent 55%);
   pointer-events: none;
+}
+
+.auth-panneau-gauche::after {
+  content: '';
+  position: absolute;
+  width: 310px;
+  height: 310px;
+  bottom: -95px;
+  right: -80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(219, 111, 48, 0.34), transparent 68%);
+  pointer-events: none;
+  z-index: 1;
 }
 
 .auth-logo-bloc {
   position: relative;
   z-index: 2;
   text-align: center;
-  margin-bottom: -45px;
+  margin-bottom: -18px;
 }
 
 .auth-logo-icone {
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.15);
-  border: 2px solid rgba(255,255,255,0.3);
+  width: 98px;
+  height: 98px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.28);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: -170px auto 16px;
+  margin: -170px auto 18px;
   animation: float 3s ease-in-out infinite;
+  box-shadow: 0 10px 30px rgba(17, 31, 42, 0.36);
 }
 
 .auth-logo-icone svg {
-  width: 44px;
-  height: 44px;
-  fill: var(--blanc);
+  width: 46px;
+  height: 46px;
+  fill: #ffd6a6;
 }
 
 .auth-info-bloc {
@@ -101,18 +132,21 @@ body {
 }
 
 .auth-info-titre {
-  font-size: 2.8rem;
-  font-weight: 700;
+  font-family: 'Bebas Neue', 'Arial Narrow', sans-serif;
+  font-size: 4rem;
+  font-weight: 400;
   color: var(--blanc);
-  line-height: 1.3;
+  line-height: 0.95;
+  letter-spacing: 0.05em;
+  text-shadow: 0 10px 24px rgba(10, 17, 26, 0.35);
 }
 
 .auth-info-titre span {
-  color: var(--blanc);
+  color: #ffd9a5;
 }
 
 .auth-panneau-droit {
-  background: var(--blanc);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.92));
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -128,17 +162,19 @@ body {
 }
 
 .auth-titre-principal {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: var(--bleu-fonce);
-  margin-bottom: 18px;
+  font-family: 'Bebas Neue', 'Arial Narrow', sans-serif;
+  font-size: 2.45rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--charbon);
+  margin-bottom: 12px;
   text-align: center;
 }
 
 .auth-sous-titre {
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   color: var(--texte-clair);
-  line-height: 1.55;
+  line-height: 1.45;
 }
 
 .auth-form {
@@ -156,8 +192,10 @@ body {
 }
 
 .form-groupe label {
-  font-size: 0.87rem;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--texte);
 }
 
@@ -178,26 +216,26 @@ body {
 .input-icone-left svg {
   width: 16px;
   height: 16px;
-  fill: var(--texte-clair);
+  fill: #6f7f8f;
 }
 
 .form-input {
   width: 100%;
   padding: 12px 14px 12px 40px;
-  font-family: 'Segoe UI', sans-serif;
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
   font-size: 0.93rem;
   color: var(--texte);
-  background: var(--fond);
-  border: 1.5px solid var(--bordure);
+  background: rgba(255, 255, 255, 0.78);
+  border: 1.5px solid rgba(17, 31, 42, 0.15);
   border-radius: var(--rayon);
   outline: none;
   transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
 }
 
 .form-input:focus {
-  border-color: var(--bleu);
+  border-color: var(--caramel);
   background: var(--blanc);
-  box-shadow: 0 0 0 3px rgba(46,134,193,0.18);
+  box-shadow: 0 0 0 4px rgba(219, 111, 48, 0.18);
 }
 
 .btn-voir-mdp {
@@ -207,15 +245,15 @@ body {
   border: none;
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--bleu);
+  color: var(--caramel-fort);
   cursor: pointer;
   padding: 4px 6px;
   border-radius: 4px;
 }
 
 .alerte-erreur {
-  background: #fdf0ef;
-  border: 1.5px solid #f5c6c3;
+  background: #ffefef;
+  border: 1.5px solid #f4c0c0;
   border-left: 4px solid var(--rouge);
   border-radius: var(--rayon);
   padding: 11px 15px;
@@ -241,7 +279,7 @@ body {
 .checkbox-label input[type='checkbox'] {
   width: 15px;
   height: 15px;
-  accent-color: var(--bleu);
+  accent-color: var(--caramel);
   cursor: pointer;
 }
 
@@ -255,12 +293,12 @@ body {
 .btn-connexion {
   width: 100%;
   padding: 13px;
-  background: var(--blanc);
-  color: var(--texte);
-  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(160deg, var(--charbon), var(--indigo-noir));
+  color: #f4ddba;
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
   font-size: 0.97rem;
   font-weight: 700;
-  border: 1.5px solid var(--bordure);
+  border: 1px solid rgba(17, 31, 42, 0.38);
   border-radius: var(--rayon);
   cursor: pointer;
   display: flex;
@@ -268,19 +306,27 @@ body {
   justify-content: center;
   gap: 10px;
   margin-top: 4px;
+  box-shadow: 0 12px 24px rgba(17, 31, 42, 0.26);
+  transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
+}
+
+.btn-connexion:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+  box-shadow: 0 18px 30px rgba(17, 31, 42, 0.28);
 }
 
 .btn-connexion svg {
   width: 18px;
   height: 18px;
-  fill: var(--texte);
+  fill: #f4ddba;
 }
 
 .spinner {
   width: 17px;
   height: 17px;
   border: 2px solid var(--bordure);
-  border-top-color: var(--bleu);
+  border-top-color: var(--caramel);
   border-radius: 50%;
   animation: tourner 0.75s linear infinite;
   display: inline-block;
@@ -303,7 +349,7 @@ body {
 }
 
 .auth-footer a {
-  color: var(--bleu);
+  color: var(--caramel-fort);
   font-weight: 700;
   text-decoration: none;
 }
@@ -322,7 +368,7 @@ body {
   content: '';
   flex: 1;
   height: 1px;
-  background: var(--bordure);
+  background: rgba(17, 31, 42, 0.12);
 }
 
 @media (max-width: 900px) {
@@ -332,11 +378,16 @@ body {
     grid-template-columns: 1fr;
     border-radius: 0;
     min-height: 100vh;
+    border: none;
   }
 
   .auth-panneau-gauche {
     padding: 40px 30px;
-    min-height: 220px;
+    min-height: 260px;
+  }
+
+  .auth-logo-icone {
+    margin-top: -60px;
   }
 
   .auth-panneau-droit {
@@ -346,6 +397,6 @@ body {
 
 @media (max-width: 480px) {
   .auth-panneau-droit { padding: 30px 18px; }
-  .auth-titre-principal { font-size: 1.5rem; }
-  .auth-info-titre { font-size: 2rem; }
+  .auth-titre-principal { font-size: 1.95rem; }
+  .auth-info-titre { font-size: 2.8rem; }
 }
