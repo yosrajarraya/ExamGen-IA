@@ -226,13 +226,12 @@ const QuestionBank = () => {
 
       <main className="qb-main">
         <header className="qb-header">
-          <div>
-            <p className="qb-header-eyebrow">ExamGen — IA</p>
-            <h1 className="qb-header-title">Banque de <span>questions</span></h1>
+          
+            <h3 className="qb-header-title">Banque de <span>questions</span></h3>
             <p className="qb-header-sub">
               {filteredMes.length} question{filteredMes.length !== 1 ? 's' : ''} personnelle{filteredMes.length !== 1 ? 's' : ''} · {filteredAutres.length} partagée{filteredAutres.length !== 1 ? 's' : ''}
             </p>
-          </div>
+          
         </header>
 
         <div className="qb-search-bar">

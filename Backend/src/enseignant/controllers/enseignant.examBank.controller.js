@@ -1,8 +1,10 @@
 const mongoose = require('mongoose');
 const Enseignant = require('../models/Enseignant');
 const ExamBankItem = require('../models/ExamBankItem');
+const { parseDocxBuffer } = require('../../utils/docxParser.utils');
 
 const normalize = (value) => String(value || '').trim().toLowerCase();
+const FIXED_EXAM_TOTAL = 20;
 
 const getTeacherDepartement = async (teacherId) => {
   const teacher = await Enseignant.findById(teacherId).select('Departement');
@@ -22,12 +24,25 @@ const normalizeExam = (item) => ({
   type: item.type,
   duree: item.duree,
   status: item.status || 'Exporte',
-  noteTotale: Number(item.noteTotale) || 0,
+  noteTotale: FIXED_EXAM_TOTAL,
   questionsCount: Number(item.questionsCount) || 0,
   createdBy: item.createdBy.toString(),
   createdByName: item.createdByName,
   createdByEmail: item.createdByEmail,
   createdAt: item.createdAt,
+  questions: (item.questions || []).map((q) =>
+    q && typeof q === 'object' && q._id
+      ? {
+          id: q._id.toString(),
+          text: q.text,
+          matiere: q.matiere,
+          niveau: q.niveau,
+          anneeUniversitaire: q.anneeUniversitaire,
+          createdByName: q.createdByName,
+          createdAt: q.createdAt,
+        }
+      : q
+  ),
 });
 
 const buildAccessQuery = (teacherId, teacherDepartement) => {
@@ -131,7 +146,7 @@ const addExamToBank = async (req, res) => {
       niveau: String(niveau || "").trim(),
       type: String(type || "").trim(),
       duree: String(duree || "").trim(),
-      noteTotale: Number(noteTotale) || 0,
+      noteTotale: FIXED_EXAM_TOTAL,
       questionsCount: Number(questionsCount) || 0,
       status: String(status || "Exporte").trim() || "Exporte",
       anneeUniversitaire: String(anneeUniversitaire || "").trim(),
@@ -284,7 +299,7 @@ const copyExamBankItem = async (req, res) => {
       niveau: sourceExam.niveau,
       type: sourceExam.type,
       duree: sourceExam.duree,
-      noteTotale: sourceExam.noteTotale,
+      noteTotale: FIXED_EXAM_TOTAL,
       questionsCount: sourceExam.questionsCount,
       status: sourceExam.status,
       anneeUniversitaire: sourceExam.anneeUniversitaire,
@@ -309,7 +324,7 @@ const copyExamBankItem = async (req, res) => {
 const getExamBankItemById = async (req, res) => {
   try {
     const teacherDepartement = await getTeacherDepartement(req.user.id);
-    const exam = await ExamBankItem.findById(req.params.id);
+    const exam = await ExamBankItem.findById(req.params.id).populate('questions');
     if (!exam) {
       return res.status(404).json({ message: "Examen introuvable" });
     }
@@ -327,10 +342,96 @@ const getExamBankItemById = async (req, res) => {
   }
 };
 
+const getExamQuestions = async (req, res) => {
+  try {
+    const teacherDepartement = await getTeacherDepartement(req.user.id);
+    const exam = await ExamBankItem.findById(req.params.id).populate('questions');
+    if (!exam) return res.status(404).json({ message: 'Examen introuvable' });
+    if (!canAccessExam(exam, req.user.id, teacherDepartement)) {
+      return res.status(403).json({ message: "Vous n'avez pas accès à cet examen" });
+    }
+    const questions = (exam.questions || []).map((q) => ({
+      id: q._id.toString(),
+      text: q.text,
+      matiere: q.matiere,
+      niveau: q.niveau,
+      anneeUniversitaire: q.anneeUniversitaire,
+      createdByName: q.createdByName,
+      createdByEmail: q.createdByEmail,
+      createdAt: q.createdAt,
+    }));
+    return res.status(200).json({ questions });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const addQuestionToExam = async (req, res) => {
+  try {
+    const teacherDepartement = await getTeacherDepartement(req.user.id);
+    const exam = await ExamBankItem.findById(req.params.id);
+    if (!exam) return res.status(404).json({ message: 'Examen introuvable' });
+    if (!canAccessExam(exam, req.user.id, teacherDepartement)) {
+      return res.status(403).json({ message: "Vous n'avez pas accès à cet examen" });
+    }
+    const { questionId } = req.body || {};
+    if (!questionId) return res.status(400).json({ message: 'questionId requis' });
+    const alreadyLinked = exam.questions.map(String).includes(String(questionId));
+    if (!alreadyLinked) {
+      exam.questions.push(questionId);
+      exam.questionsCount = exam.questions.length;
+      await exam.save();
+    }
+    return res.status(200).json({ message: 'Question ajoutée à l\'examen', questionsCount: exam.questionsCount });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const removeQuestionFromExam = async (req, res) => {
+  try {
+    const teacherDepartement = await getTeacherDepartement(req.user.id);
+    const exam = await ExamBankItem.findById(req.params.id);
+    if (!exam) return res.status(404).json({ message: 'Examen introuvable' });
+    if (!canAccessExam(exam, req.user.id, teacherDepartement)) {
+      return res.status(403).json({ message: "Vous n'avez pas accès à cet examen" });
+    }
+    const { questionId } = req.params;
+    exam.questions = exam.questions.filter((q) => String(q) !== String(questionId));
+    exam.questionsCount = exam.questions.length;
+    await exam.save();
+    return res.status(200).json({ message: 'Question retirée de l\'examen', questionsCount: exam.questionsCount });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+const getExamContent = async (req, res) => {
+  try {
+    const teacherDepartement = await getTeacherDepartement(req.user.id);
+    const exam = await ExamBankItem.findById(req.params.id).select('+fileData');
+    if (!exam) return res.status(404).json({ message: 'Examen introuvable' });
+    if (!canAccessExam(exam, req.user.id, teacherDepartement)) {
+      return res.status(403).json({ message: "Vous n'avez pas accès à cet examen" });
+    }
+    if (!exam.fileData || !exam.fileData.length) {
+      return res.status(200).json({ sections: [], rawText: '' });
+    }
+    const { sections, rawText } = await parseDocxBuffer(exam.fileData);
+    return res.status(200).json({ sections, rawText });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   addExamToBank,
   getExamBank,
   getExamBankItemById,
+  getExamContent,
+  getExamQuestions,
+  addQuestionToExam,
+  removeQuestionFromExam,
   getFilteredExams,
   downloadExamBankFile,
   deleteExamBankItem,

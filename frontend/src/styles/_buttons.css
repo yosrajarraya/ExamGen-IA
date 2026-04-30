@@ -1,0 +1,102 @@
+/* ── Buttons ── */
+.exam-btn-primary {
+  padding: 12px 22px;
+  background: var(--ce-navy);
+  color: #f0e8d0;
+  border: none;
+  border-radius: var(--ce-radius-sm);
+  font-family: var(--ce-font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.22s var(--ce-ease);
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 14px rgba(10,22,40,0.15);
+}
+
+.exam-btn-primary:hover {
+  background: #112236;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(10,22,40,0.2);
+}
+
+.exam-btn-gold {
+  padding: 12px 22px;
+  background: var(--ce-accent);
+  color: #2a1800;
+  border: none;
+  border-radius: var(--ce-radius-sm);
+  font-family: var(--ce-font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.22s var(--ce-ease);
+  box-shadow: 0 4px 14px var(--ce-accent-glow);
+}
+
+.exam-btn-gold:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px var(--ce-accent-glow);
+}
+
+.exam-btn-secondary {
+  padding: 12px 22px;
+  background: var(--ce-bg-card);
+  color: var(--ce-text-label);
+  border: 1.5px solid var(--ce-border);
+  border-radius: var(--ce-radius-sm);
+  font-family: var(--ce-font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.22s var(--ce-ease);
+}
+
+.exam-btn-secondary:hover {
+  background: var(--ce-bg-elevated);
+  border-color: var(--ce-border-hover);
+  color: var(--ce-text-primary);
+  transform: translateY(-1px);
+}
+
+.btn-copy-exam {
+  width: 100%;
+  padding: 11px;
+  background: var(--ce-blue-mid);
+  color: white;
+  border: none;
+  border-radius: var(--ce-radius-sm);
+  font-family: var(--ce-font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s var(--ce-ease);
+}
+
+.btn-copy-exam:hover {
+  background: var(--ce-blue);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(30,79,168,0.2);
+}
+
+/* Small action buttons */
+.btn-action-sm {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  font-family: var(--ce-font-body);
+  transition: all 0.18s var(--ce-ease);
+}
+
+.btn-del-q   { background: var(--ce-danger-soft); color: var(--ce-danger); }
+.btn-del-q:hover { background: rgba(192,51,74,0.18); }
+
+.btn-edit-q  { background: var(--ce-blue-soft); color: var(--ce-blue); }
+.btn-edit-q:hover { background: rgba(30,79,168,0.14); }
+
+.btn-save-q  { background: var(--ce-green-soft); color: var(--ce-green); }
+.btn-save-q:hover { background: rgba(13,122,85,0.16); }

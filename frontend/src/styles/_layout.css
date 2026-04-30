@@ -1,0 +1,65 @@
+/* ── Layout ── */
+.exam-create-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--ce-bg);
+  font-family: var(--ce-font-body);
+  color: var(--ce-text-body);
+}
+
+.exam-create-main {
+  margin-left: var(--ce-sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 36px 44px 48px;
+  gap: 24px;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Subtle grid background */
+.exam-create-main::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(10,22,40,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(10,22,40,0.025) 1px, transparent 1px);
+  background-size: 44px 44px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Gold glow top-right */
+.exam-create-main::after {
+  content: '';
+  position: fixed;
+  top: -100px; right: -60px;
+  width: 360px; height: 360px;
+  background: radial-gradient(circle, rgba(201,168,76,0.07), transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.exam-create-main > * { 
+  position: relative; 
+  z-index: 1; 
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .exam-create-main { padding: 24px 28px; }
+  .form-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .exam-create-main { margin-left: 64px; padding: 20px 18px; }
+  .exam-create-header { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .exam-create-header h1 { font-size: 1.45rem; }
+  .exam-tabs { grid-template-columns: repeat(2, 1fr); }
+  .filter-form { grid-template-columns: 1fr; }
+  .status-grid { grid-template-columns: 1fr; }
+  .bareme-summary { flex-direction: column; }
+}

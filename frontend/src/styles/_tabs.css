@@ -1,0 +1,52 @@
+/* ── Tabs ── */
+.exam-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  background: var(--ce-bg-card);
+  padding: 10px;
+  border-radius: var(--ce-radius);
+  border: 1px solid var(--ce-border);
+  box-shadow: var(--ce-shadow-sm);
+  animation: fadeUp 0.4s var(--ce-ease) 0.08s both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.exam-tab {
+  padding: 12px 16px;
+  border: none;
+  border-radius: var(--ce-radius-sm);
+  background: transparent;
+  color: var(--ce-text-muted);
+  font-family: var(--ce-font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.22s var(--ce-ease);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.exam-tab:hover {
+  background: var(--ce-bg-elevated);
+  color: var(--ce-text-primary);
+}
+
+.exam-tab.active {
+  background: var(--ce-navy);
+  color: #f0e8d0;
+  box-shadow: 0 4px 12px rgba(10,22,40,0.18);
+}
+
+.exam-tab.active::after {
+  content: '';
+  display: block;
+  width: 18px; height: 2px;
+  background: var(--ce-accent);
+  border-radius: 1px;
+  margin: 4px auto 0;
+}

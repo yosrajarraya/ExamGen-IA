@@ -1,0 +1,20 @@
+/* ==================== CREATE EXAM - MAIN STYLES ==================== */
+
+@import './_variables.css';
+@import './_layout.css';
+@import './_header.css';
+@import './_tabs.css';
+@import './_cards.css';
+@import './_forms.css';
+@import './_buttons.css';
+@import './_questions.css';
+@import './_templates.css';
+@import './_export.css';
+@import './_modele.css';
+
+/* Global resets & utilities déjà présents dans ton fichier */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}

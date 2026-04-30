@@ -1,6 +1,6 @@
 import React, { useState, useRef, useLayoutEffect } from 'react';
 import iitLogo from '../../../assets/iit2.png';
-
+// import "../../../styles/modele.css";
 const TYPE_LABELS = {
   final:      { label: 'Examen Final',      color: '#1e4fa8' },
   cc:         { label: 'Contrôle Continu',  color: '#0d7a55' },
@@ -93,7 +93,7 @@ const ModelesTab = ({
                 >
                   {/* Aperçu A4 fidèle à l'admin */}
                   <div className="a4-mini-wrapper">
-                    <ExamPreviewScaled model={tpl} />
+                    <ExamPreviewScaled model={tpl} examForm={examForm} />
                   </div>
 
                   {/* Barre d'info sous l'aperçu */}
@@ -189,8 +189,10 @@ const ModelesTab = ({
         </div>
         <div className="form-group">
           <label htmlFor="exp-note">Note totale</label>
-          <input id="exp-note" type="number" placeholder="20" min="0" step="0.5"
-            value={examForm.noteTotale || ''} onChange={e => onFormChange('noteTotale', e.target.value)} />
+          <input id="exp-note" type="text" value="20 / 20" disabled />
+          <small style={{ display: 'block', marginTop: '6px', color: 'var(--ce-text-muted)' }}>
+            Barème fixé automatiquement à 20/20
+          </small>
         </div>
       </div>
 
@@ -215,7 +217,7 @@ const ModelesTab = ({
 const A4_W      = 794;
 const VISIBLE_H = 290;
 
-const ExamPreviewScaled = ({ model }) => {
+const ExamPreviewScaled = ({ model, examForm }) => {
   const wrapRef = React.useRef(null);
   const [scale, setScale] = React.useState(0.5);
 
@@ -251,7 +253,7 @@ const ExamPreviewScaled = ({ model }) => {
         transformOrigin: 'top left',
         width:           `${A4_W}px`,
       }}>
-        <ExamPreview model={model} />
+        <ExamPreview model={model} examForm={examForm} />
       </div>
     </div>
   );
@@ -261,21 +263,21 @@ const ExamPreviewScaled = ({ model }) => {
    ExamPreview — rendu 100 % inline-styles, fidèle pixel par pixel
    à la photo admin (WordTemplate.css n'est pas requis)
    ============================================================ */
-const ExamPreview = ({ model }) => {
+const ExamPreview = ({ model, examForm }) => {
   const universityAr     = model?.universiteAr     || 'الجامعة الشمالية الأمريكية الخاصة';
   const universityFr     = model?.universiteFr     || 'Université Nord-Américaine Privée';
   const institute        = model?.institutFr       || 'Institut International de Technologie';
   const department       = model?.departementFr    || 'Département Informatique';
-  const subject          = model?.matiere          || 'Fouille de données';
-  const discipline       = model?.discipline       || '2ème année Génie Informatique';
+  const subject          = examForm?.matiere    || model?.matiere          || 'Fouille de données';
+  const discipline       = examForm?.filiere    || model?.discipline       || '2ème année Génie Informatique';
   const teachers         = model?.enseignants      || 'Tarek Ben Said / Taoufik Ben Abdallah';
   const documentsAllowed = model?.documentsAutorises || 'PC & Internet non autorisés';
   const academicYear     = model?.anneeUniversitaire || '2024-2025';
   const semester         = model?.semestre
     ? `${model.semestre}${model.dateExamen ? ` (${model.dateExamen})` : ''}`
     : '1 (07/11/2024)';
-  const duration = model?.duree || '1h30';
-  const titre    = model?.titreExamen || 'DEVOIR SURVEILLÉ';
+  const duration = examForm?.duree       || model?.duree || '1h30';
+  const titre    = examForm?.titre       || model?.titreExamen || 'DEVOIR SURVEILLÉ';
   const sec      = model?.sections;
 
   /* ── styles réutilisables ── */

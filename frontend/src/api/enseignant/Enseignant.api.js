@@ -121,3 +121,8 @@ export const copyExamBankItem = async (id) => {
   const response = await api.post(`/enseignant/exams/bank/${id}/copy`);
   return response.data;
 };
+
+export const getExamContent = async (id) => {
+  const response = await api.get(`/enseignant/exams/bank/${id}/content`);
+  return response.data;
+};
