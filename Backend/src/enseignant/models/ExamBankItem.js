@@ -48,7 +48,7 @@ const examBankItemSchema = new mongoose.Schema(
     },
     noteTotale: {
       type: Number,
-      default: 0,
+      default: 20,
     },
     questionsCount: {
       type: Number,
@@ -91,6 +91,12 @@ const examBankItemSchema = new mongoose.Schema(
       required: true,
       select: false,
     },
+    questions: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'QuestionBankItem',
+      },
+    ],
   },
   {
     timestamps: true,

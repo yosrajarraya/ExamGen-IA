@@ -7,19 +7,19 @@
 
 /* ── Variables ── */
 :root {
-  --sb-bg:           #0d1b2a;
-  --sb-bg-glass:     rgba(255, 255, 255, 0.035);
-  --sb-border:       rgba(255, 255, 255, 0.07);
-  --sb-accent:       #c9a84c;
-  --sb-accent-soft:  rgba(201, 168, 76, 0.12);
-  --sb-accent-glow:  rgba(201, 168, 76, 0.22);
-  --sb-text-primary: #e8eaf0;
+  --sb-bg:           #0b1829;
+  --sb-bg-glass:     rgba(255, 255, 255, 0.04);
+  --sb-border:       rgba(255, 255, 255, 0.08);
+  --sb-accent:       #d4a843;
+  --sb-accent-soft:  rgba(212, 168, 67, 0.14);
+  --sb-accent-glow:  rgba(212, 168, 67, 0.28);
+  --sb-text-primary: #f0f2f8;
   --sb-text-muted:   #7a8499;
-  --sb-text-label:   #a0a9bc;
+  --sb-text-label:   #a8b2c8;
   --sb-danger:       #e05c6a;
   --sb-danger-soft:  rgba(224, 92, 106, 0.1);
   --sb-radius:       12px;
-  --sb-width:        260px;
+  --sb-width:        280px;
   --sb-font-display: 'Playfair Display', Georgia, serif;
   --sb-font-body:    'DM Sans', sans-serif;
   --sb-transition:   0.22s cubic-bezier(0.4, 0, 0.2, 1);
@@ -82,34 +82,36 @@
 .app-sidebar-logo {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 28px 22px 24px;
+  gap: 14px;
+  padding: 28px 22px 26px;
   border-bottom: 1px solid var(--sb-border);
   position: relative;
+  background: linear-gradient(180deg, rgba(212,168,67,0.05) 0%, transparent 100%);
 }
 
 .app-sidebar-logo-icon {
-  width: 44px;
-  height: 44px;
+  width: 58px;
+  height: 58px;
   flex-shrink: 0;
-  background: var(--sb-bg-glass);
-  border: 1px solid rgba(201, 168, 76, 0.3);
-  border-radius: 10px;
-  padding: 6px;
+  background: rgba(255,255,255,0.06);
+  border: 1.5px solid rgba(212, 168, 67, 0.4);
+  border-radius: 14px;
+  padding: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 12px var(--sb-accent-glow);
-  transition: box-shadow var(--sb-transition);
+  box-shadow: 0 0 18px var(--sb-accent-glow), inset 0 1px 0 rgba(255,255,255,0.08);
+  transition: box-shadow var(--sb-transition), transform var(--sb-transition);
 }
 
 .app-sidebar-logo-icon:hover {
-  box-shadow: 0 0 20px var(--sb-accent-glow);
+  box-shadow: 0 0 28px var(--sb-accent-glow);
+  transform: scale(1.04);
 }
 
 .app-sidebar-logo-name {
   font-family: var(--sb-font-display);
-  font-size: 1.05rem;
+  font-size: 1.18rem;
   font-weight: 600;
   color: var(--sb-text-primary);
   letter-spacing: 0.01em;
@@ -117,13 +119,13 @@
 }
 
 .app-sidebar-logo-sub {
-  font-size: 0.67rem;
-  font-weight: 400;
+  font-size: 0.68rem;
+  font-weight: 500;
   color: var(--sb-accent);
-  letter-spacing: 0.12em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
-  margin-top: 2px;
-  opacity: 0.85;
+  margin-top: 3px;
+  opacity: 0.9;
 }
 
 /* ══════════════════════════════

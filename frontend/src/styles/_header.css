@@ -1,0 +1,89 @@
+/* ── Header ── */
+.exam-create-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--ce-border);
+  animation: slideDown 0.38s var(--ce-ease) both;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.exam-create-header-eyebrow {
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ce-accent);
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.exam-create-header h1 {
+  font-family: var(--ce-font-display);
+  font-size: 1.85rem;
+  font-weight: 600;
+  color: var(--ce-text-primary);
+  line-height: 1.15;
+}
+
+.exam-create-header h1 span { color: var(--ce-accent); }
+
+.exam-create-header-sub {
+  margin-top: 5px;
+  font-size: 0.82rem;
+  color: var(--ce-text-muted);
+  font-weight: 300;
+}
+
+/* Header badge */
+.header-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  background: var(--ce-accent-soft);
+  border: 1px solid rgba(201,168,76,0.20);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--ce-accent);
+  letter-spacing: 0.06em;
+}
+
+.header-badge::before {
+  content: '';
+  width: 7px; height: 7px;
+  background: var(--ce-accent);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--ce-accent-glow);
+  animation: blinkDot 2s ease-in-out infinite;
+}
+
+@keyframes blinkDot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+/* Logout button */
+.exam-btn-logout {
+  padding: 8px 18px;
+  background: var(--ce-bg-elevated);
+  border: 1px solid var(--ce-border);
+  border-radius: var(--ce-radius-sm);
+  font-family: var(--ce-font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ce-text-muted);
+  cursor: pointer;
+  transition: all 0.2s var(--ce-ease);
+}
+
+.exam-btn-logout:hover {
+  background: var(--ce-danger-soft);
+  border-color: rgba(192,51,74,0.2);
+  color: var(--ce-danger);
+}

@@ -1,0 +1,56 @@
+/* ── Templates Grid ── */
+.templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.template-card {
+  background: var(--ce-bg-card);
+  border: 1.5px solid var(--ce-border);
+  border-radius: var(--ce-radius);
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.25s var(--ce-ease);
+}
+
+.template-card:hover {
+  border-color: var(--ce-border-hover);
+  box-shadow: var(--ce-shadow-sm);
+  transform: translateY(-2px);
+}
+
+.template-card.selected {
+  border: 2px solid var(--ce-navy);
+  background: #f5f7fc;
+  box-shadow: 0 4px 16px rgba(10,22,40,0.10);
+}
+
+/* Modèles Word A4 */
+.templates-a4-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.a4-template-container {
+  border: 2px solid var(--ce-border);
+  border-radius: var(--ce-radius);
+  overflow: hidden;
+  background: white;
+  cursor: pointer;
+  transition: all 0.25s var(--ce-ease);
+  box-shadow: var(--ce-shadow-sm);
+}
+
+.a4-template-container:hover {
+  border-color: var(--ce-blue-mid);
+  box-shadow: var(--ce-shadow-md);
+  transform: translateY(-3px);
+}
+
+.a4-template-container.selected {
+  border-color: var(--ce-green);
+  box-shadow: 0 0 0 4px rgba(13, 122, 85, 0.18);
+}

@@ -4,6 +4,10 @@ import axios from 'axios';
 import Sidebar from '../../components/sidebar/Sidebar';
 import useAuth from '../../context/useAuth';
 import { enseignantNavItems, buildEnseignantProfile } from '../../components/sidebar/sidebarConfigs';
+
+// Import des icônes (après avoir fait npm install react-icons)
+import { FiPlus, FiBookOpen, FiCpu, FiArrowRight, FiActivity, FiLayers, FiDownload } from 'react-icons/fi';
+
 import '../../styles/TeacherDashboard.css';
 
 function TeacherDashboard() {
@@ -13,30 +17,20 @@ function TeacherDashboard() {
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState('');
 
+  // 1. Calcul des statistiques avec icônes
   const quickStats = useMemo(() => {
-    if (!profil?.stats) {
-      return [
-        { label: 'Examens',   value: 0, color: 'blue'   },
-        { label: 'Questions', value: 0, color: 'violet'  },
-        { label: 'Exports',   value: 0, color: 'green'   },
-      ];
-    }
+    const stats = profil?.stats || { examens: 0, questions: 0, exports: 0 };
     return [
-      { label: 'Examens',   value: profil.stats.examens   || 0, color: 'blue'   },
-      { label: 'Questions', value: profil.stats.questions || 0, color: 'violet'  },
-      { label: 'Exports',   value: profil.stats.exports   || 0, color: 'green'   },
+      { label: 'Examens',   value: stats.examens,   color: 'blue',   icon: <FiBookOpen /> },
+      { label: 'Questions', value: stats.questions, color: 'gold',   icon: <FiLayers /> },
+      { label: 'Exports',   value: stats.exports,   color: 'green',  icon: <FiDownload /> },
     ];
   }, [profil]);
 
   const recentExams = useMemo(() => profil?.recentExams || [], [profil]);
 
-  const nomComplet =
-    profil?.nomComplet ||
-    [user?.Prenom, user?.Nom].filter(Boolean).join(' ').trim() ||
-    user?.Email ||
-    'Enseignant';
-
-  const prenom = user?.Prenom || nomComplet.split(' ')[0] || 'Enseignant';
+  const nomComplet = profil?.nomComplet || [user?.Prenom, user?.Nom].filter(Boolean).join(' ') || 'Enseignant';
+  const prenom = user?.Prenom || nomComplet.split(' ')[0];
 
   const seDeconnecter = useCallback(() => {
     logout();
@@ -45,7 +39,6 @@ function TeacherDashboard() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-
     if (!token || user?.role !== 'enseignant') {
       navigate('/enseignant/login', { replace: true });
       return;
@@ -54,60 +47,31 @@ function TeacherDashboard() {
     const loadDashboard = async () => {
       try {
         setChargement(true);
-        setErreur('');
-
         const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
         const response = await axios.get(`${apiBase}/enseignant/dashboard`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
-        const payload = response.data || {};
-        const remoteProfile = payload.profile || {};
-
-        const merged = {
-          nomComplet:
-            remoteProfile.nomComplet ||
-            [remoteProfile.prenom, remoteProfile.nom].filter(Boolean).join(' ').trim() ||
-            [user?.Prenom, user?.Nom].filter(Boolean).join(' ').trim() ||
-            user?.Email ||
-            'Enseignant',
-          email: remoteProfile.email || user?.Email || '',
-          grade: remoteProfile.grade || user?.Grade || '',
-          departement: remoteProfile.departement || user?.Departement || '',
-          stats: payload.stats || { examens: 0, questions: 0, exports: 0, requetesIA: 0 },
-          recentExams: Array.isArray(payload.recentExams) ? payload.recentExams : [],
-        };
-
-        setProfil(merged);
+        setProfil(response.data);
       } catch (error) {
-        const status = error?.response?.status;
-        if (status === 401 || status === 403) {
-          seDeconnecter();
-          return;
-        }
-        setErreur(
-          error?.response?.data?.message || 'Impossible de charger votre tableau de bord.'
-        );
+        if (error?.response?.status === 401) seDeconnecter();
+        setErreur('Impossible de charger les données.');
       } finally {
         setChargement(false);
       }
     };
-
     loadDashboard();
   }, [navigate, seDeconnecter, user]);
 
   if (chargement) {
     return (
       <div className="teacher-shell loading-shell">
-        <div className="teacher-loading-card">Chargement du tableau de bord…</div>
+        <div className="teacher-loading-card">Initialisation de votre espace...</div>
       </div>
     );
   }
 
-  // Heure de la journée pour le message d'accueil
   const heure = new Date().getHours();
-  const salutation =
-    heure < 12 ? 'Bonjour' : heure < 18 ? 'Bon après-midi' : 'Bonsoir';
+  const salutation = heure < 12 ? 'Bonjour' : heure < 18 ? 'Bon après-midi' : 'Bonsoir';
 
   return (
     <div className="teacher-shell">
@@ -119,80 +83,126 @@ function TeacherDashboard() {
       />
 
       <main className="teacher-main">
-
-        {/* ── En-tête ── */}
+        {/* ── En-tête Dynamique ── */}
         <header className="teacher-header">
-          <div className="teacher-header-left">
-            <p className="teacher-header-greeting">Tableau de bord</p>
-            <h1 className="teacher-header-title">
-              {salutation}, <span>{prenom}</span>
-            </h1>
-            <p className="teacher-header-sub">
-              {profil?.grade ? `${profil.grade} · ` : ''}
-              {profil?.departement ? `${profil.departement} · ` : ''}
-              {new Date().toLocaleDateString('fr-FR', {
-                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-              })}
-            </p>
-          </div>
-          <div className="teacher-header-badge">
-            Session active
-          </div>
+         
+         
         </header>
 
-        {/* ── Erreur ── */}
         {erreur && <p className="teacher-alert-error">{erreur}</p>}
 
-        {/* ── Stats ── */}
+        {/* ── Stats avec icônes ── */}
         <section className="teacher-stats-grid">
           {quickStats.map((stat) => (
             <article className="teacher-stat-card" key={stat.label}>
-              <span className={`teacher-stat-value ${stat.color}`}>{stat.value}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <span className={`teacher-stat-value ${stat.color}`}>{stat.value}</span>
+                <span style={{ fontSize: '1.5rem', opacity: 0.5 }}>{stat.icon}</span>
+              </div>
               <span className="teacher-stat-label">{stat.label}</span>
             </article>
           ))}
         </section>
 
-        {/* ── Contenu ── */}
+        {/* ── Grille de Contenu ── */}
         <section className="teacher-content-grid">
-
-          {/* Examens récents */}
+          
+          {/* Section Activité récente */}
           <article className="teacher-panel">
-            <h3>Examens récents</h3>
+            <div className="teacher-panel-header">
+              <div className="teacher-panel-title-group">
+                <span className="teacher-panel-icon activity">
+                  <FiActivity />
+                </span>
+                <div>
+                  <h3>Activité récente</h3>
+                  <p className="teacher-panel-subtitle">Vos derniers examens créés</p>
+                </div>
+              </div>
+              <span className="teacher-panel-count">{recentExams.length}</span>
+            </div>
+
             {recentExams.length === 0 ? (
-              <p className="teacher-empty">Aucun examen créé pour le moment.</p>
+              <div className="teacher-empty-state">
+                <span className="teacher-empty-icon">📋</span>
+                <p className="teacher-empty-title">Aucune activité récente</p>
+                <p className="teacher-empty-sub">Créez votre premier examen pour commencer.</p>
+              </div>
             ) : (
-              <ul className="teacher-exams-list">
-                {recentExams.map((exam, idx) => (
-                  <li key={idx} className="teacher-exam-item">
-                    <span className="teacher-exam-icon">📄</span>
-                    <span className="teacher-exam-name">{exam}</span>
-                  </li>
-                ))}
+              <ul className="teacher-activity-list">
+                {recentExams.map((exam, idx) => {
+                  const titre = typeof exam === 'object' ? (exam.titre || exam.title || 'Sans titre') : exam;
+                  const date  = typeof exam === 'object' ? (exam.updatedAt || exam.date || exam.createdAt) : null;
+                  const statut = typeof exam === 'object' ? (exam.statut || exam.status) : null;
+                  const isPublie = statut === 'publié' || statut === 'done';
+                  const formattedDate = date
+                    ? new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+                    : null;
+                  return (
+                    <li
+                      key={idx}
+                      className="teacher-activity-item"
+                      onClick={() => navigate('/enseignant/exams/bank')}
+                    >
+                      {/* Ligne de timeline */}
+                      <div className="teacher-activity-timeline">
+                        <span className={`teacher-activity-dot ${isPublie ? 'dot-green' : 'dot-gold'}`} />
+                        {idx < recentExams.length - 1 && <span className="teacher-activity-line" />}
+                      </div>
+
+                      {/* Contenu */}
+                      <div className="teacher-activity-card">
+                        <div className="teacher-activity-card-top">
+                          <span className="teacher-activity-icon-wrap">
+                            <FiBookOpen />
+                          </span>
+                          <div className="teacher-activity-info">
+                            <span className="teacher-activity-name">{titre}</span>
+                            {formattedDate && (
+                              <span className="teacher-activity-date">
+                                Modifié le {formattedDate}
+                              </span>
+                            )}
+                          </div>
+                          <div className="teacher-activity-right">
+                            {statut && (
+                              <span className={`teacher-exam-badge ${isPublie ? 'done' : 'draft'}`}>
+                                {isPublie ? 'Publié' : 'Brouillon'}
+                              </span>
+                            )}
+                            <FiArrowRight className="teacher-exam-arrow" />
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
-            <button
-              className="teacher-link-btn"
-              onClick={() => navigate('/enseignant/exams/bank')}
-            >
-              Voir tous les examens →
+
+            <button className="teacher-link-btn" onClick={() => navigate('/enseignant/exams/bank')}>
+              Explorer toute la banque →
             </button>
           </article>
 
-          {/* Actions rapides */}
-          <article className="teacher-panel">
-            <h3>Actions rapides</h3>
+          {/* Section Actions & IA */}
+          <article className="teacher-panel" style={{ background: 'var(--td-bg-elevated)' }}>
+            <h3 style={{ borderBottomColor: 'rgba(0,0,0,0.05)' }}><FiCpu style={{ marginRight: '8px' }} /> Assistant intelligent</h3>
             <div className="teacher-actions-col">
-              <button
-                className="teacher-primary-action"
-                onClick={() => navigate('/enseignant/exams/create')}
-              >
-                + Créer un nouvel examen
+              <button className="teacher-primary-action" onClick={() => navigate('/enseignant/exams/create')}>
+                <FiPlus style={{ marginRight: '8px' }} /> Créer un nouvel examen
               </button>
-              <button
-                className="teacher-secondary-action"
-                onClick={() => navigate('/enseignant/questions/bank')}
-              >
+              
+              <div style={{ marginTop: '10px', padding: '15px', background: '#fff', borderRadius: 'var(--td-radius-sm)', border: '1px solid var(--td-border)' }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--td-text-label)', marginBottom: '12px' }}>
+                  Utilisez l'IA pour générer des questions à partir d'un texte ou d'un sujet.
+                </p>
+                <button className="teacher-secondary-action" style={{ width: '100%' }} onClick={() => navigate('/enseignant/questions/generator')}>
+                   Générer des questions par IA
+                </button>
+              </div>
+
+              <button className="teacher-secondary-action" onClick={() => navigate('/enseignant/questions/bank')}>
                 Consulter la banque de questions
               </button>
             </div>
@@ -200,12 +210,10 @@ function TeacherDashboard() {
 
         </section>
 
-        {/* ── Footer ── */}
         <footer className="teacher-footer">
           <i className="teacher-dot" />
-          Connecté en tant que Professeur · Session active
+          Portail ExamGen-IA · {new Date().getFullYear()} · Mode sécurisé
         </footer>
-
       </main>
     </div>
   );

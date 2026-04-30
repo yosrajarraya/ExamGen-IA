@@ -1,0 +1,105 @@
+/* ── Cards & Banners ── */
+.exam-card {
+  background: var(--ce-bg-card);
+  border: 1px solid var(--ce-border);
+  border-radius: var(--ce-radius);
+  padding: 32px;
+  box-shadow: var(--ce-shadow-md);
+  animation: fadeUp 0.42s var(--ce-ease) 0.15s both;
+}
+
+.exam-card h2 {
+  font-family: var(--ce-font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--ce-text-primary);
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--ce-border);
+}
+
+.exam-card h3 {
+  font-family: var(--ce-font-display);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--ce-text-primary);
+  margin: 26px 0 14px;
+}
+
+.info-banner {
+  padding: 13px 18px;
+  border-radius: var(--ce-radius-sm);
+  border-left: 3px solid;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 22px;
+}
+
+.info-banner.blue {
+  background: var(--ce-blue-soft);
+  border-color: var(--ce-blue);
+  color: var(--ce-blue);
+}
+
+.info-banner.gold {
+  background: var(--ce-accent-soft);
+  border-color: var(--ce-accent);
+  color: #8a6a1a;
+}
+
+.result-item {
+  padding: 16px 18px;
+  background: var(--ce-bg-card);
+  border: 1.5px solid var(--ce-border);
+  border-radius: var(--ce-radius-sm);
+  transition: all 0.2s var(--ce-ease);
+}
+
+.result-item:hover {
+  border-color: var(--ce-border-hover);
+  box-shadow: var(--ce-shadow-sm);
+}
+
+.result-item.mine { border-left: 3px solid var(--ce-green); background: #f6fdf8; }
+.result-item.others { border-left: 3px solid var(--ce-blue-mid); background: #f7f9ff; }
+
+.bareme-summary {
+  background: var(--ce-navy);
+  border-radius: var(--ce-radius);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.bareme-total {
+  font-family: var(--ce-font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--ce-accent);
+}
+
+.bareme-label {
+  font-size: 0.75rem;
+  color: rgba(232,220,196,0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 24px;
+  background: var(--ce-bg-elevated);
+  border-radius: var(--ce-radius);
+  border: 2px dashed var(--ce-border);
+}
+
+.empty-state p {
+  color: var(--ce-text-muted);
+  font-size: 0.875rem;
+  margin-bottom: 6px;
+}

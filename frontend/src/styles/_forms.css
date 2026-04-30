@@ -1,0 +1,49 @@
+/* ── Form groups ── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.form-group label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ce-text-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 11px 14px;
+  border: 1.5px solid var(--ce-border);
+  border-radius: var(--ce-radius-sm);
+  background: var(--ce-bg-elevated);
+  font-family: var(--ce-font-body);
+  font-size: 0.875rem;
+  color: var(--ce-text-primary);
+  transition: all 0.2s var(--ce-ease);
+  outline: none;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--ce-blue-mid);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.09);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: var(--ce-text-muted);
+  font-weight: 300;
+}

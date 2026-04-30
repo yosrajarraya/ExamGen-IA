@@ -25,6 +25,10 @@ const {
   addExamToBank,
   getExamBank,
   getExamBankItemById,
+  getExamContent,
+  getExamQuestions,
+  addQuestionToExam,
+  removeQuestionFromExam,
   getFilteredExams,
   downloadExamBankFile,
   deleteExamBankItem,
@@ -50,7 +54,11 @@ router.post("/questions/bank/:id/copy", copyQuestionBankItem); // Copier une que
 router.post("/exams/bank", addExamToBank); // Ajouter examen exporté à la banque
 router.get("/exams/bank", getExamBank); // Récupérer banque d'examens
 router.get("/exams/bank/:id/download", downloadExamBankFile); // Télécharger un .docx
-router.get("/exams/bank/:id", getExamBankItemById); // Récupérer un examen spécifique
+router.get("/exams/bank/:id/content", getExamContent);        // Parser le .docx → sections/questions
+router.get("/exams/bank/:id/questions", getExamQuestions); // Récupérer les questions d'un examen
+router.post("/exams/bank/:id/questions", addQuestionToExam); // Lier une question à un examen
+router.delete("/exams/bank/:id/questions/:questionId", removeQuestionFromExam); // Délier une question d'un examen
+router.get("/exams/bank/:id", getExamBankItemById); // Récupérer un examen spécifique (avec questions peuplées)
 router.get("/exams/filtered", getFilteredExams); // Récupérer examens filtrés
 router.delete("/exams/bank/:id", deleteExamBankItem); // Supprimer mon examen
 router.post("/exams/bank/:id/copy", copyExamBankItem); // Copier un examen
