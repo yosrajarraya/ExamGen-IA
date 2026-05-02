@@ -5,11 +5,14 @@ const wordTemplateSchema = new mongoose.Schema(
     nom: {
       type: String,
       required: true,
+      trim: true,
       default: 'Nouveau modèle',
     },
 
     type: {
       type: String,
+      required: true,
+      trim: true,
       enum: ['final', 'cc', 'rattrapage', 'tp'],
       default: 'final',
     },
@@ -21,10 +24,16 @@ const wordTemplateSchema = new mongoose.Schema(
 
     langue: {
       type: String,
+      required: true,
+      trim: true,
       enum: ['Français', 'Arabe', 'Bilingue'],
       default: 'Français',
     },
-
+    templateStyle: {
+      type: String,
+      enum: ['long', 'court'],
+      default: 'long',
+    },
     // Logos
     logoLeftBase64: {
       type: String,
@@ -39,42 +48,55 @@ const wordTemplateSchema = new mongoose.Schema(
     // En-tête institutionnel
     universiteFr: {
       type: String,
+      required: true,
+      trim: true,
       default: 'Université Nord-Américaine Privée',
     },
 
     institutFr: {
       type: String,
+      required: true,
+      trim: true,
       default: 'Institut International de Technologie',
     },
 
     departementFr: {
       type: String,
+      required: true,
+      trim: true,
       default: 'Département Informatique',
     },
 
     universiteAr: {
       type: String,
+      trim: true,
       default: '',
     },
 
     institutAr: {
       type: String,
+      trim: true,
       default: '',
     },
 
     departementAr: {
       type: String,
+      trim: true,
       default: '',
     },
 
     campusText: {
       type: String,
+      required: true,
+      trim: true,
       default: 'SFAX - TUNISIA',
     },
 
     // Bloc principal
     titreExamen: {
       type: String,
+      required: true,
+      trim: true,
       default: 'DEVOIR SURVEILLÉ',
     },
 
@@ -85,51 +107,70 @@ const wordTemplateSchema = new mongoose.Schema(
 
     matiere: {
       type: String,
+      required: true,
+      trim: true,
       default: 'Fouille de données',
     },
 
     discipline: {
       type: String,
-      default: 'Informatique'  ,
+      required: true,
+      trim: true,
+      default: 'Informatique',
     },
 
     enseignants: {
       type: String,
+      required: true,
+      trim: true,
       default: 'nom et prénom de l’enseignant',
     },
 
     anneeUniversitaire: {
       type: String,
+      required: true,
+      trim: true,
       default: '2024-2025',
     },
 
     semestre: {
       type: String,
+      required: true,
+      trim: true,
       default: '1',
     },
 
     dateExamen: {
       type: String,
+      required: true,
+      trim: true,
       default: '07/11/2024',
     },
 
     nombrePages: {
       type: String,
+      trim: true,
       default: '6',
     },
 
     duree: {
       type: String,
+      required: true,
+      trim: true,
       default: '1h30',
     },
 
     documentsAutorises: {
       type: String,
+      required: true,
+      trim: true,
       default: 'PC & Internet non autorisés',
     },
 
     feuilleType: {
       type: String,
+      required: true,
+      trim: true,
       default: 'Feuille d’énoncé',
     },
 
@@ -143,14 +184,25 @@ const wordTemplateSchema = new mongoose.Schema(
       blocRemarques: { type: Boolean, default: true },
     },
 
+    // Contenu du bloc Remarques (NB)
+    remarques: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+
     // Mise en page
     police: {
       type: String,
+      required: true,
+      trim: true,
       default: 'Arial',
     },
 
     taille: {
       type: String,
+      required: true,
+      trim: true,
       default: '11pt',
     },
 

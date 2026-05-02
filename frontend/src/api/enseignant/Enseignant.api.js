@@ -40,12 +40,13 @@ export const getWordTemplates = async () => {
   return response.data;
 };
 
-export const addQuestionToBank = async (text, matiere = '', niveau = '', anneeUniversitaire = '') => {
+export const addQuestionToBank = async (text, matiere = '', niveau = '', anneeUniversitaire = '', type = 'ouverte') => {
   const response = await api.post('/enseignant/questions/bank', { 
     text,
     matiere,
     niveau,
-    anneeUniversitaire
+    anneeUniversitaire,
+    type,
   });
   return response.data;
 };
@@ -55,18 +56,19 @@ export const getQuestionBank = async () => {
   return response.data;
 };
 
-export const getFilteredQuestions = async (matiere, niveau, annee) => {
+export const getFilteredQuestions = async (matiere, niveau, annee, type) => {
   const params = new URLSearchParams();
   if (matiere) params.append('matiere', matiere);
   if (niveau) params.append('niveau', niveau);
   if (annee) params.append('annee', annee);
+  if (type) params.append('type', type);
 
   const response = await api.get(`/enseignant/questions/filtered?${params.toString()}`);
   return response.data;
 };
 
-export const updateQuestionBankItem = async (id, text) => {
-  const response = await api.put(`/enseignant/questions/bank/${id}`, { text });
+export const updateQuestionBankItem = async (id, payload) => {
+  const response = await api.put(`/enseignant/questions/bank/${id}`, payload);
   return response.data;
 };
 

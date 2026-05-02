@@ -21,6 +21,7 @@ const normalizeExam = (item) => ({
   matiere: item.matiere,
   niveau: item.niveau,
   anneeUniversitaire: item.anneeUniversitaire,
+  semestre: item.semestre || '',
   type: item.type,
   duree: item.duree,
   status: item.status || 'Exporte',
@@ -112,6 +113,7 @@ const addExamToBank = async (req, res) => {
       fileMimeType,
       fileContentBase64,
       anneeUniversitaire,
+      semestre,
     } = req.body || {};
 
     const cleanBase64 = String(fileContentBase64 || "").trim();
@@ -150,6 +152,7 @@ const addExamToBank = async (req, res) => {
       questionsCount: Number(questionsCount) || 0,
       status: String(status || "Exporte").trim() || "Exporte",
       anneeUniversitaire: String(anneeUniversitaire || "").trim(),
+      semestre: String(semestre || "").trim(),
       createdBy: req.user.id,
       createdByName:
         `${enseignant.Prenom || ""} ${enseignant.Nom || ""}`.trim(),
