@@ -10,6 +10,63 @@ const validateMarges = (margeH, margeV) => {
   return null;
 };
 
+const REQUIRED_FIELDS = [
+  'nom',
+  'type',
+  'langue',
+  'universiteFr',
+  'institutFr',
+  'departementFr',
+  'campusText',
+  'titreExamen',
+  'matiere',
+  'discipline',
+  'enseignants',
+  'anneeUniversitaire',
+  'semestre',
+  'dateExamen',
+  'duree',
+  'documentsAutorises',
+  'feuilleType',
+  'police',
+  'taille',
+];
+
+const REQUIRED_LABELS = {
+  nom: 'Nom du modèle',
+  type: 'Type',
+  langue: 'Langue',
+  universiteFr: 'Université (FR)',
+  institutFr: 'Institut (FR)',
+  departementFr: 'Département (FR)',
+  campusText: 'Texte campus',
+  titreExamen: 'Titre examen',
+  matiere: 'Matière',
+  discipline: 'Discipline',
+  enseignants: 'Enseignants',
+  anneeUniversitaire: 'Année universitaire',
+  semestre: 'Semestre',
+  dateExamen: 'Date examen',
+  duree: 'Durée',
+  documentsAutorises: 'Documents autorisés',
+  feuilleType: 'Type de feuille',
+  police: 'Police',
+  taille: 'Taille',
+};
+
+const validateRequiredFields = (payload) => {
+  const missing = REQUIRED_FIELDS.filter((field) => {
+    const value = payload?.[field];
+    return typeof value !== 'string' || value.trim() === '';
+  });
+
+  if (missing.length === 0) {
+    return null;
+  }
+
+  return `Champs obligatoires manquants: ${missing.map((field) => REQUIRED_LABELS[field] || field).join(', ')}`;
+};
+
 const getTemplates = async (req, res) => {
   try {
     const templates = await WordTemplate.find().sort({ createdAt: 1 });
@@ -42,6 +99,11 @@ const getTemplateById = async (req, res) => {
 
 const createTemplate = async (req, res) => {
   try {
+    const requiredError = validateRequiredFields(req.body);
+    if (requiredError) {
+      return res.status(400).json({ message: requiredError });
+    }
+
     const err = validateMarges(req.body.margeH, req.body.margeV);
     if (err) {
       return res.status(400).json({ message: err });
@@ -60,6 +122,11 @@ const createTemplate = async (req, res) => {
 
 const updateTemplate = async (req, res) => {
   try {
+    const requiredError = validateRequiredFields(req.body);
+    if (requiredError) {
+      return res.status(400).json({ message: requiredError });
+    }
+
     const err = validateMarges(req.body.margeH, req.body.margeV);
     if (err) {
       return res.status(400).json({ message: err });
@@ -73,7 +140,7 @@ const updateTemplate = async (req, res) => {
           updatedBy: req.user?.email || 'admin',
         },
       },
-      { new: true }
+      { new: true, runValidators: true }
     );
 
     if (!template) {

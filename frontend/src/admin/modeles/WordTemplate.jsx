@@ -1,76 +1,66 @@
 ﻿import { useState } from 'react';
-import useAuth from '../../context/useAuth';
 import Sidebar from '../../components/sidebar/Sidebar';
+import useAuth from '../../context/useAuth';
 import { adminNavItems, buildAdminProfile } from '../../components/sidebar/sidebarConfigs';
 import ModelsList from './ModelsList';
 import ModelEditor from './ModelEditor';
+import { normalizeTemplate, makeDefaultModel } from '../../utils/template.utils';
 import './WordTemplate.css';
 
 const WordTemplate = () => {
   const { user, logout } = useAuth();
+  const [view,          setView]          = useState('list');   // 'list' | 'editor'
+  const [editingModel,  setEditingModel]  = useState(null);
 
-  const [view, setView] = useState('list'); // 'list' ou 'edit'
-  const [selectedModel, setSelectedModel] = useState(null);
-
-  const handleSelectModel = (model) => {
-    setSelectedModel(model);
-    setView('edit');
+  /* Ouvre l'éditeur sur un modèle existant */
+  const handleEditModel = (model) => {
+    setEditingModel(normalizeTemplate(model));
+    setView('editor');
   };
 
+  /* Ouvre l'éditeur sur un nouveau modèle vide */
   const handleCreateModel = (model) => {
-    setSelectedModel(model);
-    setView('edit');
+    setEditingModel(model || makeDefaultModel());
+    setView('editor');
   };
 
-  const handleModelUpdate = (updatedModel) => {
-    setSelectedModel(updatedModel);
-  };
-
-  const handleBackToList = () => {
+  /* Retour à la liste après sauvegarde */
+  const handleModelUpdate = () => {
     setView('list');
-    setSelectedModel(null);
+    setEditingModel(null);
+  };
+
+  /* Retour à la liste sans sauvegarder */
+  const handleBack = () => {
+    setView('list');
+    setEditingModel(null);
   };
 
   return (
-    <div className="new-admin-layout">
+    <div className="profil-layout">
       <Sidebar
-        roleLabel="Administration"
+        roleLabel="Espace administrateur"
         navItems={adminNavItems}
         profile={buildAdminProfile(user)}
         onLogout={logout}
       />
 
-      <main className="new-admin-main">
-        <div className="wt-page-header">
-          <div className="wt-page-header__text">
-            <h1 className="wt-page-title">Modèles Word</h1>
-    
-          </div>
-
-
-        </div>
-
-        <div className="new-admin-body wt-body">
-          {view === 'list' ? (
-            <ModelsList
-              onSelectModel={handleSelectModel}
-              onEditModel={handleSelectModel}
-              onCreateModel={handleCreateModel}
-            />
-          ) : (
-            selectedModel && (
-              <ModelEditor
-                model={selectedModel}
-                onBack={handleBackToList}
-                onModelUpdate={handleModelUpdate}
-              />
-            )
-          )}
-        </div>
+      <main className="profil-main">
+        {view === 'list' ? (
+          <ModelsList
+            onEditModel={handleEditModel}
+            onCreateModel={handleCreateModel}
+          />
+        ) : (
+          <ModelEditor
+            model={editingModel}
+            onBack={handleBack}
+            onModelUpdate={handleModelUpdate}
+          />
+        )}
       </main>
     </div>
   );
 };
 
 export default WordTemplate;
-

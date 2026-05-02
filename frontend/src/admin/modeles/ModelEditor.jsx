@@ -1,227 +1,56 @@
-import { useState, useCallback } from 'react';
-import iitLogo from '../../assets/iit2.png';
+import { useCallback, useState } from 'react';
+import {
+  DEFAULT_SECTIONS,
+  SECTION_LABELS,
+  MODEL_TYPES,
+  LANGUAGES,
+  FONTS,
+  FONT_SIZES,
+  SEMESTRES,
+  DUREES,
+  ANNEES,
+  DEPARTEMENTS,
+  DISCIPLINES,
+  DOCUMENTS_OPTIONS,
+  normalizeTemplate,
+} from '../../utils/template.utils';
+import { ExamPreview } from '../../components/ExamPreview';
 import './WordTemplate.css';
 
-const LANGUAGES = ['Français', 'Arabe', 'Bilingue'];
-const FONTS = ['Arial', 'Times New Roman', 'Calibri', 'Georgia', 'Helvetica', 'Cambria'];
-const SIZES = ['10pt', '11pt', '12pt', '13pt', '14pt'];
-
-const MODEL_TYPES = [
-  { id: 'final', label: 'Examen Final' },
-  { id: 'cc', label: 'Contrôle Continu' },
-  { id: 'rattrapage', label: 'Rattrapage' },
-  { id: 'tp', label: 'TP / Projet' },
+const REQUIRED_FIELDS = [
+  'nom', 'type', 'langue', 'templateStyle',
+  'universiteFr', 'institutFr', 'departementFr', 'campusText',
+  'titreExamen', 'documentsAutorises', 'feuilleType',
+  'duree', 'semestre', 'anneeUniversitaire', 'police', 'taille',
 ];
 
-const SECTION_LABELS = {
-  zoneNomPrenom: 'Zone Nom & Prénom',
-  zoneGroupe: 'Zone Groupe',
-  blocNote: 'Bloc Note',
-  blocCommentaires: 'Bloc Commentaires',
-  blocSignature: 'Bloc Signature',
-  blocRemarques: 'Bloc Remarques',
+const REQUIRED_LABELS = {
+  nom: 'Nom du modèle', type: 'Type', langue: 'Langue',
+  templateStyle: 'Forme du modèle', universiteFr: 'Université (FR)',
+  institutFr: 'Institut (FR)', departementFr: 'Département (FR)',
+  campusText: 'Texte campus', titreExamen: 'Titre examen',
+  documentsAutorises: 'Documents autorisés', feuilleType: 'Type de feuille',
+  duree: 'Durée', semestre: 'Semestre',
+  anneeUniversitaire: 'Année universitaire', police: 'Police', taille: 'Taille',
 };
-
-const DEFAULT_SECTIONS = {
-  zoneNomPrenom: true,
-  zoneGroupe: true,
-  blocNote: true,
-  blocCommentaires: true,
-  blocSignature: true,
-  blocRemarques: true,
-};
-
-const normalizeFromServer = (t, existingLocalId = null) => ({
-  ...t,
-  _localId: existingLocalId || t._id,
-  _id: t._id,
-  margeH: String(t.margeH ?? 2),
-  margeV: String(t.margeV ?? 2),
-  sections: t.sections || { ...DEFAULT_SECTIONS },
-  exercices: t.exercices || [],
-});
-
-const ExamPreview = ({ model }) => {
-
-  const universityLeft1 = 'North American';
-  const universityLeft2 = 'Private University';
-  const universityLeft3 = 'SFAX | TUNISIA';
-  const universityLeft4 = 'TECHNOLOGY · BUSINESS · ARCHITECTURE';
-
-  const universityAr = model?.universiteAr || 'الجامعة الشمالية الأمريكية الخاصة';
-  const universityFr = model?.universiteFr || 'Université Nord-Américaine Privée';
-  const institute = model?.institutFr || 'Institut International de Technologie';
-  const department = model?.departementFr || 'Département Informatique';
-
-  const subject = model?.matiere || 'Fouille de données';
-  const discipline = model?.discipline || '2ème année Génie Informatique';
-  const teachers = model?.enseignants || 'Tarek Ben Said / Taoufik Ben Abdallah';
-  const documentsAllowed = model?.documentsAutorises || 'PC & Internet non autorisés';
-
-  const academicYear = model?.anneeUniversitaire || '2024-2025';
-  const semester = model?.semestre ? `${model.semestre} (${model.dateExamen})` : '1 (07/11/2024)';
-  const duration = model?.duree || '1h30';
-
-  const note1 = 'Le barème est fourni à titre indicatif et peut être ajusté';
-  const note2 = `La durée de l'examen est de ${duration}`;
-  const note3 = "Les ordinateurs, l'accès à Internet et l'utilisation d'IDE Python sont strictement interdits";
-
-  return (
-    <div className="a4-sheet exam-paper">
-      {/* En-tête université */}
-      <div className="exam-top-header">
-        <div className="exam-top-header__left">
-          <div>{universityLeft1}</div>
-          <div>{universityLeft2}</div>
-          <div>{universityLeft3}</div>
-          <div className="mini-muted">{universityLeft4}</div>
-        </div>
-
-        <div className="exam-top-header__center">
-          <div>{universityAr}</div>
-          <div>{universityFr}</div>
-          <div>{institute}</div>
-          <div>{department}</div>
-        </div>
-
-        <div className="exam-top-header__right">
-          <div className="exam-logo-frame">
-            <img src={iitLogo} alt="IIT Logo" className="exam-logo-img" />
-          </div>
-        </div>
-      </div>
-
-      {/* Bloc principal */}
-      <div className="exam-box">
-        <div className="exam-box__title">
-          <div className="exam-box__title-left">
-            {model?.titreExamen || 'DEVOIR SURVEILLÉ'} 
-          </div>
-          <div className="exam-box__title-right" />
-        </div>
-
-        <div className="exam-meta-grid">
-          <div className="exam-meta-col">
-            <div>
-              <strong>Matière :</strong> {subject}
-            </div>
-            <div>
-              <strong>Discipline :</strong> {discipline}
-            </div>
-            <div>
-              <strong>Enseignants :</strong> {teachers}
-            </div>
-            <div>
-              <strong>Documents autorisés :</strong> {documentsAllowed}
-            </div>
-          </div>
-
-          <div className="exam-meta-col">
-            <div>
-              <strong>Année Universitaire :</strong> {academicYear}
-            </div>
-            <div>
-              <strong>Semestre :</strong> {semester}
-            </div>
-      
-      
-            <div>
-              <strong>Feuille d'énoncé / Durée :</strong> {duration}
-            </div>
-          </div>
-        </div>
-
-        {(model?.sections?.zoneNomPrenom || model?.sections?.zoneGroupe) && (
-          <div className="exam-student-line">
-            {model?.sections?.zoneNomPrenom && (
-              <div>
-                <strong>Prénom & Nom :</strong> <span className="line-fill long-line" />
-              </div>
-            )}
-            {model?.sections?.zoneGroupe && (
-              <div className="group-line">
-                <strong>Groupe</strong> <span className="line-fill short-line" />
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Note / commentaires / signature */}
-      {(model?.sections?.blocNote || model?.sections?.blocCommentaires || model?.sections?.blocSignature) && (
-        <div className="exam-score-row">
-          {model?.sections?.blocNote && (
-            <div className="score-box">
-              <div className="score-box-title">Note /20</div>
-            </div>
-          )}
-
-          {model?.sections?.blocCommentaires && (
-            <div className="score-box">
-              <div className="score-box-title">Commentaires</div>
-            </div>
-          )}
-
-          {model?.sections?.blocSignature && (
-            <div className="score-box">
-              <div className="score-box-title">Signature</div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Bloc NB */}
-      {model?.sections?.blocRemarques && (
-        <div className="exam-note-block">
-          <div className="exam-note-title">NB.</div>
-          <div>— {note1}</div>
-          <div>— {note2}</div>
-          <div>— {note3}</div>
-        </div>
-      )}
-
-      {/* Section questions/exercices */}
-      {model?.exercices?.length > 0 && (
-        <div className="exam-questions-start">
-          <div className="question-instruction">
-            <em>Cocher la ou les réponse(s) correcte(s) (Une réponse incorrecte sera notée 0 pour cette question)</em>
-          </div>
-
-          {model.exercices
-            .filter((ex) => ex.contenu && ex.contenu.trim() && ex.numero)
-            .sort((a, b) => parseInt(a.numero) - parseInt(b.numero))
-            .map((ex) => (
-              <div key={ex.numero} className="question-block">
-                <div className="question-title">
-                  <strong>Question {ex.numero} {ex.points && `(${ex.points} pts)`}</strong>
-                </div>
-                <div className="question-text">{ex.contenu}</div>
-              </div>
-            ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
 
 const ModelEditor = ({ model, onBack, onModelUpdate }) => {
-  const [current, setCurrent] = useState(model);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState('');
+  const [current, setCurrent] = useState(normalizeTemplate(model));
+  const [saving,      setSaving]      = useState(false);
+  const [saved,       setSaved]       = useState(false);
+  const [error,       setError]       = useState('');
   const [showPreview, setShowPreview] = useState(false);
 
   const update = useCallback((key, val) => {
-    setCurrent((prev) => ({ ...prev, [key]: val }));
+    setCurrent(prev => ({ ...prev, [key]: val }));
     setSaved(false);
     setError('');
   }, []);
 
   const updateSection = useCallback((key, val) => {
-    setCurrent((prev) => ({
+    setCurrent(prev => ({
       ...prev,
-      sections: { ...(prev.sections || {}), [key]: val },
+      sections: { ...(prev.sections || DEFAULT_SECTIONS), [key]: val },
     }));
     setSaved(false);
   }, []);
@@ -229,50 +58,52 @@ const ModelEditor = ({ model, onBack, onModelUpdate }) => {
   const handleSave = async () => {
     setSaving(true);
     setError('');
-
     try {
-      const token = localStorage.getItem('token');
+      const missing = REQUIRED_FIELDS.filter(f => {
+        const v = current?.[f];
+        return typeof v !== 'string' || v.trim() === '';
+      });
+      if (missing.length > 0) {
+        throw new Error(
+          `Champs obligatoires manquants : ${missing.map(f => REQUIRED_LABELS[f] || f).join(', ')}`
+        );
+      }
 
+      const token = localStorage.getItem('token');
       const payload = {
-        nom: current.nom,
-        type: current.type,
-        actif: current.actif,
-        langue: current.langue,
-        universiteFr: current.universiteFr,
-        institutFr: current.institutFr,
+        nom: current.nom, type: current.type, actif: current.actif,
+        langue: current.langue, templateStyle: current.templateStyle || 'long',
+        universiteFr: current.universiteFr, institutFr: current.institutFr,
         departementFr: current.departementFr,
-        universiteAr: current.universiteAr || '',
-        institutAr: current.institutAr || '',
+        universiteAr: current.universiteAr || '', institutAr: current.institutAr || '',
         departementAr: current.departementAr || '',
+        campusText: current.campusText,
+        campusTextEn: current.campusTextEn || '',
+        campusTagline: current.campusTagline || '',
         titreExamen: current.titreExamen,
-        matiere: current.matiere,
-        discipline: current.discipline,
-        enseignants: current.enseignants,
-        anneeUniversitaire: current.anneeUniversitaire,
-        semestre: current.semestre,
-        dateExamen: current.dateExamen,
-        duree: current.duree,
         documentsAutorises: current.documentsAutorises,
         feuilleType: current.feuilleType,
-        sections: current.sections,
-        police: current.police,
-        taille: current.taille,
+        matiere: current.matiere || '', discipline: current.discipline || '',
+        enseignants: current.enseignants || '',
+        anneeUniversitaire: current.anneeUniversitaire,
+        semestre: current.semestre, dateExamen: current.dateExamen || '',
+        duree: current.duree,
+        sections: { ...DEFAULT_SECTIONS, ...(current.sections || {}) },
+        remarques: current.remarques || '',
+        police: current.police, taille: current.taille,
         margeH: parseFloat(current.margeH) || 2,
         margeV: parseFloat(current.margeV) || 2,
         exercices: current.exercices || [],
       };
 
       const isNew = !current._id;
-      const url = isNew
+      const url   = isNew
         ? 'http://localhost:5000/api/admin/word-template'
         : `http://localhost:5000/api/admin/word-template/${current._id}`;
 
       const res = await fetch(url, {
         method: isNew ? 'POST' : 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),
       });
 
@@ -281,9 +112,8 @@ const ModelEditor = ({ model, onBack, onModelUpdate }) => {
         throw new Error(d.message || `Erreur ${res.status}`);
       }
 
-      const data = await res.json();
-      const updated = normalizeFromServer(data, current._localId);
-
+      const data    = await res.json();
+      const updated = normalizeTemplate(data, current._localId);
       setCurrent(updated);
       onModelUpdate(updated);
       setSaved(true);
@@ -298,337 +128,167 @@ const ModelEditor = ({ model, onBack, onModelUpdate }) => {
   return (
     <div className="model-editor-container">
       <div className="editor-header">
-        <button className="wt-btn-secondary" onClick={onBack}>
-          ← Retour à la liste
-        </button>
-        <h2 style={{ flex: 1, marginLeft: '16px' }}>{current.nom}</h2>
+        <button className="wt-btn-secondary" onClick={onBack}>← Retour à la liste</button>
+        <h2 className="editor-title">{current.nom || 'Nouveau modèle'}</h2>
       </div>
 
       <section className="wt-editor">
+        {/* Identification */}
         <div className="wt-card">
           <div className="wt-card-header">
-            <div>
-              <div className="wt-card-eyebrow">Configuration</div>
-              <h3 className="wt-card-title">Informations générales</h3>
-            </div>
+            <div><div className="wt-card-eyebrow">Identification</div><h3 className="wt-card-title">Informations du modèle</h3></div>
           </div>
-
           <div className="wt-grid wt-grid-2">
-            <div className="wt-field">
-              <label className="wt-label">Nom du modèle</label>
-              <input
-                className="wt-input"
-                value={current.nom}
-                onChange={(e) => update('nom', e.target.value)}
-              />
-            </div>
-
-            <div className="wt-field">
-              <label className="wt-label">Langue</label>
-              <select
-                className="wt-select"
-                value={current.langue}
-                onChange={(e) => update('langue', e.target.value)}
-              >
-                {LANGUAGES.map((l) => (
-                  <option key={l}>{l}</option>
-                ))}
+            <div className="wt-field"><label className="wt-label">Nom du modèle *</label><input className="wt-input" value={current.nom || ''} onChange={e => update('nom', e.target.value)} /></div>
+            <div className="wt-field"><label className="wt-label">Type *</label>
+              <select className="wt-select" value={current.type || 'final'} onChange={e => update('type', e.target.value)}>
+                {MODEL_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
               </select>
             </div>
-
-            <div className="wt-field">
-              <label className="wt-label">Type</label>
-              <select
-                className="wt-select"
-                value={current.type}
-                onChange={(e) => update('type', e.target.value)}
-              >
-                {MODEL_TYPES.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                  </option>
-                ))}
+            <div className="wt-field"><label className="wt-label">Langue *</label>
+              <select className="wt-select" value={current.langue || 'Français'} onChange={e => update('langue', e.target.value)}>
+                {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+            <div className="wt-field"><label className="wt-label">Forme du modèle *</label>
+              <select className="wt-select wt-select--highlight" value={current.templateStyle || 'long'} onChange={e => update('templateStyle', e.target.value)}>
+                <option value="long">Forme 1 — Session principale avec NB</option>
+                <option value="court">Forme 2 — Tableau simple</option>
               </select>
             </div>
           </div>
         </div>
 
+        {/* En-tête institutionnel */}
         <div className="wt-card">
           <div className="wt-card-header">
-            <div>
-              <div className="wt-card-eyebrow">Institution</div>
-              <h3 className="wt-card-title">En-tête institutionnel</h3>
-            </div>
+            <div><div className="wt-card-eyebrow">En-tête</div><h3 className="wt-card-title">Informations institutionnelles</h3></div>
           </div>
-
           <div className="wt-grid wt-grid-2">
-            <div className="wt-field">
-              <label className="wt-label">Université (FR)</label>
-              <div className="wt-static-field">
-                {current.universiteFr}
-              </div>
+            <div className="wt-field"><label className="wt-label">Université FR *</label><input className="wt-input" value={current.universiteFr || ''} onChange={e => update('universiteFr', e.target.value)} /></div>
+            <div className="wt-field"><label className="wt-label">Institut FR *</label><input className="wt-input" value={current.institutFr || ''} onChange={e => update('institutFr', e.target.value)} /></div>
+            <div className="wt-field"><label className="wt-label">Département FR *</label>
+              <select className="wt-select" value={current.departementFr || ''} onChange={e => update('departementFr', e.target.value)}>
+                <option value="">— Choisir —</option>
+                {DEPARTEMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
             </div>
-
-            <div className="wt-field">
-              <label className="wt-label">Institut (FR)</label>
-              <div className="wt-static-field">
-                {current.institutFr}
-              </div>
-            </div>
-
-            <div className="wt-field">
-              <label className="wt-label">Département (FR)</label>
-              <input
-                className="wt-input"
-                value={current.departementFr}
-                onChange={(e) => update('departementFr', e.target.value)}
-              />
-            </div>
+            <div className="wt-field"><label className="wt-label">Texte campus *</label><input className="wt-input" value={current.campusText || ''} onChange={e => update('campusText', e.target.value)} placeholder="Ex : SFAX - TUNISIA" /></div>
+            <div className="wt-field"><label className="wt-label">Ligne campus EN</label><input className="wt-input" value={current.campusTextEn || ''} onChange={e => update('campusTextEn', e.target.value)} placeholder="Ex : North American Private University" /></div>
+            <div className="wt-field"><label className="wt-label">Tagline campus EN</label><input className="wt-input" value={current.campusTagline || ''} onChange={e => update('campusTagline', e.target.value)} placeholder="Ex : TECHNOLOGY · BUSINESS · ARCHITECTURE" /></div>
+            <div className="wt-field"><label className="wt-label">Université AR</label><input className="wt-input" value={current.universiteAr || ''} onChange={e => update('universiteAr', e.target.value)} /></div>
+            <div className="wt-field"><label className="wt-label">Institut AR</label><input className="wt-input" value={current.institutAr || ''} onChange={e => update('institutAr', e.target.value)} /></div>
+            <div className="wt-field wt-field-full"><label className="wt-label">Département AR</label><input className="wt-input" value={current.departementAr || ''} onChange={e => update('departementAr', e.target.value)} /></div>
           </div>
         </div>
 
-        <div className="wt-card">
+        {/* Champs examen */}
+        <div className="wt-card wt-card--editable">
           <div className="wt-card-header">
-            <div>
-              <div className="wt-card-eyebrow">Examen</div>
-              <h3 className="wt-card-title">Bloc examen</h3>
-            </div>
+            <div><div className="wt-card-eyebrow">Examen</div><h3 className="wt-card-title">Champs du modèle</h3></div>
           </div>
-
           <div className="wt-grid wt-grid-2">
-            <div className="wt-field">
-              <label className="wt-label">Titre examen</label>
-              <input
-                className="wt-input"
-                value={current.titreExamen}
-                onChange={(e) => update('titreExamen', e.target.value)}
-              />
+            <div className="wt-field"><label className="wt-label">Titre de l'examen *</label><input className="wt-input" value={current.titreExamen || ''} onChange={e => update('titreExamen', e.target.value)} /></div>
+            <div className="wt-field"><label className="wt-label">Documents autorisés *</label>
+              <select className="wt-select" value={current.documentsAutorises || ''} onChange={e => update('documentsAutorises', e.target.value)}>
+                <option value="">— Choisir —</option>
+                {DOCUMENTS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+              </select>
             </div>
-
-           
-
-            <div className="wt-field">
-              <label className="wt-label">Matière</label>
-              <input
-                className="wt-input"
-                value={current.matiere}
-                onChange={(e) => update('matiere', e.target.value)}
-              />
+            <div className="wt-field"><label className="wt-label">Type de feuille *</label><input className="wt-input" value={current.feuilleType || ''} onChange={e => update('feuilleType', e.target.value)} /></div>
+            <div className="wt-field"><label className="wt-label">Matière</label><input className="wt-input wt-input--editable" value={current.matiere || ''} onChange={e => update('matiere', e.target.value)} placeholder="Ex : Administration de base de données" /></div>
+            <div className="wt-field"><label className="wt-label">Discipline / Niveau</label>
+              <select className="wt-select wt-select--editable" value={current.discipline || ''} onChange={e => update('discipline', e.target.value)}>
+                <option value="">— Choisir —</option>
+                {DISCIPLINES.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
             </div>
-
-            <div className="wt-field">
-              <label className="wt-label">Discipline</label>
-              <input
-                className="wt-input"
-                value={current.discipline}
-                onChange={(e) => update('discipline', e.target.value)}
-              />
+            <div className="wt-field"><label className="wt-label">Enseignant(s)</label><input className="wt-input wt-input--editable" value={current.enseignants || ''} onChange={e => update('enseignants', e.target.value)} placeholder="Ex : Amal Frikha / Taoufik Ben Abdallah" /></div>
+            <div className="wt-field"><label className="wt-label">Année universitaire *</label>
+              <select className="wt-select" value={current.anneeUniversitaire || ANNEES[0]} onChange={e => update('anneeUniversitaire', e.target.value)}>
+                {ANNEES.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
             </div>
-
-            <div className="wt-field wt-field-full">
-              <label className="wt-label">Enseignants</label>
-              <input
-                className="wt-input"
-                value={current.enseignants}
-                onChange={(e) => update('enseignants', e.target.value)}
-              />
+            <div className="wt-field"><label className="wt-label">Semestre *</label>
+              <select className="wt-select" value={current.semestre || '1'} onChange={e => update('semestre', e.target.value)}>
+                {SEMESTRES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
             </div>
-
-            <div className="wt-field wt-field-full">
-              <label className="wt-label">Documents autorisés</label>
-              <input
-                className="wt-input"
-                value={current.documentsAutorises}
-                onChange={(e) => update('documentsAutorises', e.target.value)}
-              />
+            <div className="wt-field"><label className="wt-label">Date examen</label><input className="wt-input" value={current.dateExamen || ''} onChange={e => update('dateExamen', e.target.value)} placeholder="06/01/2025" /></div>
+            <div className="wt-field"><label className="wt-label">Durée *</label>
+              <select className="wt-select" value={current.duree || '1h30'} onChange={e => update('duree', e.target.value)}>
+                {DUREES.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
             </div>
-
-            <div className="wt-field">
-              <label className="wt-label">Année universitaire</label>
-              <input
-                className="wt-input"
-                value={current.anneeUniversitaire}
-                onChange={(e) => update('anneeUniversitaire', e.target.value)}
-              />
-            </div>
-
-            <div className="wt-field">
-              <label className="wt-label">Semestre</label>
-              <input
-                className="wt-input"
-                value={current.semestre}
-                onChange={(e) => update('semestre', e.target.value)}
-              />
-            </div>
-
-            <div className="wt-field">
-              <label className="wt-label">Date examen</label>
-              <input
-                className="wt-input"
-                value={current.dateExamen}
-                onChange={(e) => update('dateExamen', e.target.value)}
-              />
-            </div>
-
-            
-            <div className="wt-field">
-              <label className="wt-label">Durée</label>
-              <input
-                className="wt-input"
-                value={current.duree}
-                onChange={(e) => update('duree', e.target.value)}
-              />
-            </div>
-
-            <div className="wt-field">
-              <label className="wt-label">Type de feuille</label>
-              <input
-                className="wt-input"
-                value={current.feuilleType}
-                onChange={(e) => update('feuilleType', e.target.value)}
-              />
-            </div>
+            <div className="wt-field"><label className="wt-label">Note totale</label><input className="wt-input" type="text" value="20 / 20" disabled /><span className="wt-field-hint">Barème fixé automatiquement à 20/20</span></div>
           </div>
         </div>
 
+        {/* Blocs */}
         <div className="wt-card">
           <div className="wt-card-header">
-            <div>
-              <div className="wt-card-eyebrow">Affichage</div>
-              <h3 className="wt-card-title">Sections affichées</h3>
-            </div>
+            <div><div className="wt-card-eyebrow">Blocs</div><h3 className="wt-card-title">Afficher / masquer les zones</h3></div>
           </div>
-
           <div className="wt-toggle-grid">
-            {Object.entries(current.sections || {}).map(([key, value]) => (
-              <label key={key} className="wt-switch-card">
-                <div>
-                  <div className="wt-switch-card__title">
-                    {SECTION_LABELS[key] || key}
-                  </div>
-                  <div className="wt-switch-card__sub">
-                    Activer ou masquer cette zone dans le modèle
-                  </div>
-                </div>
-
-                <input
-                  type="checkbox"
-                  className="wt-switch-input"
-                  checked={!!value}
-                  onChange={(e) => updateSection(key, e.target.checked)}
-                />
+            {Object.entries(SECTION_LABELS).map(([key, label]) => (
+              <label className="wt-switch-card" key={key}>
+                <span>
+                  <span className="wt-switch-card__title">{label}</span>
+                  <span className="wt-switch-card__sub">{current.sections?.[key] ? 'Affiché' : 'Masqué'}</span>
+                </span>
+                <input className="wt-switch-input" type="checkbox" checked={!!current.sections?.[key]} onChange={e => updateSection(key, e.target.checked)} />
                 <span className="wt-switch-slider" />
               </label>
             ))}
           </div>
+          {current.sections?.blocRemarques && current.templateStyle !== 'court' && (
+            <div className="wt-field wt-field-full wt-remarque-field">
+              <label className="wt-label">Contenu du bloc Remarques / NB</label>
+              <textarea className="wt-textarea" rows={5} placeholder={`— Réponses sur la feuille de l'énoncé.\n— Le barème est donné à titre indicatif.`} value={current.remarques || ''} onChange={e => update('remarques', e.target.value)} />
+              <span className="wt-field-hint">Chaque ligne sera affichée dans le bloc NB.</span>
+            </div>
+          )}
         </div>
 
+        {/* Mise en page */}
         <div className="wt-card">
           <div className="wt-card-header">
-            <div>
-              <div className="wt-card-eyebrow">Style</div>
-              <h3 className="wt-card-title">Mise en page</h3>
-            </div>
+            <div><div className="wt-card-eyebrow">Mise en page</div><h3 className="wt-card-title">Police et marges</h3></div>
           </div>
-
           <div className="wt-grid wt-grid-2">
-            <div className="wt-field">
-              <label className="wt-label">Police</label>
-              <select
-                className="wt-select"
-                value={current.police}
-                onChange={(e) => update('police', e.target.value)}
-              >
-                {FONTS.map((f) => (
-                  <option key={f}>{f}</option>
-                ))}
+            <div className="wt-field"><label className="wt-label">Police *</label>
+              <select className="wt-select" value={current.police || 'Times New Roman'} onChange={e => update('police', e.target.value)}>
+                {FONTS.map(f => <option key={f} value={f}>{f}</option>)}
               </select>
             </div>
-
-            <div className="wt-field">
-              <label className="wt-label">Taille</label>
-              <select
-                className="wt-select"
-                value={current.taille}
-                onChange={(e) => update('taille', e.target.value)}
-              >
-                {SIZES.map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
+            <div className="wt-field"><label className="wt-label">Taille *</label>
+              <select className="wt-select" value={current.taille || '12pt'} onChange={e => update('taille', e.target.value)}>
+                {FONT_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
-
-            <div className="wt-field">
-              <label className="wt-label">Marge H (cm)</label>
-              <input
-                className="wt-input"
-                type="number"
-                min="1"
-                max="5"
-                step="0.5"
-                value={current.margeH}
-                onChange={(e) => update('margeH', e.target.value)}
-              />
-            </div>
-
-            <div className="wt-field">
-              <label className="wt-label">Marge V (cm)</label>
-              <input
-                className="wt-input"
-                type="number"
-                min="1"
-                max="5"
-                step="0.5"
-                value={current.margeV}
-                onChange={(e) => update('margeV', e.target.value)}
-              />
-            </div>
+            <div className="wt-field"><label className="wt-label">Marge H (cm)</label><input className="wt-input" type="number" min="1" max="5" step="0.5" value={current.margeH || '2'} onChange={e => update('margeH', e.target.value)} /></div>
+            <div className="wt-field"><label className="wt-label">Marge V (cm)</label><input className="wt-input" type="number" min="1" max="5" step="0.5" value={current.margeV || '2'} onChange={e => update('margeV', e.target.value)} /></div>
           </div>
         </div>
 
- 
         {error && <div className="wt-error">{error}</div>}
       </section>
 
       <div className="wt-footer-actions">
-        <button
-          className="wt-btn-secondary"
-          onClick={() => setShowPreview(true)}
-        >
-          Aperçu A4
-        </button>
-
-        <button
-          className="wt-btn-primary"
-          onClick={handleSave}
-          disabled={saving}
-        >
+        <button type="button" className="wt-btn-secondary" onClick={() => setShowPreview(true)}>Aperçu A4</button>
+        <button type="button" className="wt-btn-primary" onClick={handleSave} disabled={saving}>
           {saving ? 'Sauvegarde...' : saved ? '✓ Sauvegardé' : 'Sauvegarder'}
         </button>
       </div>
 
       {showPreview && (
-        <div
-          className="preview-modal-overlay"
-          onClick={() => setShowPreview(false)}
-        >
-          <div
-            className="preview-modal"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="preview-modal-overlay" onClick={() => setShowPreview(false)}>
+          <div className="preview-modal" onClick={e => e.stopPropagation()}>
             <div className="preview-modal-header">
-              <div className="preview-modal-title">Aperçu — {current.nom}</div>
-              <button
-                className="preview-modal-close"
-                onClick={() => setShowPreview(false)}
-              >
-                ✕
-              </button>
+              <div className="preview-modal-title">Aperçu — {current.nom || 'Modèle'}</div>
+              <button className="preview-modal-close" onClick={() => setShowPreview(false)}>✕</button>
             </div>
-
-            <div className="preview-modal-content">
-              <ExamPreview model={current} />
-            </div>
+            <div className="preview-modal-content"><ExamPreview model={current} /></div>
           </div>
         </div>
       )}

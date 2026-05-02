@@ -1,52 +1,119 @@
-/* ── Tabs ── */
+/* ══════════════════════════════════════════
+   Exam Tabs — enhanced styles
+══════════════════════════════════════════ */
+
 .exam-tabs {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 6px;
   background: var(--ce-bg-card);
-  padding: 10px;
+  padding: 8px;
   border-radius: var(--ce-radius);
-  border: 1px solid var(--ce-border);
+  border: 1.5px solid var(--ce-border);
   box-shadow: var(--ce-shadow-sm);
-  animation: fadeUp 0.4s var(--ce-ease) 0.08s both;
+  animation: fadeUp 0.35s var(--ce-ease) 0.06s both;
 }
 
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(14px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
 .exam-tab {
-  padding: 12px 16px;
+  position: relative;
+  padding: 11px 14px;
   border: none;
   border-radius: var(--ce-radius-sm);
   background: transparent;
   color: var(--ce-text-muted);
   font-family: var(--ce-font-body);
-  font-size: 0.875rem;
+  font-size: 0.865rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.22s var(--ce-ease);
-  letter-spacing: 0.02em;
+  transition: all 0.2s var(--ce-ease);
+  letter-spacing: 0.01em;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  outline: none;
 }
 
-.exam-tab:hover {
+.exam-tab:hover:not(.active) {
   background: var(--ce-bg-elevated);
   color: var(--ce-text-primary);
+}
+
+.exam-tab:focus-visible {
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.18);
 }
 
 .exam-tab.active {
   background: var(--ce-navy);
   color: #f0e8d0;
-  box-shadow: 0 4px 12px rgba(10,22,40,0.18);
+  font-weight: 600;
+  box-shadow: 0 3px 10px rgba(10,22,40,0.2);
 }
 
+/* Accent underline for active tab */
 .exam-tab.active::after {
   content: '';
-  display: block;
-  width: 18px; height: 2px;
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2.5px;
   background: var(--ce-accent);
-  border-radius: 1px;
-  margin: 4px auto 0;
+  border-radius: 2px;
+}
+
+/* Step number badge */
+.exam-tab-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 800;
+  background: rgba(0,0,0,0.08);
+  color: inherit;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+
+.exam-tab.active .exam-tab-step {
+  background: rgba(201, 168, 76, 0.3);
+  color: var(--ce-accent);
+}
+
+/* Completed tab checkmark */
+.exam-tab-done {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  background: var(--ce-green-soft);
+  color: var(--ce-green);
+  flex-shrink: 0;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 480px) {
+  .exam-tabs {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .exam-tab {
+    justify-content: flex-start;
+    padding: 10px 14px;
+  }
 }

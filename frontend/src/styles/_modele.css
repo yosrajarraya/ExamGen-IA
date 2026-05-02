@@ -407,7 +407,7 @@
 }
 
 .exam-btn-primary:hover {
-  background: #112236;
+  background: #0E2B50;
   transform: translateY(-2px);
   box-shadow: 0 8px 22px rgba(10, 22, 40, 0.2);
 }
@@ -540,4 +540,91 @@
     width: 100%;
     text-align: center;
   }
+}
+.a4-template-container {
+  position: relative;
+}
+
+.template-eye-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #dbe3ef;
+  background: rgba(255,255,255,0.92);
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+}
+
+.template-eye-btn:hover {
+  background: #eff6ff;
+  border-color: #1e4fa8;
+}
+
+.selected-template-box {
+  margin-top: 22px;
+  padding: 14px 16px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  border-radius: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.teacher-form-hint {
+  margin-top: -10px;
+  margin-bottom: 18px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.template-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 23, 42, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 30px;
+  overflow: auto;
+}
+
+.template-preview-modal {
+  background: white;
+  border-radius: 16px;
+  width: fit-content;
+  max-width: 96vw;
+  overflow: hidden;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.28);
+}
+
+.template-preview-header {
+  height: 56px;
+  padding: 0 18px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.template-preview-header button {
+  border: none;
+  background: #f1f5f9;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.template-preview-content {
+  background: #e5e7eb;
+  padding: 24px;
+  overflow: auto;
 }

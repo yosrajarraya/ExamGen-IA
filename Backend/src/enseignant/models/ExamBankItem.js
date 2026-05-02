@@ -36,6 +36,12 @@ const examBankItemSchema = new mongoose.Schema(
       default: '',
       index: true,
     },
+    semestre: {
+      type: String,
+      trim: true,
+      default: '',
+      index: true,
+    },
     type: {
       type: String,
       trim: true,

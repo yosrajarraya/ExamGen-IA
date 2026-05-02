@@ -16,12 +16,12 @@
   --ce-green-soft:    rgba(13, 122, 85, 0.09);
   --ce-danger:        #c0334a;
   --ce-danger-soft:   rgba(192, 51, 74, 0.08);
-  --ce-navy:          #0a1628;
+  --ce-navy:          #0e2b50;
   --ce-text-primary:  #0d1f3c;
   --ce-text-body:     #2a3f5f;
   --ce-text-muted:    #6b7a99;
   --ce-text-label:    #4a5a78;
-  --ce-sidebar-w:     260px;
+  --ce-sidebar-w:     280px;
   --ce-radius:        14px;
   --ce-radius-sm:     9px;
   --ce-font-display:  'Playfair Display', Georgia, serif;
