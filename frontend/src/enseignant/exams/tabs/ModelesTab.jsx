@@ -6,7 +6,7 @@ import {
   ANNEES,
   DOCUMENTS_OPTIONS,
 } from '../../../utils/template.utils';
-import { ExamPreviewScaled } from '../../../components/ExamPreview';
+import { ExamPreview, ExamPreviewScaled } from '../../../components/ExamPreview';
 
 const ITEMS_PER_PAGE = 3;
 

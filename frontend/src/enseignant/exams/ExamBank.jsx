@@ -12,7 +12,7 @@ import {
 } from '../../api/enseignant/Enseignant.api';
 import '../../styles/ExamBank.css';
 
-/* â”€â”€ Helpers â”€â”€ */
+/* ── Helpers ── */
 const toId = (id) => {
   if (!id) return '';
   if (typeof id === 'object' && id.$oid) return String(id.$oid);
@@ -31,44 +31,44 @@ const normStatus = (v) => String(v || '').trim().toLowerCase();
 
 const formatDate = (iso) => {
   try { return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }); }
-  catch { return 'â€”'; }
+  catch { return '–'; }
 };
 
 const STATUS_CONFIG = {
-  exporte:    { label: 'ExportÃ©',   cls: 'exported' },
+  exporte:    { label: 'Exporté',   cls: 'exported' },
   'en cours': { label: 'En cours',  cls: 'ongoing'  },
   brouillon:  { label: 'Brouillon', cls: 'draft'    },
 };
 
-const PER_PAGE = 9; // 3 colonnes Ã— 3 lignes
+const PER_PAGE = 9; // 3 colonnes × 3 lignes
 
-/* â”€â”€ Filtre structurÃ© : Cycle â†’ AnnÃ©e â†’ Semestre â”€â”€ */
+/* ── Filtre structuré : Cycle → Année → Semestre ── */
 const CYCLES = [
-  { id: 'licence',      label: 'Licence',              icon: 'ðŸŽ“' },
-  { id: 'master',       label: 'Master / MastÃ¨re',     icon: 'ðŸ“š' },
-  { id: 'ingenieur',    label: 'IngÃ©nieur',             icon: 'âš™ï¸' },
-  { id: 'prepa',        label: 'Cycle PrÃ©paratoire',   icon: 'ðŸ“' },
-  { id: 'architecture', label: 'Architecture',          icon: 'ðŸ›' },
+  { id: 'licence',      label: 'Licence',              icon: '🎓' },
+  { id: 'master',       label: 'Master / Mastère',     icon: '📚' },
+  { id: 'ingenieur',    label: 'Ingénieur',             icon: '⚙️' },
+  { id: 'prepa',        label: 'Cycle Préparatoire',   icon: '📝' },
+  { id: 'architecture', label: 'Architecture',          icon: '🏛' },
 ];
 
 const ANNEES_PAR_CYCLE = {
-  licence:      ['1Ã¨re annÃ©e', '2Ã¨me annÃ©e', '3Ã¨me annÃ©e'],
-  master:       ['1Ã¨re annÃ©e', '2Ã¨me annÃ©e'],
-  ingenieur:    ['1Ã¨re annÃ©e', '2Ã¨me annÃ©e', '3Ã¨me annÃ©e'],
-  prepa:        ['1Ã¨re annÃ©e', '2Ã¨me annÃ©e'],
-  architecture: ['1Ã¨re annÃ©e', '2Ã¨me annÃ©e', '3Ã¨me annÃ©e', '4Ã¨me annÃ©e', '5Ã¨me annÃ©e'],
+  licence:      ['1ère année', '2ème année', '3ème année'],
+  master:       ['1ère année', '2ème année'],
+  ingenieur:    ['1ère année', '2ème année', '3ème année'],
+  prepa:        ['1ère année', '2ème année'],
+  architecture: ['1ère année', '2ème année', '3ème année', '4ème année', '5ème année'],
 };
 
 const SEMESTRES = ['Semestre 1', 'Semestre 2'];
 
-/* Normalise une chaÃ®ne : minuscules + supprime les accents */
+/* Normalise une chaîne : minuscules + supprime les accents */
 const norm = (s) =>
   String(s || '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 
-/* Mots-clÃ©s pour dÃ©tecter le cycle dans les champs filiÃ¨re/discipline/niveau */
+/* Mots-clés pour détecter le cycle dans les champs filière/discipline/niveau */
 const CYCLE_KEYWORDS = {
   licence:      ['licence', 'license', 'glid', 'msi', 'genie logiciel', 'management des systemes'],
   master:       ['master', 'mastere', 'intelligence artificielle', 'cybersecurite', 'cloud'],
@@ -78,11 +78,11 @@ const CYCLE_KEYWORDS = {
 };
 
 const ANNEE_KEYWORDS = {
-  '1Ã¨re annÃ©e': ['1ere', '1re', 'premiere', '1ere annee'],
-  '2Ã¨me annÃ©e': ['2eme', 'deuxieme', '2eme annee'],
-  '3Ã¨me annÃ©e': ['3eme', 'troisieme', '3eme annee'],
-  '4Ã¨me annÃ©e': ['4eme', '4eme annee'],
-  '5Ã¨me annÃ©e': ['5eme', '5eme annee'],
+  '1ère année': ['1ere', '1re', 'premiere', '1ere annee'],
+  '2ème année': ['2eme', 'deuxieme', '2eme annee'],
+  '3ème année': ['3eme', 'troisieme', '3eme annee'],
+  '4ème année': ['4eme', '4eme annee'],
+  '5ème année': ['5eme', '5eme annee'],
 };
 
 const matchesCycle = (exam, cycleId) => {
@@ -104,7 +104,7 @@ const matchesAnnee = (exam, annee) => {
 const matchesSemestre = (exam, semestre) => {
   if (!semestre) return true;
   const s = norm(exam.semestre || '');
-  if (!s) return false; // pas de semestre enregistre, ne correspond a aucun filtre
+  if (!s) return false;
   const num = semestre === 'Semestre 1' ? '1' : '2';
   return (
     s === num ||
@@ -114,12 +114,12 @@ const matchesSemestre = (exam, semestre) => {
   );
 };
 
-/* â”€â”€ Sub-components â”€â”€ */
+/* ── Sub-components ── */
 const Toast = ({ message, type }) =>
   message ? <div className={`eb-toast eb-toast--${type}`}>{message}</div> : null;
 
 const StatusBadge = ({ value }) => {
-  const cfg = STATUS_CONFIG[normStatus(value)] || { label: value || 'â€”', cls: 'draft' };
+  const cfg = STATUS_CONFIG[normStatus(value)] || { label: value || '–', cls: 'draft' };
   return <span className={`eb-status eb-status--${cfg.cls}`}>{cfg.label}</span>;
 };
 
@@ -127,21 +127,21 @@ const Pagination = ({ page, total, onChange }) => {
   if (total <= 1) return null;
   return (
     <div className="eb-pagination">
-      <button className="eb-page-btn" onClick={() => onChange(page - 1)} disabled={page === 1}>â† PrÃ©cÃ©dent</button>
+      <button className="eb-page-btn" onClick={() => onChange(page - 1)} disabled={page === 1}>← Précédent</button>
       <div className="eb-page-nums">
         {Array.from({ length: total }, (_, i) => i + 1).map((p) => (
           <button key={p} className={`eb-page-num ${p === page ? 'eb-page-num--active' : ''}`} onClick={() => onChange(p)}>{p}</button>
         ))}
       </div>
-      <button className="eb-page-btn" onClick={() => onChange(page + 1)} disabled={page === total}>Suivant â†’</button>
+      <button className="eb-page-btn" onClick={() => onChange(page + 1)} disabled={page === total}>Suivant →</button>
     </div>
   );
 };
 
-/* â”€â”€ Exam Card â”€â”€ */
+/* ── Exam Card ── */
 const ExamCard = ({ exam, isMine, onOpen }) => {
   const status = normStatus(exam.status);
-  const cfg = STATUS_CONFIG[status] || { label: exam.status || 'â€”', cls: 'draft' };
+  const cfg = STATUS_CONFIG[status] || { label: exam.status || '–', cls: 'draft' };
   return (
     <div className="eb-card" onClick={() => onOpen(exam)}>
       <div className="eb-card-top">
@@ -155,19 +155,19 @@ const ExamCard = ({ exam, isMine, onOpen }) => {
         {exam.niveau  && <span className="eb-tag eb-tag--level">{exam.niveau}</span>}
       </div>
       <div className="eb-card-meta">
-        {exam.duree && <span>â± {exam.duree}</span>}
-        {exam.anneeUniversitaire && <span>ðŸ“… {exam.anneeUniversitaire}</span>}
+        {exam.duree && <span>⏱ {exam.duree}</span>}
+        {exam.anneeUniversitaire && <span>📅 {exam.anneeUniversitaire}</span>}
         {exam.noteTotale > 0 && <span>/{exam.noteTotale} pts</span>}
       </div>
       <div className="eb-card-footer">
         <span className="eb-card-date">{formatDate(exam.createdAt)}</span>
-        <span className="eb-card-cta">Voir â†’</span>
+        <span className="eb-card-cta">Voir →</span>
       </div>
     </div>
   );
 };
 
-/* â”€â”€ Extrait le texte d'un nÅ“ud AST â”€â”€ */
+/* ── Extrait le texte d'un nœud AST ── */
 const extractTextFromAstNode = (node) => {
   if (!node) return '';
   if (node.type === 'text') return node.text || '';
@@ -177,7 +177,7 @@ const extractTextFromAstNode = (node) => {
   return '';
 };
 
-/* â”€â”€ Rendu AST inline â”€â”€ */
+/* ── Rendu AST inline ── */
 const renderInline = (children = []) =>
   (children || []).map((ch, i) => {
     if (!ch) return null;
@@ -193,14 +193,13 @@ const renderInline = (children = []) =>
     return null;
   });
 
-/* â”€â”€ Rendu d'un nÅ“ud AST â”€â”€ */
+/* ── Rendu d'un nœud AST ── */
 const renderAstNode = (node, idx) => {
   if (!node) return null;
   const text = extractTextFromAstNode(node).trim();
 
   if (node.type === 'paragraph' || node.type === 'heading') {
     if (!text) return null;
-    // Ligne de réponse (tirets/underscores)
     if (/^[_\s]{5,}$/.test(text) || /^_{3,}/.test(text)) {
       return <div key={idx} style={{ borderBottom: '1px dotted #888', height: '16px', marginTop: '4px', marginBottom: '4px', width: '100%' }} />;
     }
@@ -243,7 +242,7 @@ const renderAstNode = (node, idx) => {
   return null;
 };
 
-/* â”€â”€ Rendu structurÃ© style Word â€” sections plates du parser â”€â”€ */
+/* ── Rendu structuré style Word – sections plates du parser ── */
 const WordSections = ({ sections }) => {
   const isPartie   = (t) => /^partie\s*\d*/i.test((t || '').trim());
   const isExercice = (t) => /^exercice\s*\d*/i.test((t || '').trim());
@@ -280,8 +279,7 @@ const WordSections = ({ sections }) => {
           );
         }
 
-        // Autre section (ne pas afficher l'en-tÃªte)
-        if (title.toLowerCase().includes('en-tÃªte') || title.toLowerCase().includes('instructions')) return null;
+        if (title.toLowerCase().includes('en-tête') || title.toLowerCase().includes('instructions')) return null;
         return (
           <div key={si} style={{ marginTop: '10px' }}>
             {title && <div style={{ fontWeight: '600', fontSize: '13px', marginBottom: '6px' }}>{title}</div>}
@@ -292,8 +290,6 @@ const WordSections = ({ sections }) => {
     </div>
   );
 };
-
-
 
 /* ── Exam Detail Modal ── */
 const ExamModal = ({ exam, isMine, onClose, onDownload, onEdit, onCopy, onDelete }) => {
@@ -310,12 +306,10 @@ const ExamModal = ({ exam, isMine, onClose, onDownload, onEdit, onCopy, onDelete
         const data = await getExamContent(toId(exam.id));
         if (mounted) {
           let html = data?.rawHtml || '';
-          // Force right-align on any paragraph containing "Feuille"
           html = html.replace(
             /(<p[^>]*>)([^<]*Feuille[^<]*◄[^<]*<\/p>)/gi,
             '<p style="text-align:right;font-size:10px;color:#888">$2'
           );
-          // Also handle: <p ...>Feuille d'énoncé ◄</p> with any style
           html = html.replace(
             /(<p[^>]*>)((?:[^<]|<(?!\/p>))*Feuille[^<]*◄(?:[^<]|<(?!\/p>))*<\/p>)/gi,
             (match, tag, content) => {
@@ -324,15 +318,11 @@ const ExamModal = ({ exam, isMine, onClose, onDownload, onEdit, onCopy, onDelete
             }
           );
 
-          // ── Convertir les tableaux de lignes de réponse en divs pointillés ──
-          // Mammoth convertit notre Table(bNone+dotted-bottom) en <table> avec bordures visibles
-          // On détecte ces tableaux via le DOM et on les remplace par des divs propres
           const parser = new DOMParser();
           const doc = parser.parseFromString(html, 'text/html');
           doc.querySelectorAll('table').forEach((table) => {
             const rows = table.querySelectorAll('tr');
             if (rows.length === 0) return;
-            // Vérifie si TOUTES les cellules ont une seule colonne et sont vides (lignes de réponse)
             let isAnswerTable = true;
             rows.forEach((row) => {
               const cells = row.querySelectorAll('td, th');
@@ -341,7 +331,6 @@ const ExamModal = ({ exam, isMine, onClose, onDownload, onEdit, onCopy, onDelete
               if (cellText !== '') { isAnswerTable = false; }
             });
             if (!isAnswerTable) return;
-            // Remplacer le tableau par des divs lignes pointillées
             const wrapper = doc.createElement('div');
             wrapper.style.cssText = 'margin: 6px 0 10px 0; width: 100%;';
             rows.forEach(() => {
@@ -446,9 +435,9 @@ const ExamModal = ({ exam, isMine, onClose, onDownload, onEdit, onCopy, onDelete
   );
 };
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   ExamBank â€” page principale
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════
+   ExamBank – page principale
+   ══════════════════════════════════════════════════ */
 const ExamBank = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -487,7 +476,7 @@ const ExamBank = () => {
 
   useEffect(() => { setPageMes(1); setPageAutres(1); }, [search, filterMatiere, filterStatus]);
 
-  /* Quand le cycle change, reset l'annÃ©e */
+  /* Quand le cycle change, reset l'année */
   useEffect(() => { setFilterAnnee(''); setFilterSemestre(''); }, [filterCycle]);
   useEffect(() => { setFilterSemestre(''); }, [filterAnnee]);
   useEffect(() => { setPageMes(1); setPageAutres(1); }, [search, filterMatiere, filterStatus, filterCycle, filterAnnee, filterSemestre]);
@@ -500,7 +489,7 @@ const ExamBank = () => {
 
   const showToast = (msg, type = 'success') => setToast({ message: msg, type });
 
-  /* Listes de matiÃ¨res uniques pour le filtre */
+  /* Listes de matières uniques pour le filtre */
   const allMatieres = useMemo(() => {
     const all = [...mesExamens, ...autresExamens].map(e => e.matiere).filter(Boolean);
     return [...new Set(all)].sort();
@@ -535,9 +524,9 @@ const ExamBank = () => {
     try {
       const blob = await downloadExamBankFile(toId(exam.id));
       saveBlob(blob, `${String(exam.title || 'examen').replace(/[^a-zA-Z0-9_-]+/g, '_')}.docx`);
-      showToast('TÃ©lÃ©chargement rÃ©ussi.');
+      showToast('Téléchargement réussi.');
     } catch {
-      showToast('Impossible de tÃ©lÃ©charger.', 'error');
+      showToast('Impossible de télécharger.', 'error');
     }
   };
 
@@ -550,19 +539,19 @@ const ExamBank = () => {
       const result = await copyExamBankItem(toId(exam.id));
       const copiedId = result.exam?.id || result.exam?._id || toId(exam.id);
       navigate(`/enseignant/exams/create?editExam=${copiedId}`);
-      showToast('Copie crÃ©Ã©e â€” ouverture en modification.');
+      showToast('Copie créée – ouverture en modification.');
     } catch {
       showToast('Erreur lors de la copie.', 'error');
     }
   };
 
   const handleDelete = async (exam) => {
-    if (!window.confirm(`Supprimer dÃ©finitivement "${exam.title || 'cet examen'}" ?`)) return;
+    if (!window.confirm(`Supprimer définitivement "${exam.title || 'cet examen'}" ?`)) return;
     const id = toId(exam.id);
     try {
       await deleteExamBankItem(id);
       setMesExamens(prev => prev.filter(e => toId(e.id) !== id));
-      showToast('Examen supprimÃ©.');
+      showToast('Examen supprimé.');
     } catch {
       showToast('Impossible de supprimer.', 'error');
     }
@@ -579,10 +568,10 @@ const ExamBank = () => {
         {/* Header */}
         <header className="eb-header">
           <div>
-            <div className="eb-header-eyebrow">BibliothÃ¨que</div>
+            <div className="eb-header-eyebrow">Bibliothèque</div>
             <h2 className="eb-header-title">Banque d'<span>examens</span></h2>
             <p className="eb-header-sub">
-              {mesExamens.length} personnel{mesExamens.length !== 1 ? 's' : ''} Â· {autresExamens.length} partagÃ©{autresExamens.length !== 1 ? 's' : ''}
+              {mesExamens.length} personnel{mesExamens.length !== 1 ? 's' : ''} · {autresExamens.length} partagé{autresExamens.length !== 1 ? 's' : ''}
             </p>
           </div>
           <button className="eb-btn-new" onClick={() => navigate('/enseignant/exams/create')}>
@@ -593,50 +582,50 @@ const ExamBank = () => {
         {/* Filtres */}
         <div className="eb-filters">
           <div className="eb-search-wrap">
-            <span className="eb-search-icon">âŒ•</span>
+            <span className="eb-search-icon">⌕</span>
             <input
               className="eb-search"
               type="text"
-              placeholder="Titre, filiÃ¨re, matiÃ¨re, enseignantâ€¦"
+              placeholder="Titre, filière, matière, enseignant…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            {search && <button className="eb-search-clear" onClick={() => setSearch('')}>âœ•</button>}
+            {search && <button className="eb-search-clear" onClick={() => setSearch('')}>✕</button>}
           </div>
 
           <select className="eb-select" value={filterMatiere} onChange={(e) => setFilterMatiere(e.target.value)}>
-            <option value="">Toutes les matiÃ¨res</option>
+            <option value="">Toutes les matières</option>
             {allMatieres.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
 
           <select className="eb-select" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
             <option value="tous">Tous les statuts</option>
-            <option value="exporte">ExportÃ©</option>
+            <option value="exporte">Exporté</option>
             <option value="en cours">En cours</option>
             <option value="brouillon">Brouillon</option>
           </select>
 
           {hasFilters && (
-            <button className="eb-btn-reset" onClick={resetFilters}>âœ• RÃ©initialiser</button>
+            <button className="eb-btn-reset" onClick={resetFilters}>✕ Réinitialiser</button>
           )}
         </div>
 
         {/* Layout 2 colonnes : arborescence + grille */}
         <div className="eb-browser-layout">
 
-          {/* â”€â”€ Panneau arborescence â”€â”€ */}
+          {/* ── Panneau arborescence ── */}
           <aside className="eb-tree-panel">
             <div className="eb-tree-header">
-              <span className="eb-tree-header-icon">ðŸ—‚</span>
+              <span className="eb-tree-header-icon">🗂</span>
               <span>Parcourir</span>
             </div>
 
-            {/* NÅ“ud "Tous" */}
+            {/* Nœud "Tous" */}
             <button
               className={`eb-tree-all ${!filterCycle ? 'eb-tree-all--active' : ''}`}
               onClick={() => { setFilterCycle(''); setFilterAnnee(''); setFilterSemestre(''); }}
             >
-              <span className="eb-tree-all-icon">â—ˆ</span>
+              <span className="eb-tree-all-icon">◈</span>
               Tous les examens
               <span className="eb-tree-count">{(activeTab === 'mes' ? myFiltered : othFiltered).length}</span>
             </button>
@@ -657,13 +646,13 @@ const ExamBank = () => {
                       else { setFilterCycle(cycle.id); setFilterAnnee(''); setFilterSemestre(''); }
                     }}
                   >
-                    <span className="eb-tree-arrow">{cycleOpen ? 'â–¾' : 'â–¸'}</span>
+                    <span className="eb-tree-arrow">{cycleOpen ? '▾' : '▸'}</span>
                     <span className="eb-tree-icon">{cycle.icon}</span>
                     <span className="eb-tree-node-label">{cycle.label}</span>
                     <span className="eb-tree-count">{cycleItems.length}</span>
                   </button>
 
-                  {/* AnnÃ©es */}
+                  {/* Années */}
                   {cycleOpen && (ANNEES_PAR_CYCLE[cycle.id] || []).map((annee) => {
                     const anneeItems = cycleItems.filter(e => matchesAnnee(e, annee));
                     if (anneeItems.length === 0) return null;
@@ -678,8 +667,8 @@ const ExamBank = () => {
                             else { setFilterAnnee(annee); setFilterSemestre(''); }
                           }}
                         >
-                          <span className="eb-tree-arrow">{anneeOpen ? 'â–¾' : 'â–¸'}</span>
-                          <span className="eb-tree-icon">ðŸ“</span>
+                          <span className="eb-tree-arrow">{anneeOpen ? '▾' : '▸'}</span>
+                          <span className="eb-tree-icon">📁</span>
                           <span className="eb-tree-node-label">{annee}</span>
                           <span className="eb-tree-count">{anneeItems.length}</span>
                         </button>
@@ -696,8 +685,8 @@ const ExamBank = () => {
                               className={`eb-tree-node eb-tree-node--sem ${semActive ? 'eb-tree-node--active' : ''}`}
                               onClick={() => setFilterSemestre(semActive ? '' : sem)}
                             >
-                              <span className="eb-tree-arrow eb-tree-arrow--leaf">â€”</span>
-                              <span className="eb-tree-icon">ðŸ“„</span>
+                              <span className="eb-tree-arrow eb-tree-arrow--leaf">—</span>
+                              <span className="eb-tree-icon">📄</span>
                               <span className="eb-tree-node-label">{sem}</span>
                               <span className="eb-tree-count">{semItems.length}</span>
                             </button>
@@ -711,7 +700,7 @@ const ExamBank = () => {
             })}
           </aside>
 
-          {/* â”€â”€ Zone principale â”€â”€ */}
+          {/* ── Zone principale ── */}
           <div className="eb-browser-content">
 
             {/* Onglets */}
@@ -720,7 +709,7 @@ const ExamBank = () => {
                 Mes examens <span className="eb-tab-count">{myFiltered.length}</span>
               </button>
               <button className={`eb-tab ${activeTab === 'autres' ? 'eb-tab--active' : ''}`} onClick={() => setActiveTab('autres')}>
-                Examens partagÃ©s <span className="eb-tab-count">{othFiltered.length}</span>
+                Examens partagés <span className="eb-tab-count">{othFiltered.length}</span>
               </button>
             </div>
 
@@ -732,7 +721,7 @@ const ExamBank = () => {
                 </button>
                 {filterCycle && (
                   <>
-                    <span className="eb-bc-sep">â€º</span>
+                    <span className="eb-bc-sep">›</span>
                     <button className="eb-bc-item eb-bc-item--link" onClick={() => { setFilterAnnee(''); setFilterSemestre(''); }}>
                       {CYCLES.find(c => c.id === filterCycle)?.label}
                     </button>
@@ -740,7 +729,7 @@ const ExamBank = () => {
                 )}
                 {filterAnnee && (
                   <>
-                    <span className="eb-bc-sep">â€º</span>
+                    <span className="eb-bc-sep">›</span>
                     <button className="eb-bc-item eb-bc-item--link" onClick={() => setFilterSemestre('')}>
                       {filterAnnee}
                     </button>
@@ -748,7 +737,7 @@ const ExamBank = () => {
                 )}
                 {filterSemestre && (
                   <>
-                    <span className="eb-bc-sep">â€º</span>
+                    <span className="eb-bc-sep">›</span>
                     <span className="eb-bc-item eb-bc-item--current">{filterSemestre}</span>
                   </>
                 )}
@@ -760,20 +749,20 @@ const ExamBank = () => {
             {loading ? (
               <div className="eb-loading">
                 <div className="eb-loading-dots"><span /><span /><span /></div>
-                <p>Chargement des examensâ€¦</p>
+                <p>Chargement des examens…</p>
               </div>
             ) : (
               <>
                 {(activeTab === 'mes' ? myPage : othPage).length === 0 ? (
                   <div className="eb-empty">
-                    <div className="eb-empty-icon">ðŸ“‚</div>
+                    <div className="eb-empty-icon">📂</div>
                     <p className="eb-empty-msg">
-                      {hasFilters ? 'Aucun rÃ©sultat pour ces filtres.' : activeTab === 'mes' ? 'Aucun examen personnel.' : 'Aucun examen partagÃ©.'}
+                      {hasFilters ? 'Aucun résultat pour ces filtres.' : activeTab === 'mes' ? 'Aucun examen personnel.' : 'Aucun examen partagé.'}
                     </p>
-                    {hasFilters && <button className="eb-btn-reset" onClick={resetFilters}>RÃ©initialiser les filtres</button>}
+                    {hasFilters && <button className="eb-btn-reset" onClick={resetFilters}>Réinitialiser les filtres</button>}
                     {!hasFilters && activeTab === 'mes' && (
                       <button className="eb-btn-new" style={{ marginTop: '12px' }} onClick={() => navigate('/enseignant/exams/create')}>
-                        CrÃ©er mon premier examen
+                        Créer mon premier examen
                       </button>
                     )}
                   </div>
@@ -799,8 +788,8 @@ const ExamBank = () => {
                 {(activeTab === 'mes' ? myFiltered : othFiltered).length > 0 && (
                   <p className="eb-count-label">
                     {activeTab === 'mes'
-                      ? `${Math.min((pageMes - 1) * PER_PAGE + 1, myFiltered.length)}â€“${Math.min(pageMes * PER_PAGE, myFiltered.length)} sur ${myFiltered.length} examen(s)`
-                      : `${Math.min((pageAutres - 1) * PER_PAGE + 1, othFiltered.length)}â€“${Math.min(pageAutres * PER_PAGE, othFiltered.length)} sur ${othFiltered.length} examen(s)`
+                      ? `${Math.min((pageMes - 1) * PER_PAGE + 1, myFiltered.length)}–${Math.min(pageMes * PER_PAGE, myFiltered.length)} sur ${myFiltered.length} examen(s)`
+                      : `${Math.min((pageAutres - 1) * PER_PAGE + 1, othFiltered.length)}–${Math.min(pageAutres * PER_PAGE, othFiltered.length)} sur ${othFiltered.length} examen(s)`
                     }
                   </p>
                 )}
