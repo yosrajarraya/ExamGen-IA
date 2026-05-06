@@ -24,9 +24,10 @@
 }
 
 .answer-line {
+  width: 100%;
+  height: 0;
+  margin: 8px 0;
   border-bottom: 1px dotted #444;
-  height: 18px;
-  margin-bottom: 4px;
 }
 /* ── Summary Cards ── */
 

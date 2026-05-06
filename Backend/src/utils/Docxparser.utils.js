@@ -12,7 +12,7 @@ const parseDocxBuffer = async (buffer) => {
   const { value: rawText } = await mammoth.extractRawText({ buffer });
 
   const sections = extractSectionsAsAst(rawHtml, rawText);
-  return { sections, rawText };
+  return { sections, rawText, rawHtml };
 };
 
 /**

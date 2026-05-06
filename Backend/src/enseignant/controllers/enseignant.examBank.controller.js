@@ -137,6 +137,15 @@ const addExamToBank = async (req, res) => {
       return res.status(400).json({ message: "Contenu du fichier invalide" });
     }
 
+    // Génère le HTML depuis le .docx pour l'aperçu dans la banque
+    let htmlContent = '';
+    try {
+      const { rawHtml } = await parseDocxBuffer(fileData);
+      htmlContent = rawHtml || '';
+    } catch {
+      htmlContent = '';
+    }
+
     const teacherDepartement = await getTeacherDepartement(req.user.id);
     const cleanDepartement = String(Departement || filiere || teacherDepartement || '').trim();
 
@@ -163,6 +172,7 @@ const addExamToBank = async (req, res) => {
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       ).trim(),
       fileData,
+      htmlContent,
     });
 
     return res.status(201).json({
@@ -412,16 +422,23 @@ const removeQuestionFromExam = async (req, res) => {
 const getExamContent = async (req, res) => {
   try {
     const teacherDepartement = await getTeacherDepartement(req.user.id);
-    const exam = await ExamBankItem.findById(req.params.id).select('+fileData');
+    const exam = await ExamBankItem.findById(req.params.id).select('+fileData +htmlContent');
     if (!exam) return res.status(404).json({ message: 'Examen introuvable' });
     if (!canAccessExam(exam, req.user.id, teacherDepartement)) {
       return res.status(403).json({ message: "Vous n'avez pas accès à cet examen" });
     }
     if (!exam.fileData || !exam.fileData.length) {
-      return res.status(200).json({ sections: [], rawText: '' });
+      return res.status(200).json({ sections: [], rawText: '', rawHtml: exam.htmlContent || '' });
     }
-    const { sections, rawText } = await parseDocxBuffer(exam.fileData);
-    return res.status(200).json({ sections, rawText });
+    // Si htmlContent déjà stocké, l'utiliser directement
+    if (exam.htmlContent && exam.htmlContent.length > 0) {
+      return res.status(200).json({ sections: [], rawText: '', rawHtml: exam.htmlContent });
+    }
+    // Sinon parser le .docx et stocker le résultat
+    const { sections, rawText, rawHtml } = await parseDocxBuffer(exam.fileData);
+    // Mise à jour asynchrone pour les prochaines fois
+    ExamBankItem.findByIdAndUpdate(exam._id, { htmlContent: rawHtml || '' }).catch(() => {});
+    return res.status(200).json({ sections, rawText, rawHtml: rawHtml || '' });
   } catch (error) {
     return res.status(500).json({ message: error.message });
   }

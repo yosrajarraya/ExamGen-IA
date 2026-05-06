@@ -24,6 +24,7 @@ const normalizeQuestionItem = (item) => ({
   niveau: item.niveau,
   anneeUniversitaire: item.anneeUniversitaire,
   type: normalizeQuestionType(item.type),
+  answerLines: typeof item.answerLines === 'number' ? item.answerLines : null,
   createdBy: item.createdBy.toString(),
   createdByName: item.createdByName,
   createdByEmail: item.createdByEmail,
@@ -48,7 +49,7 @@ const addQuestionToBank = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Le texte de la question est requis" });
-    const { matiere, niveau, anneeUniversitaire, type } = req.body || {};
+    const { matiere, niveau, anneeUniversitaire, type, answerLines } = req.body || {};
     
     // Log pour debug
     console.log('📝 [addQuestionToBank] Type reçu:', type, '| Type normalisé:', normalizeQuestionType(type));
@@ -66,6 +67,7 @@ const addQuestionToBank = async (req, res) => {
       niveau: String(niveau || "").trim(),
       anneeUniversitaire: String(anneeUniversitaire || "").trim(),
       type: normalizedType,
+      answerLines: typeof answerLines === 'number' ? answerLines : undefined,
       createdBy: req.user.id,
       createdByName:
         `${enseignant.Prenom || ""} ${enseignant.Nom || ""}`.trim(),
@@ -156,6 +158,9 @@ const updateQuestionBankItem = async (req, res) => {
     }
     item.text = text;
     item.type = type;
+    if (typeof req.body.answerLines === 'number') {
+      item.answerLines = req.body.answerLines;
+    }
     await item.save();
     return res.status(200).json({
       message: "Question modifiée avec succès",

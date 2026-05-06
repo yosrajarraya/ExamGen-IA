@@ -40,14 +40,23 @@ export const getWordTemplates = async () => {
   return response.data;
 };
 
-export const addQuestionToBank = async (text, matiere = '', niveau = '', anneeUniversitaire = '', type = 'ouverte') => {
-  const response = await api.post('/enseignant/questions/bank', { 
+export const addQuestionToBank = async (
+  text,
+  matiere = '',
+  niveau = '',
+  anneeUniversitaire = '',
+  type = 'ouverte',
+  answerLines = undefined
+) => {
+  const payload = {
     text,
     matiere,
     niveau,
     anneeUniversitaire,
     type,
-  });
+  };
+  if (typeof answerLines === 'number') payload.answerLines = answerLines;
+  const response = await api.post('/enseignant/questions/bank', payload);
   return response.data;
 };
 
