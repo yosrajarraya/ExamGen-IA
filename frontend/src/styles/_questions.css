@@ -1527,16 +1527,10 @@ kbd {
 }
 
 .q-answer-line-preview {
-  height: 1px;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--ce-text-muted) 0,
-    var(--ce-text-muted) 4px,
-    transparent 4px,
-    transparent 8px
-  );
-  opacity: 0.4;
-  border-radius: 1px;
+  width: 100%;
+  height: 0;
+  border-bottom: 1px dotted var(--ce-text-muted);
+  opacity: 0.65;
 }
 
 .q-answer-lines-more {

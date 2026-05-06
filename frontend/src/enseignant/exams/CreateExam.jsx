@@ -26,8 +26,24 @@ import QuestionsTab, { makeSection } from './tabs/QuestionsTab';
 import ExportTab from './tabs/ExportTab';
 import '../../styles/CreateExam.css';
 
-// ─── IIT Logo base64 (même que ExportTab) ────────────────────────────────────
-const IIT_LOGO_B64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASoAAAEqCAYAAACiOh0vAAAQAElEQVR4AexdB4BVNdY+SW59dTpdUbFvUbFX1gJib9jddS2oNAGpAvqkd1Dsu7b1t7J2Xexixbq2VVfXLn3a67cn/8kb3jDAoIOOivou97zkJicnJyfJd0+S9wYKpatkgZIFShbYzC1QAqrNvINK6pUsULIAQAmoSqOgZIGSBTZ7C5SAarPvoh9fwVINJQts7hYoAdXm3kMl/UoWKFmgtPQrjYGSBUoW+PwtUPKoNv8+KmlYssCPb4HNvIYSUG3mHVRSr2SBkgVKp36lMVCyQMkCvwALlDyqX0AnlVQsWeC3boESUP0UI6BUR8kCJQv8IAuUgOoHma9UuGSBkgV+CguUgOqnsHKpjpIFShb4QRYoAdUPMl+pcMkCbbVAie+HWKAEVD/EeqWyJQuULPCTWKAEVD+JmUuVlCxQssAPsUAJqH6I9UplSxYoWeAnscCvBKh+EluVKilZoGSBn8kCJaD6mQxfqrZkgZIF2m6BElC13VYlzpIFShb4mSxQAqqfyfClatvdAiWBv2ILlIDqV9y5paaVLPBrsUAJqH4tPVlqR8kCv2ILlIDqV9y5paaVLPBrsUBbgerX0t5SO0oWKFngF2iBElD9AjutpHLJAr81C5SA6rfW46X2lizwC7RACah+gZ32c6lcqrdkgZ/LAiWg+rksX6q3ZIGSBdpsgRJQtdlUJcaSBUoW+LksUAKqn8vypXpLFvglWuBn0rkEVD+T4UvVlixQskDbLVACqrbbqsRZskDJAj+TBUpA9TMZvlRtyQIlC7TdAiWgarutfnzOUg0lC/zGLFACqt9Yh5eaW7LAL9ECJaD6JfZaSeeSBX5jFigB1W+sw0vN/bVY4LfVjhJQ/bb6u9TakgV+kRYoAfUrsVmpI6V1J6kAAAAASUVORK5CYII=';
+import iitLogoAsset from '../../assets/iit2.png';
+
+// ─── IIT Logo base64 — chargé depuis l'asset au runtime ──────────────────────
+let IIT_LOGO_B64 = null;
+const loadIITLogo = async () => {
+  if (IIT_LOGO_B64) return IIT_LOGO_B64;
+  try {
+    const resp = await fetch(iitLogoAsset);
+    const blob = await resp.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => { IIT_LOGO_B64 = reader.result; resolve(IIT_LOGO_B64); };
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+};
 
 const TABS = ['Modèles', 'Questions', 'Export'];
 const FIXED_EXAM_TOTAL = 20;
@@ -85,6 +101,252 @@ const parseOptionLine = (line) => {
   return null;
 };
 
+const astNodeToText = (node) => {
+  if (!node) return '';
+  if (node.type === 'text') return node.text || '';
+  if (Array.isArray(node.children)) return node.children.map(astNodeToText).join('');
+  if (node.type === 'list') {
+    return (node.items || [])
+      .map((item) => (item.children || []).map(astNodeToText).join(''))
+      .join('\n');
+  }
+  if (node.type === 'table') {
+    return (node.rows || [])
+      .flat()
+      .map((cell) => (cell.children || []).map(astNodeToText).join(''))
+      .join(' ');
+  }
+  return '';
+};
+
+const astNodesToLines = (nodes = []) => {
+  const lines = [];
+  const pushLines = (text) => {
+    String(text || '')
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .forEach((line) => lines.push(line));
+  };
+
+  (Array.isArray(nodes) ? nodes : []).forEach((node) => {
+    if (!node) return;
+    if (node.type === 'paragraph' || node.type === 'heading') {
+      pushLines(astNodeToText(node));
+      return;
+    }
+    if (node.type === 'list') {
+      (node.items || []).forEach((item) => pushLines(astNodeToText(item)));
+      return;
+    }
+    if (node.type === 'table') {
+      (node.rows || []).forEach((row) => {
+        pushLines((row || []).map((cell) => astNodeToText(cell)).join(' | '));
+      });
+      return;
+    }
+    if (Array.isArray(node.children)) {
+      pushLines(astNodeToText(node));
+    }
+  });
+
+  return lines;
+};
+
+const htmlToLines = (html = '') =>
+  String(html)
+    .replace(/<\s*br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|h[1-6]|li|tr|table)>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .split(/\n+/)
+    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+
+const normalizeExtractedText = (text) => String(text || '').replace(/\s+/g, ' ').trim();
+
+const stripCheckboxGlyphs = (s) => String(s || '')
+  .replace(/[\u25A0\u25A1\u25A2\u25A3\u25FB\u25FD\u25FE\u2610\u2611\u2612\u2613]/g, ' ')
+  .replace(/[\u2618\u2619]/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const collectTextFromNode = (node, ignoreSelector = '') => {
+  if (!node) return '';
+  if (node.nodeType === 3) return node.textContent || '';
+  if (node.nodeType !== 1) return '';
+
+  const el = node;
+  if (ignoreSelector && el.matches && el.matches(ignoreSelector)) return '';
+
+  return Array.from(el.childNodes || []).map((child) => collectTextFromNode(child, ignoreSelector)).join('');
+};
+
+const parseQuestionType = (label, hasOptions) => {
+  const value = normalizeExtractedText(label).toLowerCase();
+  if (!value && hasOptions) return 'qcm';
+  if (value.includes('choix unique')) return 'qcm_unique';
+  if (value.includes('choix multiple')) return 'qcm_multiple';
+  if (value.includes('vrai') && value.includes('faux')) return 'vrai_faux';
+  if (value.includes('question ouverte') || value.includes('réponse libre') || value.includes('reponse libre')) return 'ouverte';
+  if (value.includes('exercice pratique') || value.includes('pratique')) return 'pratique';
+  if (value.includes('énoncé') || value.includes('enonce')) return 'enonce';
+  if (hasOptions) return 'qcm';
+  return 'ouverte';
+};
+
+const parseQuestionElement = (questionEl) => {
+  if (!questionEl) return null;
+
+  const typeLabel = normalizeExtractedText(questionEl.querySelector('.qcm-type-label')?.textContent || '');
+  const optionTexts = Array.from(questionEl.querySelectorAll('.options .option-text'))
+    .map((optEl) => normalizeExtractedText(optEl.textContent || '').replace(/^[A-D]\s*\.\s*/, ''))
+    .filter(Boolean);
+
+  const rawText = normalizeExtractedText(
+    collectTextFromNode(questionEl, '.qcm-type-label, .options, .answer-lines, .pts, strong')
+  );
+  const cleanedRawText = stripCheckboxGlyphs(rawText);
+  const text = cleanedRawText.replace(/^Q\d+\.?\s*/i, '').trim();
+  const type = parseQuestionType(typeLabel, optionTexts.length > 0);
+  const answerLinesCount = Math.max(
+    1,
+    questionEl.querySelectorAll('.answer-lines .answer-dot-line').length || 0
+  );
+
+  const question = {
+    id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    type,
+    text,
+    points: '',
+    isEditing: false,
+  };
+
+  if (type === 'ouverte' || type === 'pratique') {
+    question.answerLines = answerLinesCount;
+  }
+
+  if (type === 'vrai_faux') {
+    question.options = [
+      { id: `${Date.now()}_a`, text: 'Vrai', correct: false },
+      { id: `${Date.now()}_b`, text: 'Faux', correct: false },
+    ];
+  } else if (optionTexts.length > 0) {
+    question.options = optionTexts.map((optText) => ({
+      id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      text: stripCheckboxGlyphs(optText),
+      correct: false,
+    }));
+  } else {
+    question.options = [];
+  }
+
+  return question;
+};
+
+const parseExamSectionsFromHtml = (rawHtml = '') => {
+  if (!rawHtml) return [];
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(rawHtml, 'text/html');
+  const partEls = Array.from(doc.querySelectorAll('section.part'));
+
+  if (partEls.length === 0) return [];
+
+  return partEls.map((partEl, partIndex) => {
+    const partTitle = normalizeExtractedText(partEl.querySelector('.part-title')?.textContent || `Partie ${partIndex + 1}`)
+      .replace(/^Partie\s*\d+\s*[—-]?\s*/i, '')
+      .trim() || `Partie ${partIndex + 1}`;
+
+    const exercises = Array.from(partEl.children || [])
+      .filter((child) => child.classList && child.classList.contains('exercise'))
+      .map((exoEl, exoIndex) => {
+        const exoTitle = normalizeExtractedText(exoEl.querySelector('.exo-title')?.textContent || `Exercice ${exoIndex + 1}`)
+          .replace(/^Exercice\s*\d+\s*[—-]?\s*/i, '')
+          .replace(/\(.*?pts?\)/i, '')
+          .trim() || `Exercice ${exoIndex + 1}`;
+
+        const questions = Array.from(exoEl.querySelectorAll(':scope > .question'))
+          .map((questionEl) => parseQuestionElement(questionEl))
+          .filter(Boolean);
+
+        return {
+          id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          title: exoTitle,
+          points: '',
+          collapsed: false,
+          questions,
+        };
+      })
+      .filter((exo) => exo.questions.length > 0);
+
+    return {
+      id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      title: partTitle,
+      collapsed: false,
+      exercises,
+    };
+  }).filter((part) => part.exercises.length > 0);
+};
+
+const getSectionContentLines = (section) => {
+  if (Array.isArray(section?.content) && section.content.length > 0) {
+    return section.content.map((line) => String(line || '').trim()).filter(Boolean);
+  }
+  if (Array.isArray(section?.contentAst) && section.contentAst.length > 0) {
+    return astNodesToLines(section.contentAst);
+  }
+  if (typeof section?.content === 'string' && section.content.trim()) {
+    return section.content.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  }
+  if (typeof section?.contentAst === 'string' && section.contentAst.trim()) {
+    return section.contentAst.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  }
+  return [];
+};
+
+const buildEditableSections = ({ sections: apiSections, rawText, rawHtml }) => {
+  const htmlSections = parseExamSectionsFromHtml(rawHtml || '');
+  if (htmlSections.length > 0) return htmlSections;
+
+  const structuredSections = Array.isArray(apiSections) ? apiSections.filter(Boolean) : [];
+  if (structuredSections.length > 0) return structuredSections;
+
+  const sourceLines = rawText?.trim()
+    ? rawText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+    : htmlToLines(rawHtml || '');
+
+  if (sourceLines.length === 0) return [];
+
+  const fallbackSections = [];
+  let current = null;
+  let sectionIndex = 0;
+  const isSectionHeading = (line) => /^(partie|section|chapitre|exercice)\b/i.test(line);
+  const isQuestionStarter = (line) => /^\d+\s*[).:-]\s+/.test(line) || /^(question|q\.?)\s*\d+\b/i.test(line);
+  const isIgnoredLeadLine = (line) => isLikelyHeaderLine(line) || /^(en[-\s]?t[êe]te|instructions?|consignes?|feuille\s*d['’]énonc[eé])\b/i.test(line);
+
+  sourceLines.forEach((line) => {
+    if (isIgnoredLeadLine(line)) return;
+
+    if (isSectionHeading(line)) {
+      if (current) fallbackSections.push(current);
+      current = { title: line, content: [] };
+      sectionIndex += 1;
+      return;
+    }
+
+    if (isQuestionStarter(line) && !current) {
+      sectionIndex += 1;
+      current = { title: `Partie ${sectionIndex}`, content: [] };
+    }
+
+    if (!current) return;
+    current.content.push(line);
+  });
+
+  if (current) fallbackSections.push(current);
+  return fallbackSections.length > 0 ? fallbackSections : [];
+};
+
 // ─── Helpers image ────────────────────────────────────────────────────────────
 const dataUrlToUint8Array = (dataUrl) => {
   const base64 = String(dataUrl || '').split(',')[1] || '';
@@ -126,11 +388,13 @@ const buildImageRun = async (dataUrl) => {
 // ─── IIT Logo ImageRun ────────────────────────────────────────────────────────
 const buildLogoImageRun = async () => {
   try {
-    const { w, h } = await loadImageDimensions(IIT_LOGO_B64);
+    const logoB64 = await loadIITLogo();
+    if (!logoB64) return null;
+    const { w, h } = await loadImageDimensions(logoB64);
     const height = 66;
     const width = Math.round((w / h) * height);
     return new ImageRun({
-      data: dataUrlToUint8Array(IIT_LOGO_B64),
+      data: dataUrlToUint8Array(logoB64),
       transformation: { width: Math.min(width, 80), height },
       type: 'png',
     });
@@ -143,6 +407,7 @@ const buildLogoImageRun = async () => {
 const parseSectionQuestions = (contentLines) => {
   const parsed = [];
   let current = null;
+  let pendingForceType = null;
 
   const flush = () => {
     if (!current) return;
@@ -177,6 +442,29 @@ const parseSectionQuestions = (contentLines) => {
       }));
     }
 
+    // honor any explicit type forced by the source (e.g. a preceding label)
+    const forced = current.forceType || pendingForceType || null;
+    if (forced) {
+      type = forced;
+      if (pendingForceType) pendingForceType = null;
+
+      // sensible defaults for forced types
+      if (type === 'vrai_faux') {
+        options = [
+          { id: `${Date.now()}_a`, text: 'Vrai', correct: false },
+          { id: `${Date.now()}_b`, text: 'Faux', correct: false },
+        ];
+      }
+      if (type === 'ouverte') {
+        options = [];
+        current.answerLines = current.answerLines || 3;
+      }
+      if (type === 'pratique' || type === 'enonce') {
+        options = [];
+      }
+      // qcm_unique / qcm_multiple: keep discovered options if present; otherwise allow empty list
+    }
+
     parsed.push({
       id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       type,
@@ -192,11 +480,72 @@ const parseSectionQuestions = (contentLines) => {
     const raw = String(rawLine || '').trim();
     if (!raw) return;
     if (isLikelyHeaderLine(raw) || isCorrectionLine(raw)) return;
-    const optionText = parseOptionLine(raw);
-    if (optionText && current) { current.options.push(optionText); return; }
+    // detect explicit type declarations like "Choix unique" or "Choix multiple"
+    const detectExplicitType = (line) => {
+      const t = String(line || '').toLowerCase();
+      if (/choix\s*unique|\(choix\s*unique\)|\bchoix\s*unique\b/.test(t)) return 'qcm_unique';
+      if (/choix\s*multiple|choix\s*multiples|\(choix\s*multiple\)/.test(t)) return 'qcm_multiple';
+      if (/vrai\s*\/\s*faux|vrai\s*et\s*faux|\(vrai\s*\/\s*faux\)/.test(t)) return 'vrai_faux';
+      if (t.includes('vrai') && t.includes('faux')) return 'vrai_faux';
+      if (/question\s+ouverte|réponse\s+libre|reponse\s+libre|\(question\s+ouverte\)/.test(t)) return 'ouverte';
+      if (/exercice\s+pratique|pratique|\(pratique\)/.test(t)) return 'pratique';
+      if (/énoncé|enonce|\(énoncé\)/.test(t)) return 'enonce';
+      return null;
+    };
+
+    const extractInlineOptions = (line) => {
+      const opts = [];
+      const regex = /([a-d])\s*[).:-]\s*([^\n]+)/gi;
+      let m;
+      while ((m = regex.exec(line)) !== null) {
+        if (m[2]) opts.push(m[2].trim());
+        if (m.index === regex.lastIndex) regex.lastIndex++;
+      }
+      return opts;
+    };
+
+    // remove checkbox glyphs before further parsing to avoid them leaking into question text
+    const cleanLine = stripCheckboxGlyphs(raw);
+    const explicitType = detectExplicitType(cleanLine);
+    // Try to detect a numbered question first (e.g. '2. Question' or '2. (Choix unique)')
     const qText = parseQuestionPrefix(raw);
-    if (qText !== null) { flush(); current = { text: qText, options: [] }; return; }
-    const normalized = normalizeQuestionLine(raw);
+    if (qText !== null) {
+      flush();
+      current = { text: qText, options: [] };
+      if (explicitType) current.forceType = explicitType;
+      // handle inline options on the same line (e.g. '1. Question a) optA b) optB')
+      const inlineOptsAfter = extractInlineOptions(raw);
+      if (inlineOptsAfter.length > 0) current.options.push(...inlineOptsAfter);
+      return;
+    }
+
+    // If no numbered prefix, but the line declares an explicit type, attach it to current or pending
+    if (explicitType) {
+      if (current) current.forceType = explicitType;
+      else pendingForceType = explicitType;
+      return;
+    }
+
+    // options like 'a) texte' appearing inline or alone
+    const inlineOpts = extractInlineOptions(cleanLine);
+    if (inlineOpts.length > 0) {
+      if (!current) {
+        const firstOptIdx = raw.search(/[a-d]\s*[).:-]/i);
+        if (firstOptIdx > 0) {
+          const possibleQ = raw.slice(0, firstOptIdx).trim();
+          const qPref = parseQuestionPrefix(possibleQ);
+          current = { text: qPref !== null ? qPref : possibleQ, options: [] };
+        } else {
+          current = { text: '', options: [] };
+        }
+      }
+      current.options.push(...inlineOpts);
+      return;
+    }
+
+    const optionText = parseOptionLine(cleanLine);
+    if (optionText && current) { current.options.push(optionText); return; }
+    const normalized = normalizeQuestionLine(cleanLine);
     if (!normalized) return;
     if (!current) { current = { text: normalized, options: [] }; return; }
     current.text = `${current.text} ${normalized}`.trim();
@@ -217,7 +566,7 @@ const bordersAll = { top: bSingle, bottom: bSingle, left: bSingle, right: bSingl
 const bordersNone = { top: bNone, bottom: bNone, left: bNone, right: bNone };
 
 // ─── Helper : cellule vide ────────────────────────────────────────────────────
-const emptyCell = (w) => new TableCell({
+const _emptyCell = (w) => new TableCell({
   width: { size: w, type: WidthType.DXA },
   borders: bordersNone,
   children: [new Paragraph({ children: [] })],
@@ -265,14 +614,14 @@ const CreateExam = () => {
   const [autresExamens, setAutresExamens] = useState([]);
   const [mesQuestions, setMesQuestions] = useState([]);
   const [autresQuestions, setAutresQuestions] = useState([]);
-  const [filteredMesExamens, setFilteredMesExamens] = useState([]);
-  const [filteredAutresExamens, setFilteredAutresExamens] = useState([]);
+  const [_filteredMesExamens, setFilteredMesExamens] = useState([]);
+  const [_filteredAutresExamens, setFilteredAutresExamens] = useState([]);
   const [filteredMesQuestions, setFilteredMesQuestions] = useState([]);
   const [filteredAutresQuestions, setFilteredAutresQuestions] = useState([]);
-  const [hasSearched, setHasSearched] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [_hasSearched, setHasSearched] = useState(true);
+  const [_isLoading, setIsLoading] = useState(true);
+  const [_error, setError] = useState('');
+  const [_successMessage, setSuccessMessage] = useState('');
   const [allTemplates, setAllTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [sections, setSections] = useState([makeSection(1)]);
@@ -356,13 +705,15 @@ const CreateExam = () => {
         setSelectedTemplate(exam.templateId || null);
 
         try {
-          const { sections: parsedSections } = await getExamContent(id);
-          if (parsedSections?.length > 0) {
+          const contentData = await getExamContent(id);
+          const editableSections = buildEditableSections(contentData);
+
+          if (editableSections.length > 0) {
             const uid = () => `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-            const rebuilt = parsedSections.map((sec, si) => {
+            const rebuilt = editableSections.map((sec, si) => {
               const sectionTitle = String(sec?.title || '').trim();
               const isHeaderSection = /en[-\s]?t[êe]te|instruction/i.test(sectionTitle);
-              const parsedQuestions = parseSectionQuestions(sec?.content);
+              const parsedQuestions = parseSectionQuestions(getSectionContentLines(sec));
               if (isHeaderSection || parsedQuestions.length === 0) return null;
               return {
                 id: uid(), title: sectionTitle || `Partie ${si + 1}`, collapsed: false,
@@ -384,15 +735,9 @@ const CreateExam = () => {
     })();
   }, [location, editingExamId]);
 
-  useEffect(() => {
-    if (!successMessage) return;
-    const t = setTimeout(() => setSuccessMessage(''), 4000);
-    return () => clearTimeout(t);
-  }, [successMessage]);
+  const _handleFilterChange = (key, val) => setFilter(p => ({ ...p, [key]: val }));
 
-  const handleFilterChange = (key, val) => setFilter(p => ({ ...p, [key]: val }));
-
-  const handleFilterSearch = async () => {
+  const _handleFilterSearch = async () => {
     setIsLoading(true); setError('');
     try {
       const [ex, qs] = await Promise.all([
@@ -414,7 +759,7 @@ const CreateExam = () => {
     }
   };
 
-  const handleFilterReset = () => {
+  const _handleFilterReset = () => {
     setFilter({ matiere: '', niveau: '', annee: '' });
     setFilteredMesExamens(mesExamens); setFilteredAutresExamens(autresExamens);
     setFilteredMesQuestions(mesQuestions); setFilteredAutresQuestions(autresQuestions);
@@ -481,6 +826,132 @@ const CreateExam = () => {
 
       // ─── EN-TÊTE ────────────────────────────────────────────────────────
       if (tpl) {
+        const templateStyle = tpl.templateStyle || 'long';
+
+        if (templateStyle === 'court') {
+          // ── Style COURT (Forme 2 — Tableau simple) ──
+          const logoRun = await buildLogoImageRun();
+          const colCourtLeft = Math.round(CONTENT_W * 0.33);
+          const colCourtCenter = Math.round(CONTENT_W * 0.34);
+          const colCourtRight = CONTENT_W - colCourtLeft - colCourtCenter;
+
+          docChildren.push(new Table({
+            width: { size: CONTENT_W, type: WidthType.DXA },
+            columnWidths: [colCourtLeft, colCourtCenter, colCourtRight],
+            borders: { top: bNone, bottom: bNone, left: bNone, right: bNone, insideH: bNone, insideV: bNone },
+            rows: [new TableRow({
+              children: [
+                new TableCell({
+                  width: { size: colCourtLeft, type: WidthType.DXA },
+                  borders: bordersNone,
+                  margins: { top: 40, bottom: 40, left: 0, right: 60 },
+                  children: [
+                    tp('République Tunisienne', { size: 16, alignment: AlignmentType.CENTER }),
+                    tp("Ministère de l'Enseignement", { size: 16, alignment: AlignmentType.CENTER }),
+                    tp('Supérieur', { size: 16, alignment: AlignmentType.CENTER }),
+                    tp('et de la Recherche Scientifique', { size: 16, alignment: AlignmentType.CENTER }),
+                  ],
+                }),
+                new TableCell({
+                  width: { size: colCourtCenter, type: WidthType.DXA },
+                  borders: bordersNone,
+                  margins: { top: 40, bottom: 40, left: 60, right: 60 },
+                  verticalAlign: VerticalAlign.CENTER,
+                  children: [new Paragraph({
+                    alignment: AlignmentType.CENTER,
+                    children: logoRun ? [logoRun] : [new TextRun({ text: 'IIT', bold: true, font: 'Times New Roman', size: 32 })],
+                  })],
+                }),
+                new TableCell({
+                  width: { size: colCourtRight, type: WidthType.DXA },
+                  borders: bordersNone,
+                  margins: { top: 40, bottom: 40, left: 60, right: 0 },
+                  children: [
+                    tp(tpl.universiteFr || 'Université Nord-Américaine privée', { size: 16, alignment: AlignmentType.CENTER }),
+                    tp(tpl.institutFr || 'Institut International de Technologie', { size: 16, alignment: AlignmentType.CENTER }),
+                    tp(tpl.universiteAr || '', { size: 14, alignment: AlignmentType.CENTER, color: '888888' }),
+                  ],
+                }),
+              ],
+            })],
+          }));
+
+          docChildren.push(new Paragraph({ children: [], spacing: { after: 80 } }));
+
+          // Tableau méta court (3 colonnes × 3 lignes)
+          const c1 = Math.round(CONTENT_W * 0.34);
+          const c2 = Math.round(CONTENT_W * 0.33);
+          const c3 = CONTENT_W - c1 - c2;
+          const mkCell = (text, w) => new TableCell({
+            width: { size: w, type: WidthType.DXA },
+            borders: bordersAll,
+            margins: { top: 40, bottom: 40, left: 80, right: 80 },
+            children: [new Paragraph({ children: [new TextRun({ text, font: 'Times New Roman', size: 18 })] })],
+          });
+          docChildren.push(new Table({
+            width: { size: CONTENT_W, type: WidthType.DXA },
+            columnWidths: [c1, c2, c3],
+            rows: [
+              new TableRow({ children: [
+                mkCell(`Matière : ${tplMatiere}`, c1),
+                mkCell(`Discipline : ${tplDiscipline}`, c2),
+                mkCell(`Semestre : ${rawSemestre}`, c3),
+              ]}),
+              new TableRow({ children: [
+                mkCell(`Enseignant : ${tplTeachers}`, c1),
+                mkCell(`Année universitaire : ${tplAnnee}`, c2),
+                mkCell(`Date : ${rawDate || '—'}`, c3),
+              ]}),
+              new TableRow({ children: [
+                mkCell(`Documents : ${tplDocs}`, c1),
+                mkCell('Nombre de pages : Auto', c2),
+                mkCell(`Durée : ${tplDuree}`, c3),
+              ]}),
+            ],
+          }));
+
+          docChildren.push(new Paragraph({
+            alignment: AlignmentType.RIGHT,
+            spacing: { before: 60, after: 60 },
+            children: [new TextRun({ text: `${feuilleType} ◄`, bold: true, font: 'Times New Roman', size: 20 })],
+          }));
+
+          if (showNP) {
+            docChildren.push(new Table({
+              width: { size: CONTENT_W, type: WidthType.DXA },
+              columnWidths: [CONTENT_W],
+              rows: [new TableRow({
+                height: { value: 700, rule: HeightRule.ATLEAST },
+                children: [new TableCell({
+                  width: { size: CONTENT_W, type: WidthType.DXA },
+                  borders: bordersAll,
+                  margins: { top: 80, bottom: 80, left: 120, right: 80 },
+                  children: [new Paragraph({
+                    children: [new TextRun({ text: 'Prénom & Nom :   _______________________________________', font: 'Times New Roman', size: 20 })],
+                  })],
+                })],
+              })],
+            }));
+          }
+
+          if (showNB) {
+            const remarquesRaw = (tpl?.remarques || '').trim();
+            const nbLines = remarquesRaw
+              ? remarquesRaw.split('\n').filter(l => l.trim())
+              : ["— Réponses sur la feuille de l'énoncé.", '— Le barème est donné à titre indicatif.'];
+            docChildren.push(new Paragraph({ children: [], spacing: { after: 120 } }));
+            nbLines.forEach(line => {
+              docChildren.push(new Paragraph({
+                spacing: { before: 40, after: 40 },
+                children: [new TextRun({ text: line, font: 'Times New Roman', size: 18 })],
+              }));
+            });
+          }
+
+          docChildren.push(new Paragraph({ children: [], spacing: { after: 360 } }));
+
+        } else {
+          // ── Style LONG (Forme 1 — Session principale avec NB) ──
         // ── 1. Colonnes en-tête université ──
         const colLeft = Math.round(CONTENT_W * 0.27);
         const colCenter = Math.round(CONTENT_W * 0.53);
@@ -697,6 +1168,8 @@ const CreateExam = () => {
 
         docChildren.push(new Paragraph({ children: [], spacing: { after: 360 } }));
 
+        } // end else (long style)
+
       } else {
         // ── EN-TÊTE MINIMAL (sans template) ──
         docChildren.push(new Paragraph({
@@ -748,7 +1221,7 @@ const CreateExam = () => {
 
         docChildren.push(new Paragraph({
           spacing: { before: 120, after: 240 },
-          border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: '000000', space: 1 } },
+          border: { bottom: { style: BorderStyle.DOTTED, size: 6, color: '000000', space: 1 } },
           children: [],
         }));
       }
@@ -760,7 +1233,7 @@ const CreateExam = () => {
         // ── Titre de partie ──
         docChildren.push(new Paragraph({
           spacing: { before: 320, after: 120 },
-          border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: 'CCCCCC', space: 1 } },
+          border: { bottom: { style: BorderStyle.DOTTED, size: 4, color: 'CCCCCC', space: 1 } },
           children: [
             new TextRun({ text: `Partie ${si + 1} — `, bold: true, font: 'Times New Roman', size: 24, color: '1e4fa8' }),
             new TextRun({ text: sec.title || `Partie ${si + 1}`, bold: true, font: 'Times New Roman', size: 24 }),
@@ -782,7 +1255,7 @@ const CreateExam = () => {
           for (const [qi, q] of exo.questions.entries()) {
             const pts = q.points ? ` [${q.points} pts]` : '';
             const qNum = qi + 1;
-            const typeLabel = getTypeLabel(q.type);
+            const _typeLabel = getTypeLabel(q.type);
 
             // ── Énoncé de l'énoncé / question ──
             if (q.type === 'enonce') {
@@ -801,7 +1274,6 @@ const CreateExam = () => {
                   new TextRun({ text: `${qNum}. `, bold: true, font: 'Times New Roman', size: 20 }),
                   new TextRun({ text: q.text || '', font: 'Times New Roman', size: 20 }),
                   ...(pts ? [new TextRun({ text: pts, bold: true, font: 'Times New Roman', size: 18, color: '1e4fa8' })] : []),
-                  ...(typeLabel ? [new TextRun({ text: `  ${typeLabel}`, font: 'Times New Roman', size: 17, color: '888888', italics: true })] : []),
                 ],
               }));
             }
@@ -847,18 +1319,47 @@ const CreateExam = () => {
             // ── Lignes de réponse (questions ouvertes, pratique, etc.) ──
             const isOpenType = ['ouverte', 'calcul', 'definition', 'code', 'completement', 'schema', 'pratique'].includes(q.type);
             if (isOpenType) {
-              const nbLines = q.answerLines
-                ?? (q.type === 'calcul' ? 5 : q.type === 'code' || q.type === 'pratique' ? 6 : 3);
+              const rawLines = q.answerLines;
+              const nbLines = (rawLines !== null && rawLines !== undefined && Number(rawLines) > 0)
+                ? Number(rawLines)
+                : (q.type === 'calcul' ? 5 : q.type === 'code' || q.type === 'pratique' ? 6 : 3);
+              // Un seul tableau avec N lignes — chaque ligne a une bordure inférieure pointillée
+              const answerRows = [];
               for (let li = 0; li < nbLines; li++) {
-                docChildren.push(new Paragraph({
-                  spacing: { before: 40, after: 40 },
-                  indent: { left: 360 },
-                  children: [new TextRun({
-                    text: '         ___________________________________________________________',
-                    font: 'Times New Roman', size: 16, color: 'BBBBBB',
-                  })],
-                }));
+                answerRows.push(
+                  new TableRow({
+                    height: { value: 400, rule: HeightRule.EXACT },
+                    children: [
+                      new TableCell({
+                        width: { size: CONTENT_W, type: WidthType.DXA },
+                        borders: {
+                          top: bNone,
+                          left: bNone,
+                          right: bNone,
+                          bottom: { style: BorderStyle.DOTTED, size: 6, color: '888888' },
+                        },
+                        margins: { top: 0, bottom: 0, left: 0, right: 0 },
+                        children: [new Paragraph({ children: [new TextRun({ text: '' })] })],
+                      }),
+                    ],
+                  })
+                );
               }
+              docChildren.push(
+                new Table({
+                  width: { size: CONTENT_W, type: WidthType.DXA },
+                  columnWidths: [CONTENT_W],
+                  borders: {
+                    top: bNone,
+                    left: bNone,
+                    right: bNone,
+                    bottom: bNone,
+                    insideH: bNone,
+                    insideV: bNone,
+                  },
+                  rows: answerRows,
+                })
+              );
             }
 
             // Espace après chaque question
@@ -941,7 +1442,8 @@ const CreateExam = () => {
                 examForm.matiere.trim(),
                 examForm.niveau.trim(),
                 `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
-                q.type || 'ouverte'
+                q.type || 'ouverte',
+                typeof q.answerLines === 'number' ? q.answerLines : undefined
               ).catch((err) => console.error('Erreur sauvegarde question:', err))
             )
         )

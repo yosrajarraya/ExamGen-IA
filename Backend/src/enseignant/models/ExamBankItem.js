@@ -97,6 +97,11 @@ const examBankItemSchema = new mongoose.Schema(
       required: true,
       select: false,
     },
+    htmlContent: {
+      type: String,
+      default: '',
+      select: false,
+    },
     questions: [
       {
         type: mongoose.Schema.Types.ObjectId,
