@@ -146,6 +146,11 @@ const ExamCard = ({ exam, isMine, onOpen }) => {
     <div className="eb-card" onClick={() => onOpen(exam)}>
       <div className="eb-card-top">
         <span className={`eb-card-status eb-status--${cfg.cls}`}>{cfg.label}</span>
+        {isMine && (
+          <span className={`eb-card-visibility ${exam.visibility === 'private' ? 'eb-card-visibility--private' : 'eb-card-visibility--public'}`}>
+            {exam.visibility === 'private' ? '🔒 Privé' : '🌐 Public'}
+          </span>
+        )}
         {!isMine && <span className="eb-card-author">{exam.createdByName || 'Professeur'}</span>}
       </div>
       <h3 className="eb-card-title">{exam.title || 'Examen sans titre'}</h3>

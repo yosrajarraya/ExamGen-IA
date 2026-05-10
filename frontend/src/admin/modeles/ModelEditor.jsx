@@ -10,6 +10,7 @@ import {
   DUREES,
   ANNEES,
   DEPARTEMENTS,
+  FILIERES,
   DISCIPLINES,
   DOCUMENTS_OPTIONS,
   normalizeTemplate,
@@ -74,7 +75,7 @@ const ModelEditor = ({ model, onBack, onModelUpdate }) => {
         nom: current.nom, type: current.type, actif: current.actif,
         langue: current.langue, templateStyle: current.templateStyle || 'long',
         universiteFr: current.universiteFr, institutFr: current.institutFr,
-        departementFr: current.departementFr,
+        departementFr: current.departementFr, filiereFr: current.filiereFr || '',
         universiteAr: current.universiteAr || '', institutAr: current.institutAr || '',
         departementAr: current.departementAr || '',
         campusText: current.campusText,
@@ -171,6 +172,18 @@ const ModelEditor = ({ model, onBack, onModelUpdate }) => {
               <select className="wt-select" value={current.departementFr || ''} onChange={e => update('departementFr', e.target.value)}>
                 <option value="">— Choisir —</option>
                 {DEPARTEMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+            <div className="wt-field"><label className="wt-label">Filière FR</label>
+              <select className="wt-select" value={current.filiereFr || ''} onChange={e => update('filiereFr', e.target.value)}>
+                <option value="">— Choisir —</option>
+                {current.departementFr && FILIERES[current.departementFr]
+                  ? FILIERES[current.departementFr].map(f => <option key={f} value={f}>{f}</option>)
+                  : null
+                }
+                {current.filiereFr && (!current.departementFr || !FILIERES[current.departementFr]?.includes(current.filiereFr)) && (
+                  <option value={current.filiereFr}>{current.filiereFr}</option>
+                )}
               </select>
             </div>
             <div className="wt-field"><label className="wt-label">Texte campus *</label><input className="wt-input" value={current.campusText || ''} onChange={e => update('campusText', e.target.value)} placeholder="Ex : SFAX - TUNISIA" /></div>

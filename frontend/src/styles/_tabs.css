@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════
-   Exam Tabs — enhanced styles
+   Exam Tabs — style original restauré
 ══════════════════════════════════════════ */
 
 .exam-tabs {
@@ -12,6 +12,7 @@
   border: 1.5px solid var(--ce-border);
   box-shadow: var(--ce-shadow-sm);
   animation: fadeUp 0.35s var(--ce-ease) 0.06s both;
+  flex-shrink: 0;
 }
 
 @keyframes fadeUp {
@@ -56,7 +57,6 @@
   box-shadow: 0 3px 10px rgba(10,22,40,0.2);
 }
 
-/* Accent underline for active tab */
 .exam-tab.active::after {
   content: '';
   position: absolute;
@@ -69,7 +69,6 @@
   border-radius: 2px;
 }
 
-/* Step number badge */
 .exam-tab-step {
   display: inline-flex;
   align-items: center;
@@ -90,7 +89,6 @@
   color: var(--ce-accent);
 }
 
-/* Completed tab checkmark */
 .exam-tab-done {
   display: inline-flex;
   align-items: center;
@@ -104,16 +102,7 @@
   flex-shrink: 0;
 }
 
-/* ── Responsive ── */
-
 @media (max-width: 480px) {
-  .exam-tabs {
-    grid-template-columns: 1fr;
-    gap: 4px;
-  }
-
-  .exam-tab {
-    justify-content: flex-start;
-    padding: 10px 14px;
-  }
+  .exam-tabs { grid-template-columns: 1fr; gap: 4px; }
+  .exam-tab { justify-content: flex-start; padding: 10px 14px; }
 }

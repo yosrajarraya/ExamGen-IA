@@ -38,6 +38,11 @@ const enseignantSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    Filiere: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     Specialite: {
       type: String,
       default: '',

@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap');
 
 :root {
   --eb-bg:           #f5f7fc;
@@ -1363,4 +1363,29 @@
   height: 18px;
   display: block;
   box-sizing: border-box;
+}
+
+/* ── Visibility badge on exam cards ── */
+.eb-card-visibility {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  flex-shrink: 0;
+}
+
+.eb-card-visibility--public {
+  background: rgba(13, 122, 85, 0.09);
+  color: #0d7a55;
+  border: 1px solid rgba(13, 122, 85, 0.2);
+}
+
+.eb-card-visibility--private {
+  background: rgba(192, 51, 74, 0.08);
+  color: #c0334a;
+  border: 1px solid rgba(192, 51, 74, 0.2);
 }

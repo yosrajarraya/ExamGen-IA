@@ -54,6 +54,7 @@ const loginEnseignant = async (req, res) => {
         Email: enseignant.Email,
         Grade: enseignant.Grade,
         Departement: enseignant.Departement,
+        Filiere: enseignant.Filiere,
         Specialite: enseignant.Specialite,
         role: 'enseignant',
       },

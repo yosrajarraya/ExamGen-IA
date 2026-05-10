@@ -35,6 +35,16 @@ const questionBankItemSchema = new mongoose.Schema(
       type: Number,
       default: null,
     },
+    options: {
+      type: [
+        {
+          id:      { type: String, default: '' },
+          text:    { type: String, default: '' },
+          correct: { type: Boolean, default: false },
+        },
+      ],
+      default: [],
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Enseignant',
