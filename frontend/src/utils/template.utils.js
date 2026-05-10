@@ -51,16 +51,73 @@ export const ANNEES = Array.from(
 );
 
 export const DEPARTEMENTS = [
-  'Département Génie Informatique',
-  'Département Génie Civil',
-  'Département Génie Mécanique',
-  'Département Génie des Procédés',
-  'Département Génie Industriel',
-  'Département Architecture',
-  'Département Sciences de Base',
-  'Département Langues et Communication',
-  'Département Management et Économie',
+  'Computer Science',
+  'Civil Engineering',
+  'Mechanical Engineering',
+  'Industrial Engineering',
+  'Chemical Engineering',
+  'Telecommunications Engineering',
+  'Architecture',
 ];
+
+// Mapping entre noms français (du backend) et clés anglaises (pour FILIERES)
+export const DEPARTEMENT_MAPPING = {
+  'Développement logiciel': 'Computer Science',
+  'Computer Science': 'Computer Science',
+  'Génie Civil': 'Civil Engineering',
+  'Civil Engineering': 'Civil Engineering',
+  'Génie Mécanique': 'Mechanical Engineering',
+  'Mechanical Engineering': 'Mechanical Engineering',
+  'Génie Industriel': 'Industrial Engineering',
+  'Industrial Engineering': 'Industrial Engineering',
+  'Génie des Procédés': 'Chemical Engineering',
+  'Chemical Engineering': 'Chemical Engineering',
+  'Télécommunications': 'Telecommunications Engineering',
+  'Telecommunications Engineering': 'Telecommunications Engineering',
+  'Architecture': 'Architecture',
+};
+
+export const FILIERES = {
+  'Computer Science': [
+    'Génie Informatique',
+    'Génie Logiciel et Systèmes d\'Information (Licence)',
+    'Cybersécurité',
+    'Cloud Computing',
+    'Data / IA',
+  ],
+  'Civil Engineering': [
+    'Génie Civil',
+    'Construction',
+    'Structures',
+    'Routes et ouvrages',
+  ],
+  'Mechanical Engineering': [
+    'Génie Mécanique',
+    'Fabrication',
+    'Maintenance industrielle',
+    'Conception mécanique',
+  ],
+  'Industrial Engineering': [
+    'Génie Industriel',
+    'Management des systèmes industriels (Licence)',
+    'Logistique',
+    'Qualité et production',
+  ],
+  'Chemical Engineering': [
+    'Génie des Procédés',
+    'Procédés chimiques',
+    'Industrie agroalimentaire',
+  ],
+  'Telecommunications Engineering': [
+    'Génie Télécommunications',
+    'Réseaux',
+    'Communications',
+  ],
+  'Architecture': [
+    'Architecture',
+    'Design architectural',
+  ],
+};
 
 export const DISCIPLINES = [
   'Cycle Préparatoire — 1ère année',
@@ -126,7 +183,7 @@ export const makeDefaultModel = () => ({
   templateStyle: 'long',
   universiteFr: 'Université Nord-Américaine privée',
   institutFr: 'Institut International de Technologie',
-  departementFr: 'Département Génie Informatique',
+  departementFr: 'Computer Science',
   universiteAr: 'الجامعة الشمالية الأمريكية الخاصة',
   institutAr: 'معهد التكنولوجيا الدولي',
   departementAr: '',
@@ -161,7 +218,7 @@ export const getPreviewData = (model, examForm = {}) => {
     universityAr:  model?.universiteAr    || 'الجامعة الشمالية الأمريكية الخاصة',
     universityFr:  model?.universiteFr    || 'Université Nord-Américaine privée',
     institute:     model?.institutFr      || 'Institut International de Technologie',
-    department:    model?.departementFr   || 'Département Génie Informatique',
+    department:    model?.departementFr   || 'Computer Science',
     campusText:    model?.campusText      || 'SFAX - TUNISIA',
     campusTextEn:  model?.campusTextEn    || 'North American Private University',
     campusTagline: model?.campusTagline   || 'TECHNOLOGY · BUSINESS · ARCHITECTURE',

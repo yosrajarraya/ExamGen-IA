@@ -142,17 +142,67 @@ const AddModal = ({ onSave, onClose }) => {
 
 /* ── Edit Modal ── */
 const EditModal = ({ question, onSave, onClose }) => {
-  const [text, setText]   = useState(question.text || '');
-  const [type, setType]   = useState(normalizeQuestionType(question.type));
+  const [text, setText]     = useState(question.text || '');
+  const [type, setType]     = useState(normalizeQuestionType(question.type));
+  const [options, setOptions] = useState(
+    Array.isArray(question.options) && question.options.length > 0
+      ? question.options.map((o, i) => ({
+          id: o.id || `opt_${i}`,
+          text: typeof o === 'string' ? o : (o.text || ''),
+          correct: !!o.correct,
+        }))
+      : []
+  );
   const [saving, setSaving] = useState(false);
-  const [err, setErr]     = useState('');
+  const [err, setErr]       = useState('');
+
+  const isQcmType = (t) => ['qcm', 'qcm_unique', 'qcm_multiple', 'vrai_faux'].includes(t);
+
+  /* Quand le type change, initialise les options par défaut si vides */
+  const handleTypeChange = (newType) => {
+    setType(newType);
+    if (isQcmType(newType) && options.length === 0) {
+      if (newType === 'vrai_faux') {
+        setOptions([
+          { id: 'vf_a', text: 'Vrai', correct: false },
+          { id: 'vf_b', text: 'Faux', correct: false },
+        ]);
+      } else {
+        setOptions([
+          { id: `opt_0`, text: 'Option A', correct: false },
+          { id: `opt_1`, text: 'Option B', correct: false },
+        ]);
+      }
+    }
+  };
+
+  const addOption = () =>
+    setOptions(prev => [...prev, { id: `opt_${Date.now()}`, text: '', correct: false }]);
+
+  const removeOption = (id) =>
+    setOptions(prev => prev.filter(o => o.id !== id));
+
+  const updateOptionText = (id, text) =>
+    setOptions(prev => prev.map(o => o.id === id ? { ...o, text } : o));
+
+  const toggleCorrect = (id) => {
+    const isUnique = type === 'qcm_unique' || type === 'qcm';
+    setOptions(prev => prev.map(o => {
+      if (o.id === id) return { ...o, correct: !o.correct };
+      if (isUnique && o.id !== id) return { ...o, correct: false }; // radio behavior
+      return o;
+    }));
+  };
 
   const handleSave = async () => {
     const clean = text.trim();
     if (!clean) { setErr('Le texte est requis.'); return; }
+    if (isQcmType(type) && options.length < 2) {
+      setErr('Ajoutez au moins 2 options pour ce type de question.'); return;
+    }
     setSaving(true); setErr('');
     try {
-      await onSave(clean, normalizeQuestionType(type));
+      await onSave(clean, normalizeQuestionType(type), isQcmType(type) ? options : []);
       onClose();
     } catch (e) {
       setErr(e?.response?.data?.message || 'Erreur de modification.');
@@ -161,9 +211,12 @@ const EditModal = ({ question, onSave, onClose }) => {
     }
   };
 
+  const isVF = type === 'vrai_faux';
+  const isUnique = type === 'qcm_unique' || type === 'qcm';
+
   return (
     <div className="qb-modal-overlay" onClick={onClose}>
-      <div className="qb-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="qb-modal qb-modal--wide" onClick={(e) => e.stopPropagation()}>
         <div className="qb-modal-header">
           <div className="qb-modal-header-left">
             <div className="qb-modal-num">✎</div>
@@ -173,13 +226,60 @@ const EditModal = ({ question, onSave, onClose }) => {
         </div>
         <div className="qb-modal-body">
           <label className="qb-field-label">Type de question *</label>
-          <select className="qb-field-input" value={type} onChange={(e) => setType(e.target.value)}>
+          <select className="qb-field-input" value={type} onChange={(e) => handleTypeChange(e.target.value)}>
             {QUESTION_TYPE_OPTIONS.filter((option) => option.value).map((option) => (
               <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
+
           <label className="qb-field-label" style={{ marginTop: '14px' }}>Texte de la question *</label>
-          <textarea className="qb-edit-textarea" value={text} onChange={(e) => setText(e.target.value)} rows={5} autoFocus />
+          <textarea className="qb-edit-textarea" value={text} onChange={(e) => setText(e.target.value)} rows={4} autoFocus />
+
+          {/* Options QCM */}
+          {isQcmType(type) && (
+            <div className="qb-options-section">
+              <label className="qb-field-label" style={{ marginTop: '14px' }}>
+                Options
+                <span className="qb-options-hint">
+                  {isVF ? ' — Vrai ou Faux' : isUnique ? ' — Cochez la bonne réponse' : ' — Cochez toutes les bonnes réponses'}
+                </span>
+              </label>
+              <div className="qb-options-list">
+                {options.map((opt, i) => (
+                  <div key={opt.id} className={`qb-option-row${opt.correct ? ' qb-option-row--correct' : ''}`}>
+                    <button
+                      type="button"
+                      className={`qb-option-check${opt.correct ? ' qb-option-check--on' : ''}`}
+                      onClick={() => toggleCorrect(opt.id)}
+                      title={isUnique ? 'Bonne réponse' : 'Cocher comme correcte'}
+                    >
+                      {isUnique ? (opt.correct ? '●' : '○') : (opt.correct ? '✓' : String.fromCharCode(65 + i))}
+                    </button>
+                    {isVF ? (
+                      <span className="qb-option-vf">{opt.text}</span>
+                    ) : (
+                      <input
+                        type="text"
+                        className="qb-option-input"
+                        placeholder={`Option ${String.fromCharCode(65 + i)}`}
+                        value={opt.text}
+                        onChange={(e) => updateOptionText(opt.id, e.target.value)}
+                      />
+                    )}
+                    {!isVF && options.length > 2 && (
+                      <button type="button" className="qb-option-del" onClick={() => removeOption(opt.id)}>✕</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {!isVF && (
+                <button type="button" className="qb-add-option-btn" onClick={addOption}>
+                  + Ajouter une option
+                </button>
+              )}
+            </div>
+          )}
+
           {err && <p className="qb-field-error">{err}</p>}
         </div>
         <div className="qb-modal-footer">
@@ -371,9 +471,13 @@ const QuestionBank = () => {
     showToast('Question ajoutée à votre banque.');
   };
 
-  const handleSaveEdit = async (text, type) => {
-    await updateQuestionBankItem(editModal.id, { text, type });
-    setMesQuestions(prev => prev.map(q => q.id === editModal.id ? { ...q, text, type: normalizeQuestionType(type) } : q));
+  const handleSaveEdit = async (text, type, options) => {
+    await updateQuestionBankItem(editModal.id, { text, type, options });
+    setMesQuestions(prev => prev.map(q =>
+      q.id === editModal.id
+        ? { ...q, text, type: normalizeQuestionType(type), options: options || [] }
+        : q
+    ));
     showToast('Question modifiée.');
     setEditModal(null);
   };

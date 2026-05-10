@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   FiTrash2, FiChevronLeft, FiChevronRight, FiChevronDown, FiChevronUp,
-  FiImage, FiX, FiPlus, FiAlignLeft, FiHelpCircle, FiCheckSquare,
-  FiToggleLeft, FiCode, FiMenu, FiAlertTriangle, FiLayers, FiBookOpen,
-  FiZap, FiGrid, FiDatabase, FiSearch, FiCornerDownRight,
-  FiCheckCircle,
+  FiX, FiPlus, FiAlignLeft, FiHelpCircle, FiCheckSquare,
+  FiToggleLeft, FiCode, FiMenu, FiLayers,
+  FiZap, FiDatabase, FiCheckCircle,
 } from 'react-icons/fi';
-import { getQuestionBank } from '../../../api/enseignant/Enseignant.api';
+import QuestionBankModal from './QuestionBankModal';
 
 /* ── Helpers ── */
 const uid = () => `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -38,449 +37,235 @@ const makeQuestion  = (type = 'ouverte') => ({ id: uid(), type: normalizeType(ty
 const makeExercise  = (num) => ({ id: uid(), title: `Exercice ${num}`, points: '', questions: [makeQuestion()], collapsed: false });
 const makeSection   = (num) => ({ id: uid(), title: `Partie ${num}`, exercises: [makeExercise(1)], collapsed: false });
 
-const sumAllPoints = (secs) =>
-  (secs || []).reduce((s, sec) =>
-    s + (sec.exercises || []).reduce((es, ex) => {
-      const ep = parseFloat(ex.points) || 0;
-      const qp = (ex.questions || []).reduce((qs, q) => qs + (parseFloat(q.points) || 0), 0);
-      return es + (ep || qp);
-    }, 0), 0);
-
 /* ── Outils de la barre latérale ── */
-const TOOLBAR_GROUPS = [
-  {
-    id: 'structure',
-    label: 'Structure',
-    icon: FiLayers,
-    items: [
-      { id: 'section',  label: 'Nouvelle partie',   icon: FiLayers,   color: 'navy',   desc: 'Ajoute une partie à l\'examen' },
-      { id: 'exercise', label: 'Nouvel exercice',    icon: FiBookOpen, color: 'blue',   desc: 'Ajoute un exercice dans la partie active' },
-    ],
-  },
-  {
-    id: 'questions',
-    label: 'Questions',
-    icon: FiHelpCircle,
-    items: [
-      { id: 'q_ouverte',      label: 'Question ouverte',   icon: FiHelpCircle,  color: 'blue',   desc: 'Réponse libre' },
-      { id: 'q_qcm_unique',   label: 'QCM choix unique',   icon: FiCheckCircle, color: 'violet', desc: 'Une seule bonne réponse' },
-      { id: 'q_qcm_multiple', label: 'QCM choix multiple', icon: FiCheckSquare, color: 'indigo', desc: 'Plusieurs bonnes réponses' },
-      { id: 'q_vrai_faux',    label: 'Vrai / Faux',        icon: FiToggleLeft,  color: 'green',  desc: 'Vrai ou Faux' },
-      { id: 'q_pratique',     label: 'Exercice pratique',  icon: FiCode,        color: 'gold',   desc: 'Code, calcul, manipulation' },
-      { id: 'q_enonce',       label: 'Énoncé / Texte',     icon: FiAlignLeft,   color: 'gray',   desc: 'Bloc de texte sans points' },
-    ],
-  },
-  {
-    id: 'media',
-    label: 'Médias',
-    icon: FiImage,
-    items: [
-      { id: 'image', label: 'Image',  icon: FiImage, color: 'amber', desc: 'Insère une image dans la question active' },
-    ],
-  },
-];
 
-/* Clé de drag depuis la toolbar */
+/* Clé de drag */
 const TOOLBAR_DRAG_KEY = 'toolbar-item';
 
-/* ── Barre d'outils latérale ── */
-const Toolbar = ({ onDragStart, onInsertFromBank }) => {
-  const [openGroups, setOpenGroups] = useState({ structure: true, questions: true, media: true });
-  const [showBank, setShowBank] = useState(false);
-  const [bankItems, setBankItems]     = useState([]);
-  const [bankLoading, setBankLoading] = useState(false);
-  const [bankSearch, setBankSearch]   = useState('');
-  const [bankTypeFilter, setBankTypeFilter] = useState('');
-  const [bankTab, setBankTab]         = useState('mes'); // 'mes' | 'autres'
+/* Définition des actions rapides */
+const QUICK_ACTIONS = [
+  { id: 'section',        label: 'Partie',          dot: '#0e2b50', bg: '#e8edf5', color: '#0e2b50' },
+  { id: 'exercise',       label: 'Exercice',         dot: '#1e4fa8', bg: '#eef2ff', color: '#1e4fa8' },
+  { id: 'q_ouverte',      label: 'Question ouverte', dot: '#3b82f6', bg: '#eff6ff', color: '#1d4ed8' },
+  { id: 'q_qcm_unique',   label: 'QCM unique',       dot: '#8b5cf6', bg: '#f5f3ff', color: '#6d28d9' },
+  { id: 'q_qcm_multiple', label: 'QCM multiple',     dot: '#6366f1', bg: '#eef2ff', color: '#4338ca' },
+  { id: 'q_vrai_faux',    label: 'Vrai / Faux',      dot: '#10b981', bg: '#ecfdf5', color: '#065f46' },
+  { id: 'q_pratique',     label: 'Pratique',         dot: '#f59e0b', bg: '#fffbeb', color: '#92400e' },
+  { id: 'q_enonce',       label: 'Énoncé',           dot: '#9ca3af', bg: '#f9fafb', color: '#374151' },
+];
 
-  const toggleGroup = (id) => setOpenGroups(prev => ({ ...prev, [id]: !prev[id] }));
-
-
-  /* Charge la banque à l'ouverture */
-  const openBank = async () => {
-    setShowBank(true);
-    if (bankItems.length > 0) return; // déjà chargé
-    setBankLoading(true);
-    try {
-      const data = await getQuestionBank();
-      const mes    = Array.isArray(data?.mesQuestions)    ? data.mesQuestions    : [];
-      const autres = Array.isArray(data?.autresQuestions) ? data.autresQuestions : [];
-      setBankItems({ mes, autres });
-    } catch {
-      setBankItems({ mes: [], autres: [] });
-    } finally {
-      setBankLoading(false);
-    }
-  };
-
-  const currentList = (bankItems[bankTab] || []).filter(q => {
-    const s = bankSearch.trim().toLowerCase();
-    const type = (bankTypeFilter || '').trim();
-    if (type) {
-      const qType = q.type || (Array.isArray(q.options) && q.options.length ? 'qcm' : 'ouverte');
-      const normalized = (qType === 'qcm' || qType === 'qcm_multiple' || qType === 'qcm_unique') ? 'qcm' : qType;
-      if (normalized !== type) return false;
-    }
-    return !s || (q.text || '').toLowerCase().includes(s) || (q.matiere || '').toLowerCase().includes(s);
-  });
-
-
-
-  return (
-    <aside className="qt-toolbar">
-      <div className="qt-toolbar-header">
-        <FiGrid size={18} />
-        <span>Outils de construction</span>
-      </div>
-
-      {/* ── Banque de questions (mise en avant) ── */}
-      <button
-        type="button"
-        className={`qt-bank-btn ${showBank ? 'qt-bank-btn--active' : ''}`}
-        onClick={() => showBank ? setShowBank(false) : openBank()}
-      >
-        <FiDatabase size={18} />
-        <div className="qt-bank-btn-content">
-          <span className="qt-bank-btn-title">Banque de questions</span>
-          <span className="qt-bank-btn-subtitle">Réutiliser mes questions</span>
-        </div>
-        <span className="qt-tool-group-arrow">{showBank ? '▾' : '▸'}</span>
-      </button>
-
-      {/* Panneau Banque (inchangé ou légèrement amélioré) */}
-       {showBank && (
-        <div className="qt-bank-panel">
-          {/* Onglets mes / autres */}
-          <div className="qt-bank-tabs">
-            <button
-              type="button"
-              className={`qt-bank-tab ${bankTab === 'mes' ? 'qt-bank-tab--active' : ''}`}
-              onClick={() => setBankTab('mes')}
-            >
-              Mes questions
-              {bankItems.mes && <span className="qt-bank-count">{bankItems.mes.length}</span>}
-            </button>
-            <button
-              type="button"
-              className={`qt-bank-tab ${bankTab === 'autres' ? 'qt-bank-tab--active' : ''}`}
-              onClick={() => setBankTab('autres')}
-            >
-              Partagées
-              {bankItems.autres && <span className="qt-bank-count">{bankItems.autres.length}</span>}
-            </button>
-          </div>
-
-          {/* Recherche */}
-          <div className="qt-bank-search">
-            <FiSearch size={12} />
-            <input
-              type="text"
-              placeholder="Rechercher…"
-              value={bankSearch}
-              onChange={e => setBankSearch(e.target.value)}
-              className="qt-bank-search-input"
-            />
-            {bankSearch && (
-              <button type="button" className="qt-bank-search-clear" onClick={() => setBankSearch('')}>
-                <FiX size={11} />
-              </button>
-            )}
-            <select className="qt-bank-type-select" value={bankTypeFilter} onChange={(e) => setBankTypeFilter(e.target.value)} style={{ marginLeft: '8px' }}>
-              <option value="">Tous les types</option>
-              <option value="ouverte">Ouverte</option>
-              <option value="qcm">QCM</option>
-              <option value="vrai_faux">Vrai / Faux</option>
-              <option value="pratique">Pratique</option>
-              <option value="enonce">Énoncé</option>
-            </select>
-          </div>
-
-          {/* Liste */}
-          <div className="qt-bank-list">
-            {bankLoading ? (
-              <div className="qt-bank-loading">Chargement…</div>
-            ) : currentList.length === 0 ? (
-              <div className="qt-bank-empty">
-                {bankSearch ? 'Aucun résultat.' : 'Aucune question disponible.'}
-              </div>
-            ) : (
-              currentList.map((q) => (
-                <div key={q.id} className="qt-bank-item">
-                  <div className="qt-bank-item-text">
-                    {(q.text || '').length > 80 ? q.text.slice(0, 80) + '…' : q.text}
-                  </div>
-                  {q.matiere && <span className="qt-bank-item-tag">{q.matiere}</span>}
-                  <button
-                    type="button"
-                    className="qt-bank-item-add"
-                    title="Insérer dans l'exercice actif"
-                    onClick={() => onInsertFromBank(q)}
-                  >
-                    <FiCornerDownRight size={12} />
-                    Insérer
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-      <div className="qt-toolbar-divider" />
-
-      {/* ── Groupes d'outils ── */}
-      {TOOLBAR_GROUPS.map((group) => {
-        const GroupIcon = group.icon;
-        const isOpen = openGroups[group.id];
-
-        return (
-          <div key={group.id} className="qt-tool-group">
-            <button
-              type="button"
-              className="qt-tool-group-header"
-              data-group={group.id} 
-              onClick={() => toggleGroup(group.id)}
-            >
-              <GroupIcon size={16} />
-              <span>{group.label}</span>
-              <span className="qt-tool-group-arrow">{isOpen ? '▾' : '▸'}</span>
-            </button>
-
-            {isOpen && (
-              <div className="qt-tool-items">
-                {group.items.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <div
-                      key={item.id}
-                      className={`qt-tool-item qt-tool-item--${item.color}`}
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData(TOOLBAR_DRAG_KEY, item.id);
-                        onDragStart(item.id);
-                      }}
-                      title={item.desc}
-                    >
-                      <div className="qt-tool-icon-wrapper">
-                        <Icon size={18} />
-                      </div>
-                      <div className="qt-tool-content">
-                        <span className="qt-tool-label">{item.label}</span>
-                        {item.desc && <span className="qt-tool-desc">{item.desc}</span>}
-                      </div>
-                      <div className="qt-drag-indicator" title="Glisser pour ajouter">
-                        ⠿
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })}
-
-      {/* Raccourcis clavier améliorés */}
-      <div className="qt-toolbar-shortcuts">
-        <div className="qt-shortcut-title">
-          <FiZap size={14} /> Raccourcis clavier
-        </div>
-        <div className="qt-shortcut-grid">
-          <div className="qt-shortcut-item"><kbd>P</kbd> <span>Partie</span></div>
-          <div className="qt-shortcut-item"><kbd>E</kbd> <span>Exercice</span></div>
-          <div className="qt-shortcut-item"><kbd>Q</kbd> <span>Question</span></div>
-        </div>
-      </div>
-    </aside>
-  );
-};
-
-/* ── Barème Alert Banner ── */
-const BaremeAlert = ({ total }) => {
-  if (total <= 20) return null;
-  return (
-    <div className="bareme-alert-banner">
-      <FiAlertTriangle size={16} />
-      <span>
-        Barème total : <strong>{total} pts</strong> — dépasse la limite de <strong>20 pts</strong>.
-        Corrigez les points avant de passer à l'export.
+/* ── Barre horizontale unifiée : barème + outils ── */
+const HorizontalToolbar = ({ sections, totalPts, totalEx, totalQ, ptsOver, ptsPct, onOpenBank, onAddSection, onAddExercise, onAddQuestion, onDragStart }) => (
+  <div className={`qt-hbar${ptsOver ? ' qt-hbar--over' : ''}`}>
+    {/* Barème */}
+    <div className="qt-hbar-score">
+      <span className={`qt-hbar-pts${ptsOver ? ' qt-hbar-pts--over' : ''}`}>
+        {totalPts > 0 ? totalPts : '—'}<span className="qt-hbar-denom">/20</span>
       </span>
-    </div>
-  );
-};
-
-/* ── MCQ Options ── */
-const McqOptions = ({ options = [], onChange, onAddOption, onRemoveOption, isVF, isUnique }) => (
-  <div className="mcq-options">
-    <div className="mcq-mode-hint">
-      {isVF ? '⇄ Vrai ou Faux' : isUnique ? '⊙ Choix unique — une seule réponse correcte' : '☑ Choix multiple — plusieurs réponses correctes'}
-    </div>
-    {options.map((opt, i) => {
-      const lbl = String.fromCharCode(65 + i);
-      return (
-        <div key={opt.id} className={`mcq-option-row ${opt.correct ? 'mcq-option-row--correct' : ''}`}>
-          <button
-            type="button"
-            className={`mcq-check-btn ${opt.correct ? 'mcq-check-btn--active' : ''} ${isUnique ? 'mcq-check-btn--radio' : ''}`}
-            onClick={() => {
-              if (isUnique && !opt.correct) {
-                options.forEach((o) => { if (o.id !== opt.id && o.correct) onChange(o.id, 'correct', false); });
-              }
-              onChange(opt.id, 'correct', !opt.correct);
-            }}
-            title={isUnique ? 'Sélectionner comme bonne réponse' : 'Cocher comme correcte'}
-          >
-            {isUnique ? (opt.correct ? '●' : '○') : (opt.correct ? '✓' : lbl)}
-          </button>
-          {isVF ? (
-            <span className="vf-text-static">{opt.text}</span>
-          ) : (
-            <input type="text" className="mcq-option-input" placeholder={`Option ${lbl}`}
-              value={opt.text} onChange={(e) => onChange(opt.id, 'text', e.target.value)} />
-          )}
-          {!isVF && options.length > 2 && (
-            <button type="button" className="btn-action-sm btn-del-q" onClick={() => onRemoveOption(opt.id)}>
-              <FiX size={12} />
-            </button>
-          )}
-        </div>
-      );
-    })}
-    {!isVF && (
-      <button type="button" className="btn-add-option" onClick={onAddOption}>
-        <FiPlus size={13} /> Ajouter une option
-      </button>
-    )}
-  </div>
-);
-
-/* ── Image Upload ── */
-const ImageUpload = ({ imageUrl, onUpload, onRemove }) => (
-  <div className="img-upload-zone">
-    {imageUrl ? (
-      <div className="img-preview-wrap">
-        <img src={imageUrl} alt="Aperçu" className="img-preview" />
-        <button type="button" className="img-remove-btn" onClick={onRemove}><FiX size={14} /></button>
+      <div className="qt-hbar-progress">
+        <div className="qt-hbar-fill" style={{ width: `${ptsPct}%`, background: ptsOver ? '#ef4444' : '#0e2b50' }} />
       </div>
-    ) : (
-      <label className="img-upload-label">
-        <FiImage size={15} /><span>Ajouter une image</span>
-        <input type="file" accept="image/*" style={{ display: 'none' }}
-          onChange={(e) => {
-            const file = e.target.files?.[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => onUpload(file, ev.target?.result);
-            reader.readAsDataURL(file);
-          }} />
-      </label>
-    )}
+    </div>
+
+    {/* Stats chips */}
+    <div className="qt-hbar-chips">
+      {[
+        { v: sections.length, l: 'Partie(s)' },
+        { v: totalEx,         l: 'Exercice(s)' },
+        { v: totalQ,          l: 'Question(s)' },
+      ].map(({ v, l }) => (
+        <div key={l} className="qt-hbar-chip">
+          <strong>{v}</strong>
+          <span>{l}</span>
+        </div>
+      ))}
+    </div>
+
+    <div className="qt-hbar-divider" />
+
+    {/* Actions rapides — cliquables ET draggables */}
+    <div className="qt-hbar-actions">
+      {QUICK_ACTIONS.map(a => (
+        <button
+          key={a.id}
+          type="button"
+          className="qt-hbar-action"
+          style={{ '--a-dot': a.dot, '--a-bg': a.bg, '--a-color': a.color }}
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.setData(TOOLBAR_DRAG_KEY, a.id);
+            onDragStart(a.id);
+          }}
+          onClick={() => {
+            if (a.id === 'section') onAddSection();
+            else if (a.id === 'exercise') onAddExercise();
+            else onAddQuestion(a.id.replace('q_', ''));
+          }}
+          title={`Cliquer ou glisser pour ajouter : ${a.label}`}
+        >
+          <span className="qt-hbar-action-dot" />
+          <span className="qt-hbar-action-label">{a.label}</span>
+        </button>
+      ))}
+    </div>
+
+    <div className="qt-hbar-divider" />
+
+    {/* Banque */}
+    <button type="button" className="qt-hbar-bank" onClick={onOpenBank}>
+      <FiDatabase size={14} />
+      <span>Banque</span>
+    </button>
   </div>
 );
 
-/* ── Question Item ── */
+/* ── Question Item — nouveau design ── */
 const QuestionItem = ({ question, qIndex, onUpdate, onUpdateMultiple, onDelete, onUpdatePoints, onDragStart, onDragEnter, onDragEnd }) => {
   const type     = normalizeType(question.type);
   const isEnonce = type === 'enonce';
   const isQcm    = isQcmType(type);
   const isVF     = type === 'vrai_faux';
   const isUnique = type === 'qcm_unique';
-  const meta     = TYPE_META[type] || TYPE_META['ouverte'];
+
+  const TYPE_COLORS = {
+    enonce: '#9ca3af', ouverte: '#3b82f6', qcm_unique: '#8b5cf6',
+    qcm_multiple: '#6366f1', vrai_faux: '#10b981', pratique: '#f59e0b',
+  };
+  const accentColor = TYPE_COLORS[type] || '#3b82f6';
 
   const handleTypeChange = (newType) => {
     const nt = normalizeType(newType);
     onUpdateMultiple(question.id, { type: nt, options: (isQcmType(nt) || nt === 'vrai_faux') ? getDefaultOptions(nt) : [] });
   };
 
-  const handleOptChange   = (optId, field, value) => onUpdate(question.id, 'options', (question.options || []).map((o) => o.id === optId ? { ...o, [field]: value } : o));
-  const handleAddOpt      = () => onUpdate(question.id, 'options', [...(question.options || []), { id: uid(), text: `Option ${String.fromCharCode(65 + (question.options || []).length)}`, correct: false }]);
-  const handleRemoveOpt   = (optId) => onUpdate(question.id, 'options', question.options.filter((o) => o.id !== optId));
+  const handleOptChange = (optId, field, value) =>
+    onUpdate(question.id, 'options', (question.options || []).map((o) => o.id === optId ? { ...o, [field]: value } : o));
+  const handleAddOpt = () =>
+    onUpdate(question.id, 'options', [...(question.options || []), { id: uid(), text: `Option ${String.fromCharCode(65 + (question.options || []).length)}`, correct: false }]);
+  const handleRemoveOpt = (optId) =>
+    onUpdate(question.id, 'options', question.options.filter((o) => o.id !== optId));
 
   return (
     <div
-      className={`question-item question-item--${meta.color}`}
+      className="qitem"
+      style={{ '--accent': accentColor }}
       draggable
       onDragStart={() => onDragStart(qIndex)}
       onDragEnter={() => onDragEnter(qIndex)}
       onDragEnd={onDragEnd}
       onDragOver={(e) => e.preventDefault()}
     >
-      <div className="question-item-header">
-        <div className="q-header-left">
-          <span className="q-drag-handle" title="Glisser pour réordonner"><FiMenu size={14} /></span>
-          {!isEnonce && <span className="q-num-badge">{qIndex + 1}</span>}
-          <select className="q-type-select" value={type} onChange={(e) => handleTypeChange(e.target.value)}>
+      {/* Accent bar */}
+      <div className="qitem-accent" />
+
+      <div className="qitem-inner">
+        {/* Row 1 : type + points + delete */}
+        <div className="qitem-row">
+          <span className="qitem-drag"><FiMenu size={13} /></span>
+          {!isEnonce && <span className="qitem-num">{qIndex + 1}</span>}
+          <select className="qitem-type-select" value={type} onChange={(e) => handleTypeChange(e.target.value)}>
             {QUESTION_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
-        </div>
-        <div className="q-header-right">
+          <div className="qitem-spacer" />
           {!isEnonce && (
-            <div className="q-pts-wrap">
+            <div className="qitem-pts">
               <input
                 type="number"
-                className={`q-pts-input${parseFloat(question.points) > 20 ? ' pts-input--over' : ''}`}
+                className={`qitem-pts-input${parseFloat(question.points) > 20 ? ' pts-over' : ''}`}
                 placeholder="0"
                 value={question.points}
                 onChange={(e) => onUpdatePoints(question.id, e.target.value)}
                 min="0" max="20" step="0.5"
               />
-              <span className="q-pts-label">pts</span>
+              <span className="qitem-pts-label">pts</span>
             </div>
           )}
-          <button type="button" className="btn-action-sm btn-del-q" onClick={() => onDelete(question.id)}>
+          <button type="button" className="qitem-del" onClick={() => onDelete(question.id)}>
             <FiTrash2 size={13} />
           </button>
         </div>
-      </div>
 
-      <textarea className="question-edit-textarea"
-        placeholder={isEnonce ? "Texte de l'énoncé…" : 'Énoncé de la question…'}
-        value={question.text} onChange={(e) => onUpdate(question.id, 'text', e.target.value)} rows={3} />
+        {/* Textarea */}
+        <textarea
+          className="qitem-textarea"
+          placeholder={isEnonce ? "Texte de l'énoncé…" : 'Énoncé de la question…'}
+          value={question.text}
+          onChange={(e) => onUpdate(question.id, 'text', e.target.value)}
+          rows={3}
+        />
 
-      {/* Lignes de réponse — uniquement pour questions ouvertes et pratiques */}
-      {(type === 'ouverte' || type === 'pratique') && (
-        <div className="q-answer-lines-ctrl">
-          <label className="q-answer-lines-label">
-            <span>Lignes de réponse pour l'étudiant :</span>
-            <div className="q-answer-lines-input-wrap">
-              <button
-                type="button"
-                className="q-answer-lines-btn"
-                onClick={() => onUpdate(question.id, 'answerLines', Math.max(1, (question.answerLines || 3) - 1))}
-              >−</button>
-              <span className="q-answer-lines-val">{question.answerLines || 3}</span>
-              <button
-                type="button"
-                className="q-answer-lines-btn"
-                onClick={() => onUpdate(question.id, 'answerLines', Math.min(20, (question.answerLines || 3) + 1))}
-              >+</button>
-            </div>
-          </label>
-          {/* Aperçu des lignes */}
-          <div className="q-answer-lines-preview">
-            {Array.from({ length: Math.min(question.answerLines || 3, 5) }).map((_, i) => (
-              <div key={i} className="q-answer-line-preview" />
-            ))}
-            {(question.answerLines || 3) > 5 && (
-              <span className="q-answer-lines-more">+{(question.answerLines || 3) - 5} lignes</span>
+        {/* Lignes de réponse */}
+        {(type === 'ouverte' || type === 'pratique') && (
+          <div className="qitem-lines-ctrl">
+            <span className="qitem-lines-label">Lignes de réponse :</span>
+            <button type="button" className="qitem-lines-btn"
+              onClick={() => onUpdate(question.id, 'answerLines', Math.max(1, (question.answerLines || 3) - 1))}>−</button>
+            <span className="qitem-lines-val">{question.answerLines || 3}</span>
+            <button type="button" className="qitem-lines-btn"
+              onClick={() => onUpdate(question.id, 'answerLines', Math.min(20, (question.answerLines || 3) + 1))}>+</button>
+          </div>
+        )}
+
+        {/* Image */}
+        {question.imageUrl && (
+          <div className="qitem-img-wrap">
+            <img src={question.imageUrl} alt="Aperçu" className="qitem-img" />
+            <button type="button" className="qitem-img-del"
+              onClick={() => { onUpdate(question.id, 'image', null); onUpdate(question.id, 'imageUrl', null); }}>
+              <FiX size={12} />
+            </button>
+          </div>
+        )}
+
+        {/* MCQ */}
+        {!isEnonce && (isQcm || isVF) && (
+          <div className="qitem-mcq">
+            <p className="qitem-mcq-hint">
+              {isVF ? 'Vrai ou Faux' : isUnique ? 'Choix unique' : 'Choix multiple'}
+            </p>
+            {(question.options || []).map((opt, i) => {
+              const lbl = String.fromCharCode(65 + i);
+              return (
+                <div key={opt.id} className={`qitem-opt${opt.correct ? ' qitem-opt--correct' : ''}`}>
+                  <button
+                    type="button"
+                    className={`qitem-opt-check${opt.correct ? ' qitem-opt-check--on' : ''}`}
+                    onClick={() => {
+                      if (isUnique && !opt.correct) {
+                        (question.options || []).forEach((o) => { if (o.id !== opt.id && o.correct) handleOptChange(o.id, 'correct', false); });
+                      }
+                      handleOptChange(opt.id, 'correct', !opt.correct);
+                    }}
+                  >
+                    {isUnique ? (opt.correct ? '●' : '○') : (opt.correct ? '✓' : lbl)}
+                  </button>
+                  {isVF ? (
+                    <span className="qitem-opt-vf">{opt.text}</span>
+                  ) : (
+                    <input type="text" className="qitem-opt-input" placeholder={`Option ${lbl}`}
+                      value={opt.text} onChange={(e) => handleOptChange(opt.id, 'text', e.target.value)} />
+                  )}
+                  {!isVF && (question.options || []).length > 2 && (
+                    <button type="button" className="qitem-opt-del" onClick={() => handleRemoveOpt(opt.id)}>
+                      <FiX size={11} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+            {!isVF && (
+              <button type="button" className="qitem-add-opt" onClick={handleAddOpt}>
+                <FiPlus size={12} /> Ajouter une option
+              </button>
             )}
           </div>
-        </div>
-      )}
-
-      {question.imageUrl && (
-        <ImageUpload imageUrl={question.imageUrl}
-          onUpload={(f, url) => { onUpdate(question.id, 'image', f); onUpdate(question.id, 'imageUrl', url); }}
-          onRemove={() => { onUpdate(question.id, 'image', null); onUpdate(question.id, 'imageUrl', null); }} />
-      )}
-
-      {!isEnonce && (isQcm || isVF) && (
-        <McqOptions options={question.options} isVF={isVF} isUnique={isUnique}
-          onChange={handleOptChange} onAddOption={handleAddOpt} onRemoveOption={handleRemoveOpt} />
-      )}
+        )}
+      </div>
     </div>
   );
 };
 
-/* ── Exercise Block ── */
+/* ── Exercise Block — nouveau design ── */
 const ExerciseBlock = ({ exercise, exoIndex, onUpdateExo, onDeleteExo, onUpdateExercisePoints, onUpdateQuestionPoints }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [dropTarget, setDropTarget] = useState(false);
@@ -505,19 +290,11 @@ const ExerciseBlock = ({ exercise, exoIndex, onUpdateExo, onDeleteExo, onUpdateE
     dragFrom.current = null; dragTo.current = null;
   };
 
-  /* Drop depuis la toolbar */
   const handleToolDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDropTarget(false);
+    e.preventDefault(); e.stopPropagation(); setDropTarget(false);
     const toolId = e.dataTransfer.getData(TOOLBAR_DRAG_KEY);
     if (!toolId) return;
-    if (toolId.startsWith('q_')) {
-      const qType = toolId.replace('q_', '');
-      addQ(qType);
-      if (collapsed) setCollapsed(false);
-    }
-    // image : ouvre le file picker sur la dernière question
+    if (toolId.startsWith('q_')) { addQ(toolId.replace('q_', '')); if (collapsed) setCollapsed(false); }
     if (toolId === 'image') {
       const input = document.createElement('input');
       input.type = 'file'; input.accept = 'image/*';
@@ -526,10 +303,7 @@ const ExerciseBlock = ({ exercise, exoIndex, onUpdateExo, onDeleteExo, onUpdateE
         const reader = new FileReader();
         reader.onload = (re) => {
           const lastQ = exercise.questions[exercise.questions.length - 1];
-          if (lastQ) {
-            updateQ(lastQ.id, 'image', file);
-            updateQ(lastQ.id, 'imageUrl', re.target?.result);
-          }
+          if (lastQ) { updateQ(lastQ.id, 'image', file); updateQ(lastQ.id, 'imageUrl', re.target?.result); }
         };
         reader.readAsDataURL(file);
       };
@@ -540,31 +314,33 @@ const ExerciseBlock = ({ exercise, exoIndex, onUpdateExo, onDeleteExo, onUpdateE
   const totalQpts = exercise.questions.reduce((s, q) => s + (parseFloat(q.points) || 0), 0);
 
   return (
-    <div className="exercise-container">
-      <div className="exercise-header">
-        <div className="exercise-header-left">
-          <span className="exercise-num">{exoIndex + 1}</span>
-          <input type="text" className="exercise-title-input" value={exercise.title}
-            onChange={(e) => onUpdateExo(exercise.id, 'title', e.target.value)}
-            placeholder={`Exercice ${exoIndex + 1}`} />
-        </div>
-        <div className="exercise-header-right">
-          <div className="exercise-pts-group">
+    <div className="exo-block">
+      <div className="exo-header">
+        <span className="exo-num">{exoIndex + 1}</span>
+        <input
+          type="text"
+          className="exo-title"
+          value={exercise.title}
+          onChange={(e) => onUpdateExo(exercise.id, 'title', e.target.value)}
+          placeholder={`Exercice ${exoIndex + 1}`}
+        />
+        <div className="exo-header-right">
+          <div className="exo-pts-wrap">
             <input
               type="number"
-              className={`exercise-pts-input${parseFloat(exercise.points) > 20 ? ' pts-input--over' : ''}`}
-              placeholder="Pts"
+              className={`exo-pts-input${parseFloat(exercise.points) > 20 ? ' pts-over' : ''}`}
+              placeholder="—"
               value={exercise.points}
               onChange={(e) => onUpdateExercisePoints(exercise.id, e.target.value)}
               min="0" max="20" step="0.5"
             />
-            <span className="exercise-pts-label">pts</span>
+            <span className="exo-pts-label">pts</span>
           </div>
-          {totalQpts > 0 && <span className="exercise-auto-pts" title="Total automatique des questions">∑ {totalQpts}</span>}
-          <button type="button" className="btn-action-sm btn-collapse-exo" onClick={() => setCollapsed(!collapsed)}>
-            {collapsed ? <FiChevronDown size={14} /> : <FiChevronUp size={14} />}
+          {totalQpts > 0 && <span className="exo-sum" title="Somme des questions">∑{totalQpts}</span>}
+          <button type="button" className="exo-btn" onClick={() => setCollapsed(!collapsed)}>
+            {collapsed ? <FiChevronDown size={13} /> : <FiChevronUp size={13} />}
           </button>
-          <button type="button" className="btn-action-sm btn-del-q" onClick={() => onDeleteExo(exercise.id)}>
+          <button type="button" className="exo-btn exo-btn--del" onClick={() => onDeleteExo(exercise.id)}>
             <FiTrash2 size={13} />
           </button>
         </div>
@@ -572,7 +348,7 @@ const ExerciseBlock = ({ exercise, exoIndex, onUpdateExo, onDeleteExo, onUpdateE
 
       {!collapsed && (
         <div
-          className={`exercise-body ${dropTarget ? 'exercise-body--drop-target' : ''}`}
+          className={`exo-body${dropTarget ? ' exo-body--drop' : ''}`}
           onDragOver={(e) => { e.preventDefault(); if (e.dataTransfer.types.includes(TOOLBAR_DRAG_KEY)) setDropTarget(true); }}
           onDragLeave={() => setDropTarget(false)}
           onDrop={handleToolDrop}
@@ -584,17 +360,21 @@ const ExerciseBlock = ({ exercise, exoIndex, onUpdateExo, onDeleteExo, onUpdateE
               onDelete={deleteQ}
               onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} />
           ))}
+          {exercise.questions.length === 0 && (
+            <div className="exo-empty">Glissez une question ici ou utilisez la barre latérale</div>
+          )}
         </div>
       )}
     </div>
   );
 };
 
-/* ── Section Block ── */
+/* ── Section Block — nouveau design ── */
 const SectionBlock = ({ section, sectionIndex, onUpdateSection, onDeleteSection, onUpdateExercisePoints, onUpdateQuestionPoints }) => {
-  const updateExo   = (exoId, field, value) => onUpdateSection(section.id, 'exercises', section.exercises.map((e) => e.id === exoId ? { ...e, [field]: value } : e));
-  const deleteExo   = (exoId) => onUpdateSection(section.id, 'exercises', section.exercises.filter((e) => e.id !== exoId));
-  const addExercise = () => onUpdateSection(section.id, 'exercises', [...section.exercises, makeExercise(section.exercises.length + 1)]);
+  const updateExo = (exoId, field, value) =>
+    onUpdateSection(section.id, 'exercises', section.exercises.map((e) => e.id === exoId ? { ...e, [field]: value } : e));
+  const deleteExo = (exoId) =>
+    onUpdateSection(section.id, 'exercises', section.exercises.filter((e) => e.id !== exoId));
 
   const totalPts = section.exercises.reduce((s, ex) => {
     const ep = parseFloat(ex.points) || 0;
@@ -604,21 +384,28 @@ const SectionBlock = ({ section, sectionIndex, onUpdateSection, onDeleteSection,
   const totalQ = section.exercises.reduce((s, ex) => s + ex.questions.length, 0);
 
   return (
-    <div className="section-container">
-      <div className="section-header" onClick={() => onUpdateSection(section.id, 'collapsed', !section.collapsed)}>
-        <div className="section-header-left">
-          <span className="section-pill">Partie {sectionIndex + 1}</span>
-          <input type="text" className="section-title-input" value={section.title}
-            placeholder={`Partie ${sectionIndex + 1}`}
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => onUpdateSection(section.id, 'title', e.target.value)} />
-        </div>
-        <div className="section-header-right">
-          <span className="section-points-badge">{totalPts > 0 ? `${totalPts} pts · ` : ''}{totalQ} q.</span>
-          <button type="button" className="btn-collapse">
-            {section.collapsed ? <FiChevronDown size={15} /> : <FiChevronUp size={15} />}
+    <div className="sec-block">
+      {/* Section header */}
+      <div className="sec-header" onClick={() => onUpdateSection(section.id, 'collapsed', !section.collapsed)}>
+        <span className="sec-badge">Partie {sectionIndex + 1}</span>
+        <input
+          type="text"
+          className="sec-title"
+          value={section.title}
+          placeholder={`Partie ${sectionIndex + 1}`}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => onUpdateSection(section.id, 'title', e.target.value)}
+        />
+        <div className="sec-header-right">
+          {(totalPts > 0 || totalQ > 0) && (
+            <span className="sec-meta">
+              {totalPts > 0 && `${totalPts} pts · `}{totalQ} q.
+            </span>
+          )}
+          <button type="button" className="sec-btn">
+            {section.collapsed ? <FiChevronDown size={14} /> : <FiChevronUp size={14} />}
           </button>
-          <button type="button" className="btn-section-del"
+          <button type="button" className="sec-btn sec-btn--del"
             onClick={(e) => { e.stopPropagation(); onDeleteSection(section.id); }}>
             <FiTrash2 size={13} />
           </button>
@@ -626,7 +413,7 @@ const SectionBlock = ({ section, sectionIndex, onUpdateSection, onDeleteSection,
       </div>
 
       {!section.collapsed && (
-        <div className="section-body">
+        <div className="sec-body">
           {section.exercises.map((ex, ei) => (
             <ExerciseBlock key={ex.id} exercise={ex} exoIndex={ei}
               onUpdateExo={updateExo} onDeleteExo={deleteExo}
@@ -644,6 +431,7 @@ const QuestionsTab = ({ sections, setSections, selectedTemplate, allTemplates, o
   const dragSecFrom    = useRef(null);
   const dragSecTo      = useRef(null);
   const [draggingTool, setDraggingTool] = useState(null);
+  const [isShowingBankModal, setIsShowingBankModal] = useState(false);
 
   const updateSection = useCallback((secId, field, value) =>
     setSections((prev) => prev.map((s) => s.id === secId ? { ...s, [field]: value } : s)), [setSections]);
@@ -804,93 +592,86 @@ const QuestionsTab = ({ sections, setSections, selectedTemplate, allTemplates, o
       tabIndex={-1}
       style={{ outline: 'none' }}
     >
-      <BaremeAlert total={stats.totalPts} />
+      {/* Modal Banque de Questions */}
+      <QuestionBankModal
+        isOpen={isShowingBankModal}
+        onClose={() => setIsShowingBankModal(false)}
+        onInsertFromBank={(q) => {
+          insertFromBank(q);
+          setIsShowingBankModal(false);
+        }}
+      />
 
-      {/* Layout 2 colonnes : toolbar + canvas */}
-      <div className="qt-layout">
+      {/* ── Barre horizontale sticky : barème + outils ── */}
+      <div className="qt-hbar-sticky-wrapper">
+        <HorizontalToolbar
+          sections={sections}
+          totalPts={stats.totalPts}
+          totalEx={stats.totalEx}
+          totalQ={stats.totalQ}
+          ptsOver={ptsOver}
+          ptsPct={ptsPct}
+          onOpenBank={() => setIsShowingBankModal(true)}
+          onAddSection={addSection}
+          onAddExercise={addExerciseToLast}
+          onAddQuestion={addQuestionToLast}
+          onDragStart={setDraggingTool}
+        />
+      </div>
 
-        {/* ── Barre d'outils ── */}
-        <Toolbar onDragStart={setDraggingTool} onInsertFromBank={insertFromBank} />
-
-        {/* ── Canvas principal ── */}
-        <div
-          className={`qt-canvas ${draggingTool ? 'qt-canvas--dragging' : ''}`}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={handleCanvasDrop}
-        >
-
-          {/* Barème */}
-          {stats.totalQ > 0 && (
-            <div className={`bareme-summary ${ptsOver ? 'bareme-summary--over' : ''}`}>
-              <div className="bareme-main-stat">
-                <div className="bareme-total" style={ptsOver ? { color: '#ff6b82' } : {}}>
-                  {stats.totalPts > 0 ? stats.totalPts : '—'}<span className="bareme-total-denom">/20</span>
-                </div>
-                <div className="bareme-label">Barème total</div>
-                <div className="bareme-progress-bar">
-                  <div className="bareme-progress-fill" style={{ width: `${ptsPct}%`, background: ptsOver ? '#ff6b82' : 'var(--ce-accent)' }} />
-                </div>
-              </div>
-              <div className="bareme-breakdown">
-                {[{ label: 'Partie(s)', value: sections.length }, { label: 'Exercice(s)', value: stats.totalEx }, { label: 'Question(s)', value: stats.totalQ }].map(({ label, value }) => (
-                  <div key={label} className="bareme-item"><strong>{value}</strong><span>{label}</span></div>
-                ))}
-              </div>
+      {/* ── Canvas pleine largeur ── */}
+      <div
+        className={`qt-canvas${draggingTool ? ' qt-canvas--dragging' : ''}`}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={handleCanvasDrop}
+      >
+        {sections.length === 0 ? (
+          <div className="qt-empty-state">
+            <div className="qt-empty-icon"><FiZap size={26} /></div>
+            <p className="qt-empty-title">Construisez votre examen</p>
+            <p className="qt-empty-hint">Utilisez la barre d'outils ci-dessus ou les boutons ci-dessous</p>
+            <div className="qt-empty-actions">
+              <button type="button" className="qt-empty-btn qt-empty-btn--primary" onClick={addSection}>
+                <FiLayers size={14} /> Nouvelle partie
+              </button>
+              <button type="button" className="qt-empty-btn qt-empty-btn--secondary" onClick={() => addQuestionToLast('ouverte')}>
+                <FiHelpCircle size={14} /> Question directe
+              </button>
             </div>
-          )}
-
-          {/* Sections */}
-          {sections.length === 0 ? (
-            <div className="qt-drop-zone">
-              <div className="qt-drop-zone-icon">
-                <FiZap size={28} />
-              </div>
-              <p className="qt-drop-zone-title">Commencez à construire votre examen</p>
-              <p className="qt-drop-zone-hint">Glissez un outil depuis la barre de gauche, ou utilisez les boutons ci-dessous</p>
-              <div className="qt-drop-zone-actions">
-                <button type="button" className="qt-quick-btn qt-quick-btn--section" onClick={addSection}>
-                  <FiLayers size={14} /> Nouvelle partie
-                </button>
-                <button type="button" className="qt-quick-btn qt-quick-btn--question" onClick={() => addQuestionToLast('ouverte')}>
-                  <FiHelpCircle size={14} /> Question directe
-                </button>
-              </div>
-            </div>
-          ) : (
-            sections.map((s, si) => (
-              <div
-                key={s.id}
-                draggable
-                onDragStart={() => handleSecDragStart(si)}
-                onDragEnter={() => handleSecDragEnter(si)}
-                onDragEnd={handleSecDragEnd}
-                onDragOver={(e) => e.preventDefault()}
-                className="section-drag-wrapper"
-              >
-                <SectionBlock section={s} sectionIndex={si}
-                  onUpdateSection={updateSection} onDeleteSection={deleteSection}
-                  onUpdateExercisePoints={updateExercisePoints}
-                  onUpdateQuestionPoints={updateQuestionPoints} />
-              </div>
-            ))
-          )}
-
-          {/* Actions navigation */}
-          <div className="exam-actions">
-            <button type="button" className="exam-btn-secondary" onClick={() => onTabChange('Modèles')}>
-              <FiChevronLeft /> Modèles
-            </button>
-            <button
-              type="button"
-              className={`exam-btn-primary ${ptsOver ? 'exam-btn-primary--disabled' : ''}`}
-              onClick={() => {
-                if (ptsOver) { onSetError?.('Le barème total dépasse 20 pts. Corrigez avant de continuer.'); return; }
-                onTabChange('Export');
-              }}
-            >
-              Continuer vers Export <FiChevronRight />
-            </button>
           </div>
+        ) : (
+          sections.map((s, si) => (
+            <div
+              key={s.id}
+              draggable
+              onDragStart={() => handleSecDragStart(si)}
+              onDragEnter={() => handleSecDragEnter(si)}
+              onDragEnd={handleSecDragEnd}
+              onDragOver={(e) => e.preventDefault()}
+            >
+              <SectionBlock section={s} sectionIndex={si}
+                onUpdateSection={updateSection} onDeleteSection={deleteSection}
+                onUpdateExercisePoints={updateExercisePoints}
+                onUpdateQuestionPoints={updateQuestionPoints} />
+            </div>
+          ))
+        )}
+
+        {/* Navigation */}
+        <div className="exam-actions">
+          <button type="button" className="exam-btn-secondary" onClick={() => onTabChange('Modèles')}>
+            <FiChevronLeft /> Modèles
+          </button>
+          <button
+            type="button"
+            className={`exam-btn-primary${ptsOver ? ' exam-btn-primary--disabled' : ''}`}
+            onClick={() => {
+              if (ptsOver) { onSetError?.('Le barème total dépasse 20 pts. Corrigez avant de continuer.'); return; }
+              onTabChange('Export');
+            }}
+          >
+            Continuer vers Export <FiChevronRight />
+          </button>
         </div>
       </div>
     </section>

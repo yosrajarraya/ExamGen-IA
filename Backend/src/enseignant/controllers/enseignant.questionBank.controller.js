@@ -25,6 +25,7 @@ const normalizeQuestionItem = (item) => ({
   anneeUniversitaire: item.anneeUniversitaire,
   type: normalizeQuestionType(item.type),
   answerLines: typeof item.answerLines === 'number' ? item.answerLines : null,
+  options: Array.isArray(item.options) ? item.options : [],
   createdBy: item.createdBy.toString(),
   createdByName: item.createdByName,
   createdByEmail: item.createdByEmail,
@@ -49,7 +50,7 @@ const addQuestionToBank = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Le texte de la question est requis" });
-    const { matiere, niveau, anneeUniversitaire, type, answerLines } = req.body || {};
+    const { matiere, niveau, anneeUniversitaire, type, answerLines, options } = req.body || {};
     
     // Log pour debug
     console.log('📝 [addQuestionToBank] Type reçu:', type, '| Type normalisé:', normalizeQuestionType(type));
@@ -61,6 +62,16 @@ const addQuestionToBank = async (req, res) => {
       return res.status(404).json({ message: "Enseignant introuvable" });
     
     const normalizedType = normalizeQuestionType(type);
+
+    // Normalise les options reçues
+    const normalizedOptions = Array.isArray(options)
+      ? options.map((o, i) => ({
+          id:      String(o.id || `opt_${i}`),
+          text:    String(o.text || '').trim(),
+          correct: !!o.correct,
+        }))
+      : [];
+
     const created = await QuestionBankItem.create({
       text,
       matiere: String(matiere || "").trim(),
@@ -68,6 +79,7 @@ const addQuestionToBank = async (req, res) => {
       anneeUniversitaire: String(anneeUniversitaire || "").trim(),
       type: normalizedType,
       answerLines: typeof answerLines === 'number' ? answerLines : undefined,
+      options: normalizedOptions,
       createdBy: req.user.id,
       createdByName:
         `${enseignant.Prenom || ""} ${enseignant.Nom || ""}`.trim(),
@@ -160,6 +172,14 @@ const updateQuestionBankItem = async (req, res) => {
     item.type = type;
     if (typeof req.body.answerLines === 'number') {
       item.answerLines = req.body.answerLines;
+    }
+    // Sauvegarde des options QCM
+    if (Array.isArray(req.body.options)) {
+      item.options = req.body.options.map((o, i) => ({
+        id:      String(o.id || `opt_${i}`),
+        text:    String(o.text || '').trim(),
+        correct: !!o.correct,
+      }));
     }
     await item.save();
     return res.status(200).json({

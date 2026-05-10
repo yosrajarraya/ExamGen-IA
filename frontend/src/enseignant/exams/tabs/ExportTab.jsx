@@ -1,7 +1,7 @@
 ﻿import { useState } from 'react';
 import {
   FiArrowLeft, FiSave, FiUploadCloud, FiFileText,
-  FiDownload, FiCheck, FiLoader, FiEye, FiX,
+  FiDownload, FiCheck, FiLoader,
 } from 'react-icons/fi';
 import iitLogoAsset from '../../../assets/iit2.png';
 
@@ -566,13 +566,12 @@ const ExportTab = ({
   exportMessage,
   exportError,
   onSave,
-  onExportWord,
   onTabChange,
 }) => {
   const [wordLoading, setWordLoading] = useState(false);
   const [wordDone,    setWordDone]    = useState(false);
   const [wordError,   setWordError]   = useState('');
-  const [showA4,      setShowA4]      = useState(false);
+  const [visibility,  setVisibility]  = useState('public');
 
   /* Résolution du modèle actif */
   const selectedTpl = selectedTemplate
@@ -609,12 +608,8 @@ const ExportTab = ({
     try {
       if (!selectedTpl && !backendTpl) throw new Error('Veuillez sélectionner un modèle.');
       if (totalQuestions === 0) throw new Error('Veuillez ajouter au moins une question.');
-      /* Utilise finishAndSaveExam depuis CreateExam — génère un vrai .docx */
-      if (onExportWord) {
-        await onExportWord();
-      } else {
-        exportToWord(examForm, sections, activeTpl);
-      }
+      // Passe la visibilité choisie au moment du téléchargement
+      await onSave('Exporte', visibility);
       setWordDone(true);
       setTimeout(() => setWordDone(false), 2500);
     } catch (err) {
@@ -626,6 +621,7 @@ const ExportTab = ({
 
   return (
     <section className="exam-card export-section">
+      
       <div className="export-header">
         <h2>Finaliser l'examen</h2>
         <p className="export-subtitle">Vérifiez l'aperçu puis sauvegardez ou exportez le fichier Word.</p>
@@ -656,24 +652,30 @@ const ExportTab = ({
       {/* Bloc export Word */}
       <div className="word-export-block">
         <div className="word-export-info">
+
           <div className="word-export-icon"><FiFileText size={22} /></div>
           <div>
             <div className="word-export-title">Export Word</div>
-            <div className="word-export-desc">Télécharge l'examen avec l'en-tête du modèle choisi, les questions et les numéros de pages.</div>
+            <div className="word-export-desc">Exportez l’examen au format Word avec sauvegarde automatique dans la banque</div>
           </div>
         </div>
-
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+ <div className="visibility-toggle-group">
           <button
             type="button"
-            className="btn-word-export"
-            style={{ background: '#059669', boxShadow: '0 2px 8px rgba(5,150,105,0.25)' }}
-            onClick={() => setShowA4(true)}
-            disabled={!(selectedTpl || backendTpl)}
+            className={`visibility-btn ${visibility === 'private' ? 'visibility-btn--active visibility-btn--private' : ''}`}
+            onClick={() => setVisibility('private')}
           >
-            <FiEye size={16} /> Aperçu A4
+            🔒 Privé
           </button>
-
+          <button
+            type="button"
+            className={`visibility-btn ${visibility === 'public' ? 'visibility-btn--active visibility-btn--public' : ''}`}
+            onClick={() => setVisibility('public')}
+          >
+            🌐 Public
+          </button>
+        </div>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
             type="button"
             className={`btn-word-export ${wordDone ? 'btn-word-export--done' : ''}`}
@@ -684,7 +686,7 @@ const ExportTab = ({
               ? <><FiLoader className="spin" size={16} /> Génération…</>
               : wordDone
                 ? <><FiCheck size={16} /> Téléchargé</>
-                : <><FiDownload size={16} /> Télécharger Word</>
+                : <><FiDownload size={16} /> Télécharger & publier</>
             }
           </button>
         </div>
@@ -694,43 +696,18 @@ const ExportTab = ({
       {exportMessage && <p className="msg-success export-msg">{exportMessage}</p>}
       {exportError   && <p className="msg-error export-msg">{exportError}</p>}
 
+      {/* Visibilité de l'examen */}
+  
       {/* Actions */}
       <div className="exam-actions">
         <button type="button" className="exam-btn-secondary" onClick={() => onTabChange('Questions')} disabled={isSavingExam}>
           <FiArrowLeft /> Retour aux Questions
         </button>
-        <button type="button" className="exam-btn-secondary export-action-btn" onClick={() => onSave('Brouillon')} disabled={isSavingExam || !canExport}>
+        <button type="button"className="exam-btn-gold export-action-btn"  onClick={() => onSave('Brouillon', visibility)} disabled={isSavingExam || !canExport}>
           <FiSave /> {isSavingExam ? 'Sauvegarde…' : 'Sauvegarder brouillon'}
         </button>
-        <button type="button" className="exam-btn-gold export-action-btn" onClick={() => onSave('En cours')} disabled={isSavingExam || !canExport}>
-          <FiUploadCloud /> {isSavingExam ? 'Publication…' : "Publier l'examen"}
-        </button>
-      </div>
 
-      {/* Modal aperçu A4 */}
-      {showA4 && (selectedTpl || backendTpl) && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.65)', zIndex: 9999, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '24px', overflow: 'auto' }}
-          onClick={() => setShowA4(false)}
-        >
-          <div
-            style={{ background: '#fff', borderRadius: '14px', width: 'min(880px, 96vw)', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ height: '56px', padding: '0 18px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <strong>Aperçu A4 — {examForm.titre || activeTpl.nom || activeTpl.titreExamen}</strong>
-              <button type="button" onClick={() => setShowA4(false)} style={{ width: '34px', height: '34px', borderRadius: '50%', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <FiX size={16} />
-              </button>
-            </div>
-            <div style={{ overflow: 'auto', background: '#e5e7eb', padding: '24px', maxHeight: 'calc(90vh - 56px)' }}>
-              <div style={{ width: `${A4_W}px`, margin: '0 auto', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
-                <ExamA4Preview examForm={examForm} sections={sections} tpl={activeTpl} />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </section>
   );
 };

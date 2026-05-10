@@ -46,7 +46,8 @@ export const addQuestionToBank = async (
   niveau = '',
   anneeUniversitaire = '',
   type = 'ouverte',
-  answerLines = undefined
+  answerLines = undefined,
+  options = []
 ) => {
   const payload = {
     text,
@@ -56,6 +57,7 @@ export const addQuestionToBank = async (
     type,
   };
   if (typeof answerLines === 'number') payload.answerLines = answerLines;
+  if (Array.isArray(options) && options.length > 0) payload.options = options;
   const response = await api.post('/enseignant/questions/bank', payload);
   return response.data;
 };

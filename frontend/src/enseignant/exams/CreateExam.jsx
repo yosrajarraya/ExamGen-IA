@@ -660,6 +660,15 @@ const CreateExam = () => {
           : Array.isArray(tplRaw?.data) ? tplRaw.data
             : Array.isArray(tplRaw?.templates) ? tplRaw.templates : [];
 
+        // ─── Filtrer les templates selon le département et la filière de l'enseignant ───
+        if (user?.Departement || user?.Filiere) {
+          tpls = tpls.filter(tpl => {
+            const deptMatch = !user.Departement || tpl.departementFr === user.Departement;
+            const filiereMatch = !user.Filiere || tpl.filiereFr === user.Filiere;
+            return deptMatch && filiereMatch;
+          });
+        }
+
         setMesExamens(mesEx); setAutresExamens(autEx);
         setMesQuestions(mesQ); setAutresQuestions(autQ);
         setFilteredMesExamens(mesEx); setFilteredAutresExamens(autEx);
@@ -677,7 +686,7 @@ const CreateExam = () => {
       }
     };
     load();
-  }, []);
+  }, [user]);
 
   // ─── Chargement examen à éditer ───────────────────────────────────────────
   useEffect(() => {
@@ -775,7 +784,7 @@ const CreateExam = () => {
   /* ═══════════════════════════════════════════════════════════════════════════
      BUILD & SAVE EXAM — génération .docx corrigée
      ═══════════════════════════════════════════════════════════════════════════ */
-  const finishAndSaveExam = async (overrideStatut) => {
+  const finishAndSaveExam = async (overrideStatut, visibility = 'public') => {
     const titre = examForm.titre.trim();
     if (!titre) { setExportError("Le titre de l'examen est requis"); return; }
 
@@ -1422,6 +1431,7 @@ const CreateExam = () => {
         noteTotale: FIXED_EXAM_TOTAL,
         questionsCount: allQuestions.length,
         status: statusToUse,
+        visibility: visibility || 'public',
         fileName: filename,
         fileMimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         fileContentBase64: b64,
@@ -1443,7 +1453,8 @@ const CreateExam = () => {
                 examForm.niveau.trim(),
                 `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
                 q.type || 'ouverte',
-                typeof q.answerLines === 'number' ? q.answerLines : undefined
+                typeof q.answerLines === 'number' ? q.answerLines : undefined,
+                Array.isArray(q.options) ? q.options : []
               ).catch((err) => console.error('Erreur sauvegarde question:', err))
             )
         )
@@ -1503,14 +1514,16 @@ const CreateExam = () => {
           </div>
         </header>
 
+        {/* ── Onglets — style original ── */}
         <nav className="exam-tabs" role="tablist">
-          {TABS.map((tab) => (
+          {TABS.map((tab, i) => (
             <button
               key={tab} type="button" role="tab"
               aria-selected={activeTab === tab}
               className={`exam-tab ${activeTab === tab ? 'active' : ''}`}
               onClick={() => setActiveTab(tab)}
             >
+              <span className="exam-tab-step">{i + 1}</span>
               {tab}
             </button>
           ))}
@@ -1551,7 +1564,6 @@ const CreateExam = () => {
             exportMessage={exportMessage}
             exportError={exportError}
             onSave={finishAndSaveExam}
-            onExportWord={() => finishAndSaveExam('Exporte')}
             onTabChange={setActiveTab}
           />
         )}

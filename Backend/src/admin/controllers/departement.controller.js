@@ -1,12 +1,13 @@
 const Departement = require('../models/Departement');
 
 const DEFAULT_DEPARTEMENTS = [
-  'Informatique',
-  'Développement logiciel',
-  'Réseaux et télécommunications',
-  'Intelligence artificielle',
-  'Data Science',
-  'Cybersécurité',
+  'Computer Science',
+  'Civil Engineering',
+  'Mechanical Engineering',
+  'Industrial Engineering',
+  'Chemical Engineering',
+  'Telecommunications Engineering',
+  'Architecture',
 ];
 
 const ensureDefaultDepartements = async () => {

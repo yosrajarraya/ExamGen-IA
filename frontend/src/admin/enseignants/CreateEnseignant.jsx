@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { createEnseignant, updateEnseignant, getDepartements } from '../../api/admin/Enseignant.api';
+import { createEnseignant, updateEnseignant } from '../../api/admin/Enseignant.api';
+import { DEPARTEMENTS, FILIERES } from '../../utils/template.utils';
 import './CreateEnseignant.css';
 
 const EMPTY_FORM = {
@@ -9,6 +10,7 @@ const EMPTY_FORM = {
   Telephone: '',
   Grade: '',
   Departement: '',
+  Filiere: '',
   Specialite: '',
   Active: true,
 };
@@ -17,21 +19,9 @@ const CreateEnseignant = ({ isOpen, onClose, onCreated, onError, showToast, mode
   const [form, setForm] = useState(EMPTY_FORM);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [departements, setDepartements] = useState([]);
 
   useEffect(() => {
     if (!isOpen) return;
-
-    const loadDepartements = async () => {
-      try {
-        const data = await getDepartements();
-        setDepartements(Array.isArray(data) ? data : []);
-      } catch {
-        setDepartements([]);
-      }
-    };
-
-    loadDepartements();
 
     if (mode === 'edit' && initialData) {
       setForm({
@@ -41,6 +31,7 @@ const CreateEnseignant = ({ isOpen, onClose, onCreated, onError, showToast, mode
         Telephone: initialData.Telephone || '',
         Grade: initialData.Grade || '',
         Departement: initialData.Departement || '',
+        Filiere: initialData.Filiere || '',
         Specialite: initialData.Specialite || '',
         Active: typeof initialData.Active === 'boolean' ? initialData.Active : true,
       });
@@ -157,31 +148,47 @@ const CreateEnseignant = ({ isOpen, onClose, onCreated, onError, showToast, mode
             </div>
           </div>
 
-          {/* Département + Spécialité */}
+          {/* Département + Filière */}
           <div className="form-row">
             <div className="form-group">
               <label>Département</label>
               <select value={form.Departement} onChange={set('Departement')}>
                 <option value="">Sélectionner un département</option>
-                {departements.map((departement) => (
-                  <option key={departement.id} value={departement.name}>
-                    {departement.name}
+                {DEPARTEMENTS.map((departement) => (
+                  <option key={departement} value={departement}>
+                    {departement}
                   </option>
                 ))}
-                {form.Departement && !departements.some((departement) => departement.name === form.Departement) && (
-                  <option value={form.Departement}>{form.Departement}</option>
-                )}
               </select>
             </div>
             <div className="form-group">
-              <label>Spécialité</label>
-              <input
-                type="text"
-                value={form.Specialite}
-                onChange={set('Specialite')}
-                placeholder="Algorithmique"
-              />
+              <label>Filière</label>
+              <select value={form.Filiere} onChange={set('Filiere')}>
+                <option value="">Sélectionner une filière</option>
+                {form.Departement && FILIERES[form.Departement]
+                  ? FILIERES[form.Departement].map((filiere) => (
+                      <option key={filiere} value={filiere}>
+                        {filiere}
+                      </option>
+                    ))
+                  : null
+                }
+                {form.Filiere && (!form.Departement || !FILIERES[form.Departement]?.includes(form.Filiere)) && (
+                  <option value={form.Filiere}>{form.Filiere}</option>
+                )}
+              </select>
             </div>
+          </div>
+
+          {/* Spécialité */}
+          <div className="form-group">
+            <label>Spécialité</label>
+            <input
+              type="text"
+              value={form.Specialite}
+              onChange={set('Specialite')}
+              placeholder="Algorithmique"
+            />
           </div>
 
           {/* Checkbox */}

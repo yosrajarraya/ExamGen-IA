@@ -65,6 +65,12 @@ const examBankItemSchema = new mongoose.Schema(
       trim: true,
       default: 'Exporte',
     },
+    visibility: {
+      type: String,
+      enum: ['public', 'private'],
+      default: 'public',
+      index: true,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Enseignant',
