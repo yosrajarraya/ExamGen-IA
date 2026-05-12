@@ -47,7 +47,8 @@ export const addQuestionToBank = async (
   anneeUniversitaire = '',
   type = 'ouverte',
   answerLines = undefined,
-  options = []
+  options = [],
+  imageUrl = ''
 ) => {
   const payload = {
     text,
@@ -58,6 +59,7 @@ export const addQuestionToBank = async (
   };
   if (typeof answerLines === 'number') payload.answerLines = answerLines;
   if (Array.isArray(options) && options.length > 0) payload.options = options;
+  if (imageUrl) payload.imageUrl = imageUrl;
   const response = await api.post('/enseignant/questions/bank', payload);
   return response.data;
 };

@@ -26,6 +26,7 @@ const normalizeQuestionItem = (item) => ({
   type: normalizeQuestionType(item.type),
   answerLines: typeof item.answerLines === 'number' ? item.answerLines : null,
   options: Array.isArray(item.options) ? item.options : [],
+  imageUrl: item.imageUrl || '',
   createdBy: item.createdBy.toString(),
   createdByName: item.createdByName,
   createdByEmail: item.createdByEmail,
@@ -50,7 +51,7 @@ const addQuestionToBank = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Le texte de la question est requis" });
-    const { matiere, niveau, anneeUniversitaire, type, answerLines, options } = req.body || {};
+    const { matiere, niveau, anneeUniversitaire, type, answerLines, options, imageUrl } = req.body || {};
     
     // Log pour debug
     console.log('📝 [addQuestionToBank] Type reçu:', type, '| Type normalisé:', normalizeQuestionType(type));
@@ -80,6 +81,7 @@ const addQuestionToBank = async (req, res) => {
       type: normalizedType,
       answerLines: typeof answerLines === 'number' ? answerLines : undefined,
       options: normalizedOptions,
+      imageUrl: typeof imageUrl === 'string' ? imageUrl : '',
       createdBy: req.user.id,
       createdByName:
         `${enseignant.Prenom || ""} ${enseignant.Nom || ""}`.trim(),
@@ -180,6 +182,10 @@ const updateQuestionBankItem = async (req, res) => {
         text:    String(o.text || '').trim(),
         correct: !!o.correct,
       }));
+    }
+    // Sauvegarde de l'image
+    if (typeof req.body.imageUrl === 'string') {
+      item.imageUrl = req.body.imageUrl;
     }
     await item.save();
     return res.status(200).json({

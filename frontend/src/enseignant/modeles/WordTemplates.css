@@ -18,11 +18,18 @@
 
 .profil-main {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  min-width: 0;
   padding: 20px 24px;
-  margin-left: 280px;
+  margin-left: var(--sb-width, 280px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 100vh;
+  transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Sidebar réduite */
+body.sidebar-collapsed .profil-main {
+  margin-left: var(--sb-width-collapsed, 68px) !important;
 }
 
 .profil-topbar {

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useAuth from '../../context/useAuth';
 import Sidebar from '../../components/sidebar/Sidebar';
 import { enseignantNavItems, buildEnseignantProfile } from '../../components/sidebar/sidebarConfigs';
@@ -144,6 +145,7 @@ const AddModal = ({ onSave, onClose }) => {
 const EditModal = ({ question, onSave, onClose }) => {
   const [text, setText]     = useState(question.text || '');
   const [type, setType]     = useState(normalizeQuestionType(question.type));
+  const [imageUrl, setImageUrl] = useState(question.imageUrl || '');
   const [options, setOptions] = useState(
     Array.isArray(question.options) && question.options.length > 0
       ? question.options.map((o, i) => ({
@@ -202,7 +204,7 @@ const EditModal = ({ question, onSave, onClose }) => {
     }
     setSaving(true); setErr('');
     try {
-      await onSave(clean, normalizeQuestionType(type), isQcmType(type) ? options : []);
+      await onSave(clean, normalizeQuestionType(type), isQcmType(type) ? options : [], imageUrl);
       onClose();
     } catch (e) {
       setErr(e?.response?.data?.message || 'Erreur de modification.');
@@ -319,6 +321,11 @@ const ViewModal = ({ question, index, isMine, onClose, onCopy }) => (
           </div>
         )}
         <p className="qb-modal-text">{question.text}</p>
+        {question.imageUrl && (
+          <div className="qb-modal-image-wrap">
+            <img src={question.imageUrl} alt="Image de la question" className="qb-modal-image" />
+          </div>
+        )}
         {question.options?.length > 0 && (
           <div className="qb-modal-options">
             {question.options.map((opt, oi) => (
@@ -511,6 +518,10 @@ const QuestionBank = () => {
   const hasFilters = search || filterMatiere || filterType;
   const resetFilters = () => { setSearch(''); setFilterMatiere(''); setFilterType(''); };
 
+  const navigate = useNavigate();
+  // keep a ref to navigate to use inside render closures
+  const navigateRef = useRef(navigate);
+
   return (
     <div className="qb-layout">
       <Sidebar roleLabel="Espace enseignant" navItems={enseignantNavItems} profile={buildEnseignantProfile(user)} onLogout={logout} />
@@ -601,7 +612,16 @@ const QuestionBank = () => {
                     index={activeTab === 'mes' ? offsetMes + i : offsetAutres + i}
                     isMine={activeTab === 'mes'}
                     onView={(q, idx) => setViewModal({ question: q, index: idx, isMine: activeTab === 'mes' })}
-                    onEdit={(q) => setEditModal(q)}
+                    onEdit={(q) => {
+                      // Redirect to CreateExam and pass the question to import
+                      try {
+                        const nav = navigateRef.current || navigate;
+                        nav('/enseignant/exams/create', { state: { importQuestion: q } });
+                      } catch (e) {
+                        // fallback to inline editor
+                        setEditModal(q);
+                      }
+                    }}
                     onDelete={handleDelete}
                     onCopy={handleCopy}
                   />

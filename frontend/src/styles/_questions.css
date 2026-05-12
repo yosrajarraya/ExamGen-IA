@@ -2902,7 +2902,7 @@
 
 
 /* ══════════════════════════════════════════════════════
-   BARRE HORIZONTALE UNIFIÉE — barème + outils
+   BARRE HORIZONTALE UNIFIÉE — 2 lignes : barème + outils
    ══════════════════════════════════════════════════════ */
 
 /* Wrapper sticky */
@@ -2910,74 +2910,72 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  /* margin: 0 -44px; */
-  padding: 8px 44px;
+  padding: 10px 0;
   background: var(--ce-bg);
   border-bottom: 1px solid var(--ce-border);
-  box-shadow: 0 2px 8px rgba(10,22,40,0.06);
+  box-shadow: 0 2px 10px rgba(10,22,40,0.07);
 }
 
-@media (max-width: 1100px) {
-  .qt-hbar-sticky-wrapper { margin: 0 -28px; padding: 8px 28px; }
-}
-
-@media (max-width: 768px) {
-  .qt-hbar-sticky-wrapper { margin: 0 -18px; padding: 8px 18px; }
-}
-
+/* Conteneur principal — 2 lignes */
 .qt-hbar {
-  display: flex;
-  align-items: center;
-  gap: 0;
   background: #fff;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 10px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.05);
   overflow: hidden;
-  flex-wrap: wrap;
 }
 
 .qt-hbar--over {
   border-color: #fca5a5;
-  background: #fff5f5;
 }
 
-/* Score barème */
-.qt-hbar-score {
+/* ── Ligne générique ── */
+.qt-hbar-row {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  width: 100%;
+}
+
+/* ── Ligne 1 : Barème + Stats ── */
+.qt-hbar-row--top {
   padding: 10px 18px;
-  min-width: 88px;
-  border-right: 1px solid #e5e7eb;
+  gap: 20px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #f8fafc;
+}
+
+/* Score */
+.qt-hbar-score-block {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
   flex-shrink: 0;
 }
 
 .qt-hbar-pts {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 800;
   color: #0e2b50;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 .qt-hbar-pts--over { color: #ef4444; }
 
 .qt-hbar-denom {
-  font-size: 0.7rem;
-  color: #9ca3af;
+  font-size: 0.78rem;
+  color: #94a3b8;
   font-weight: 500;
-  margin-left: 1px;
 }
 
 .qt-hbar-progress {
-  width: 52px;
+  width: 60px;
   height: 3px;
-  background: #e5e7eb;
+  background: #e2e8f0;
   border-radius: 2px;
   overflow: hidden;
-  margin-top: 5px;
+  margin-left: 8px;
+  align-self: center;
 }
 
 .qt-hbar-fill {
@@ -2986,72 +2984,78 @@
   transition: width 0.4s ease;
 }
 
-/* Chips stats */
-.qt-hbar-chips {
+/* Stats */
+.qt-hbar-stats {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 12px;
-  border-right: 1px solid #e5e7eb;
-  flex-shrink: 0;
+  gap: 6px;
 }
 
-.qt-hbar-chip {
+.qt-hbar-stat {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding: 5px 12px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  gap: 5px;
+  padding: 4px 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
   border-radius: 7px;
-  min-width: 56px;
 }
 
-.qt-hbar-chip strong {
+.qt-hbar-stat strong {
   font-size: 1rem;
   font-weight: 700;
-  color: #111827;
-  line-height: 1.1;
+  color: #0e2b50;
+  line-height: 1;
 }
 
-.qt-hbar-chip span {
-  font-size: 0.57rem;
-  color: #9ca3af;
+.qt-hbar-stat span {
+  font-size: 0.68rem;
+  color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-top: 1px;
 }
 
-/* Séparateur */
-.qt-hbar-divider {
-  width: 1px;
-  align-self: stretch;
-  background: #e5e7eb;
-  flex-shrink: 0;
+/* Warning dépassement */
+.qt-hbar-warning {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #ef4444;
+  padding: 4px 10px;
+  background: #fee2e2;
+  border-radius: 6px;
 }
 
-/* Actions rapides — draggables */
+/* ── Ligne 2 : Actions + Banque ── */
+.qt-hbar-row--bottom {
+  padding: 8px 14px;
+  gap: 6px;
+  background: #fff;
+}
+
+/* Actions */
 .qt-hbar-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 8px 12px;
+  gap: 5px;
   flex: 1;
   flex-wrap: wrap;
-  min-width: 0;
 }
 
 .qt-hbar-action {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 11px;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  background: var(--a-bg, #f9fafb);
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1.5px solid transparent;
+  background: var(--a-bg, #f8fafc);
   cursor: grab;
   font-family: inherit;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--a-color, #374151);
   white-space: nowrap;
@@ -3060,14 +3064,14 @@
 }
 
 .qt-hbar-action:hover {
-  filter: brightness(0.94);
+  filter: brightness(0.92);
   transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .qt-hbar-action:active {
   cursor: grabbing;
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 
 .qt-hbar-action-dot {
@@ -3084,29 +3088,32 @@
   pointer-events: none;
 }
 
-/* Bouton banque */
+/* Bouton Banque */
 .qt-hbar-bank {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: #eff6ff;
+  gap: 7px;
+  padding: 7px 16px;
+  background: #0e2b50;
   border: none;
-  border-left: 1px solid #e5e7eb;
+  border-radius: 8px;
   font-family: inherit;
   font-size: 0.78rem;
   font-weight: 600;
-  color: #1d4ed8;
+  color: #e8dcc4;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
   white-space: nowrap;
-  align-self: stretch;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
-.qt-hbar-bank:hover { background: #dbeafe; }
+.qt-hbar-bank:hover {
+  background: #0f2040;
+  transform: translateY(-1px);
+}
 
-/* Canvas pleine largeur */
+/* ── Canvas ── */
 .qt-canvas {
   width: 100%;
   min-width: 0;
@@ -3119,6 +3126,13 @@
   border-radius: 10px;
 }
 
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .qt-hbar-row--top { flex-wrap: wrap; gap: 10px; }
+  .qt-hbar-stats { flex-wrap: wrap; }
+  .qt-hbar-actions { gap: 4px; }
+  .qt-hbar-action { font-size: 0.72rem; padding: 4px 10px; }
+}
 /* Responsive */
 @media (max-width: 768px) {
   .qt-hbar-actions { padding: 6px 8px; gap: 3px; }
