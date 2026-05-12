@@ -45,6 +45,10 @@ const questionBankItemSchema = new mongoose.Schema(
       ],
       default: [],
     },
+    imageUrl: {
+      type: String,
+      default: '',
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Enseignant',

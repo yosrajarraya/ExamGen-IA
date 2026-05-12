@@ -3,7 +3,7 @@ import {
   FiTrash2, FiChevronLeft, FiChevronRight, FiChevronDown, FiChevronUp,
   FiX, FiPlus, FiAlignLeft, FiHelpCircle, FiCheckSquare,
   FiToggleLeft, FiCode, FiMenu, FiLayers,
-  FiZap, FiDatabase, FiCheckCircle,
+  FiZap, FiDatabase, FiCheckCircle, FiImage,
 } from 'react-icons/fi';
 import QuestionBankModal from './QuestionBankModal';
 
@@ -52,70 +52,71 @@ const QUICK_ACTIONS = [
   { id: 'q_vrai_faux',    label: 'Vrai / Faux',      dot: '#10b981', bg: '#ecfdf5', color: '#065f46' },
   { id: 'q_pratique',     label: 'Pratique',         dot: '#f59e0b', bg: '#fffbeb', color: '#92400e' },
   { id: 'q_enonce',       label: 'Énoncé',           dot: '#9ca3af', bg: '#f9fafb', color: '#374151' },
+  { id: 'image',          label: 'Image',            dot: '#f97316', bg: '#fff7ed', color: '#c2410c' },
 ];
 
 /* ── Barre horizontale unifiée : barème + outils ── */
-const HorizontalToolbar = ({ sections, totalPts, totalEx, totalQ, ptsOver, ptsPct, onOpenBank, onAddSection, onAddExercise, onAddQuestion, onDragStart }) => (
+const HorizontalToolbar = ({ sections, totalPts, totalEx, totalQ, ptsOver, ptsPct, onOpenBank, onAddSection, onAddExercise, onAddQuestion, onAddImage, onDragStart }) => (
   <div className={`qt-hbar${ptsOver ? ' qt-hbar--over' : ''}`}>
-    {/* Barème */}
-    <div className="qt-hbar-score">
-      <span className={`qt-hbar-pts${ptsOver ? ' qt-hbar-pts--over' : ''}`}>
-        {totalPts > 0 ? totalPts : '—'}<span className="qt-hbar-denom">/20</span>
-      </span>
-      <div className="qt-hbar-progress">
-        <div className="qt-hbar-fill" style={{ width: `${ptsPct}%`, background: ptsOver ? '#ef4444' : '#0e2b50' }} />
-      </div>
-    </div>
 
-    {/* Stats chips */}
-    <div className="qt-hbar-chips">
-      {[
-        { v: sections.length, l: 'Partie(s)' },
-        { v: totalEx,         l: 'Exercice(s)' },
-        { v: totalQ,          l: 'Question(s)' },
-      ].map(({ v, l }) => (
-        <div key={l} className="qt-hbar-chip">
-          <strong>{v}</strong>
-          <span>{l}</span>
+    {/* ── Ligne 1 : Barème + Stats ── */}
+    <div className="qt-hbar-row qt-hbar-row--top">
+      <div className="qt-hbar-score-block">
+        <span className={`qt-hbar-pts${ptsOver ? ' qt-hbar-pts--over' : ''}`}>
+          {totalPts > 0 ? totalPts : '—'}
+        </span>
+        <span className="qt-hbar-denom">/20</span>
+        <div className="qt-hbar-progress">
+          <div className="qt-hbar-fill" style={{ width: `${ptsPct}%`, background: ptsOver ? '#ef4444' : '#0e2b50' }} />
         </div>
-      ))}
+      </div>
+      <div className="qt-hbar-stats">
+        {[
+          { v: sections.length, l: 'Partie(s)' },
+          { v: totalEx,         l: 'Exercice(s)' },
+          { v: totalQ,          l: 'Question(s)' },
+        ].map(({ v, l }) => (
+          <div key={l} className="qt-hbar-stat">
+            <strong>{v}</strong>
+            <span>{l}</span>
+          </div>
+        ))}
+      </div>
+      {ptsOver && <div className="qt-hbar-warning">⚠ Barème dépasse 20 pts</div>}
     </div>
 
-    <div className="qt-hbar-divider" />
-
-    {/* Actions rapides — cliquables ET draggables */}
-    <div className="qt-hbar-actions">
-      {QUICK_ACTIONS.map(a => (
-        <button
-          key={a.id}
-          type="button"
-          className="qt-hbar-action"
-          style={{ '--a-dot': a.dot, '--a-bg': a.bg, '--a-color': a.color }}
-          draggable
-          onDragStart={(e) => {
-            e.dataTransfer.setData(TOOLBAR_DRAG_KEY, a.id);
-            onDragStart(a.id);
-          }}
-          onClick={() => {
-            if (a.id === 'section') onAddSection();
-            else if (a.id === 'exercise') onAddExercise();
-            else onAddQuestion(a.id.replace('q_', ''));
-          }}
-          title={`Cliquer ou glisser pour ajouter : ${a.label}`}
-        >
-          <span className="qt-hbar-action-dot" />
-          <span className="qt-hbar-action-label">{a.label}</span>
-        </button>
-      ))}
+    {/* ── Ligne 2 : Actions + Banque ── */}
+    <div className="qt-hbar-row qt-hbar-row--bottom">
+      <div className="qt-hbar-actions">
+        {QUICK_ACTIONS.map(a => (
+          <button
+            key={a.id}
+            type="button"
+            className="qt-hbar-action"
+            style={{ '--a-dot': a.dot, '--a-bg': a.bg, '--a-color': a.color }}
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.setData(TOOLBAR_DRAG_KEY, a.id);
+              onDragStart(a.id);
+            }}
+            onClick={() => {
+              if (a.id === 'section')   onAddSection();
+              else if (a.id === 'exercise') onAddExercise();
+              else if (a.id === 'image')    onAddImage?.();
+              else onAddQuestion(a.id.replace('q_', ''));
+            }}
+            title={`Cliquer ou glisser : ${a.label}`}
+          >
+            <span className="qt-hbar-action-dot" />
+            <span className="qt-hbar-action-label">{a.label}</span>
+          </button>
+        ))}
+      </div>
+      <button type="button" className="qt-hbar-bank" onClick={onOpenBank}>
+        <FiDatabase size={14} />
+        <span>Banque de questions</span>
+      </button>
     </div>
-
-    <div className="qt-hbar-divider" />
-
-    {/* Banque */}
-    <button type="button" className="qt-hbar-bank" onClick={onOpenBank}>
-      <FiDatabase size={14} />
-      <span>Banque</span>
-    </button>
   </div>
 );
 
@@ -536,6 +537,32 @@ const QuestionsTab = ({ sections, setSections, selectedTemplate, allTemplates, o
     });
   }, [setSections]);
 
+  /* Ajoute une image au dernier question (via bouton de la toolbar) */
+  const addImageToLast = useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*';
+    input.onchange = (ev) => {
+      const file = ev.target.files?.[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (re) => {
+        setSections((prev) => {
+          if (!prev || prev.length === 0) return prev;
+          const next = JSON.parse(JSON.stringify(prev));
+          const lastSec = next[next.length - 1];
+          if (!lastSec || !lastSec.exercises || lastSec.exercises.length === 0) return prev;
+          const lastEx = lastSec.exercises[lastSec.exercises.length - 1];
+          if (!lastEx || !lastEx.questions || lastEx.questions.length === 0) return prev;
+          const lastQ = lastEx.questions[lastEx.questions.length - 1];
+          lastQ.image = file;
+          lastQ.imageUrl = re.target?.result;
+          return next;
+        });
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  }, [setSections]);
+
   /* Raccourcis clavier */
   const handleKeyDown = useCallback((e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
@@ -615,6 +642,7 @@ const QuestionsTab = ({ sections, setSections, selectedTemplate, allTemplates, o
           onAddSection={addSection}
           onAddExercise={addExerciseToLast}
           onAddQuestion={addQuestionToLast}
+          onAddImage={addImageToLast}
           onDragStart={setDraggingTool}
         />
       </div>

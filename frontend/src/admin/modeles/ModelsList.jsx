@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   TYPE_LABELS,
   normalizeTemplate,
@@ -7,12 +7,15 @@ import {
 import { ExamPreview, ExamPreviewScaled } from '../../components/ExamPreview';
 import './WordTemplate.css';
 
+const PER_PAGE = 6;
+
 const ModelsList = ({ onEditModel, onCreateModel }) => {
   const [models,        setModels]        = useState([]);
   const [loading,       setLoading]       = useState(true);
   const [searchQuery,   setSearchQuery]   = useState('');
   const [previewModel,  setPreviewModel]  = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [page,          setPage]          = useState(1);
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -31,6 +34,9 @@ const ModelsList = ({ onEditModel, onCreateModel }) => {
     };
     fetchModels();
   }, []);
+
+  // Reset page when search changes
+  useEffect(() => { setPage(1); }, [searchQuery]);
 
   const handleCreate = () => {
     const newModel = makeDefaultModel();
@@ -57,13 +63,16 @@ const ModelsList = ({ onEditModel, onCreateModel }) => {
     }
   };
 
-  const filtered = models.filter(m => {
+  const filtered = useMemo(() => models.filter(m => {
     const q = searchQuery.toLowerCase();
     return !q
       || (m.nom        || '').toLowerCase().includes(q)
       || (m.matiere    || '').toLowerCase().includes(q)
       || (m.discipline || '').toLowerCase().includes(q);
-  });
+  }), [models, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const paginated  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   if (loading) return <div className="wt-loading">Chargement des modèles...</div>;
 
@@ -87,8 +96,9 @@ const ModelsList = ({ onEditModel, onCreateModel }) => {
         />
       </div>
 
+      {/* Grid — max 6 par page */}
       <div className="admin-templates-grid">
-        {filtered.map(m => {
+        {paginated.map(m => {
           const typeInfo = TYPE_LABELS[m.type] || { label: 'Autre', color: '#64748b' };
           return (
             <div key={m._localId} className="admin-template-card" onClick={() => onEditModel(m)}>
@@ -116,7 +126,50 @@ const ModelsList = ({ onEditModel, onCreateModel }) => {
             </div>
           );
         })}
+
+        {paginated.length === 0 && (
+          <div className="wt-empty-state">
+            <p>Aucun modèle trouvé{searchQuery ? ` pour « ${searchQuery} »` : ''}.</p>
+          </div>
+        )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="wt-pagination">
+          <button
+            className="wt-page-btn"
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+          >
+            ← Précédent
+          </button>
+
+          <div className="wt-page-nums">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+              <button
+                key={p}
+                className={`wt-page-num${p === page ? ' wt-page-num--active' : ''}`}
+                onClick={() => setPage(p)}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+
+          <button
+            className="wt-page-btn"
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+          >
+            Suivant →
+          </button>
+
+          <span className="wt-page-info">
+            {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} sur {filtered.length}
+          </span>
+        </div>
+      )}
 
       {previewModel && (
         <div className="preview-modal-overlay" onClick={() => setPreviewModel(null)}>

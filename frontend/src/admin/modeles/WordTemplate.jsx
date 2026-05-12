@@ -37,7 +37,7 @@ const WordTemplate = () => {
   };
 
   return (
-    <div className="profil-layout">
+    <div className="new-admin-layout">
       <Sidebar
         roleLabel="Espace administrateur"
         navItems={adminNavItems}
@@ -45,7 +45,7 @@ const WordTemplate = () => {
         onLogout={logout}
       />
 
-      <main className="profil-main">
+      <main className="new-admin-main">
         {view === 'list' ? (
           <ModelsList
             onEditModel={handleEditModel}

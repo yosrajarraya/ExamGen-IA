@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import {
   Document, Packer, Paragraph, TextRun,
   Table, TableRow, TableCell,
@@ -633,6 +633,7 @@ const CreateExam = () => {
   const [exportMessage, setExportMessage] = useState('');
   const [exportError, setExportError] = useState('');
   const [editingExamId, setEditingExamId] = useState(null);
+  const importedQuestionRef = useRef(null);
 
   const onFormChange = (field, value) =>
     setExamForm(prev => ({ ...prev, [field]: value }));
@@ -660,15 +661,7 @@ const CreateExam = () => {
           : Array.isArray(tplRaw?.data) ? tplRaw.data
             : Array.isArray(tplRaw?.templates) ? tplRaw.templates : [];
 
-        // ─── Filtrer les templates selon le département et la filière de l'enseignant ───
-        if (user?.Departement || user?.Filiere) {
-          tpls = tpls.filter(tpl => {
-            const deptMatch = !user.Departement || tpl.departementFr === user.Departement;
-            const filiereMatch = !user.Filiere || tpl.filiereFr === user.Filiere;
-            return deptMatch && filiereMatch;
-          });
-        }
-
+        // ─── Tous les templates sont accessibles à tous les enseignants ───
         setMesExamens(mesEx); setAutresExamens(autEx);
         setMesQuestions(mesQ); setAutresQuestions(autQ);
         setFilteredMesExamens(mesEx); setFilteredAutresExamens(autEx);
@@ -743,6 +736,58 @@ const CreateExam = () => {
       }
     })();
   }, [location, editingExamId]);
+
+  // Import a single question passed via navigation state (from QuestionBank 'Modifier')
+  useEffect(() => {
+    const imported = location.state?.importQuestion;
+    if (!imported || importedQuestionRef.current) return;
+
+    try {
+      const mapQ = (q) => {
+        const nid = `imp_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+        let t = (q.type || 'ouverte').toString();
+        if (t === 'qcm') t = 'qcm_multiple';
+        const opts = Array.isArray(q.options) ? q.options.map((o, i) => ({
+          id: o.id || `opt_${Date.now()}_${i}`,
+          text: typeof o === 'string' ? o : (o.text || ''),
+          correct: !!o.correct,
+        })) : [];
+
+        return {
+          id: nid,
+          type: t,
+          text: q.text || '',
+          points: '',
+          isEditing: false,
+          answerLines: q.answerLines || 3,
+          image: null,
+          imageUrl: q.imageUrl || null,
+          options: opts,
+        };
+      };
+
+      const qToAdd = mapQ(imported);
+      setSections((prev) => {
+        const next = Array.isArray(prev) ? JSON.parse(JSON.stringify(prev)) : [];
+        if (next.length === 0) next.push(makeSection(1));
+        const lastSec = next[next.length - 1];
+        if (!Array.isArray(lastSec.exercises) || lastSec.exercises.length === 0) {
+          lastSec.exercises = [{ id: `exo_${Date.now()}`, title: 'Exercice 1', points: '', collapsed: false, questions: [] }];
+        }
+        const lastEx = lastSec.exercises[lastSec.exercises.length - 1];
+        lastEx.questions = lastEx.questions || [];
+        lastEx.questions.push(qToAdd);
+        return next;
+      });
+      importedQuestionRef.current = imported.id || true;
+      setActiveTab('Questions');
+      setSuccessMessage('Question importée depuis la banque.');
+      // Clear state to avoid re-import on refresh
+      try { window.history.replaceState({}, document.title, location.pathname + location.search.replace(/(&?importQuestion=[^&]*)/, '')); } catch (e) {}
+    } catch (e) {
+      console.warn('Import question failed', e);
+    }
+  }, [location]);
 
   const _handleFilterChange = (key, val) => setFilter(p => ({ ...p, [key]: val }));
 
@@ -1454,7 +1499,8 @@ const CreateExam = () => {
                 `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
                 q.type || 'ouverte',
                 typeof q.answerLines === 'number' ? q.answerLines : undefined,
-                Array.isArray(q.options) ? q.options : []
+                Array.isArray(q.options) ? q.options : [],
+                q.imageUrl || ''
               ).catch((err) => console.error('Erreur sauvegarde question:', err))
             )
         )
