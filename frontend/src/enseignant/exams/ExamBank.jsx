@@ -1,5 +1,6 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FiChevronLeft, FiChevronRight, FiX, FiDownload, FiEdit2, FiTrash2, FiCopy } from 'react-icons/fi';
 import useAuth from '../../context/useAuth';
 import Sidebar from '../../components/sidebar/Sidebar';
 import { enseignantNavItems, buildEnseignantProfile } from '../../components/sidebar/sidebarConfigs';
@@ -42,21 +43,9 @@ const STATUS_CONFIG = {
 
 const PER_PAGE = 9; // 3 colonnes × 3 lignes
 
-/* ── Filtre structuré : Cycle → Année → Semestre ── */
-const CYCLES = [
-  { id: 'licence',      label: 'Licence',              icon: '🎓' },
-  { id: 'master',       label: 'Master / Mastère',     icon: '📚' },
-  { id: 'ingenieur',    label: 'Ingénieur',             icon: '⚙️' },
-  { id: 'prepa',        label: 'Cycle Préparatoire',   icon: '📝' },
-  { id: 'architecture', label: 'Architecture',          icon: '🏛' },
-];
-
+/* ── Filtre structuré : Filière → Année → Semestre ── */
 const ANNEES_PAR_CYCLE = {
-  licence:      ['1ère année', '2ème année', '3ème année'],
-  master:       ['1ère année', '2ème année'],
-  ingenieur:    ['1ère année', '2ème année', '3ème année'],
-  prepa:        ['1ère année', '2ème année'],
-  architecture: ['1ère année', '2ème année', '3ème année', '4ème année', '5ème année'],
+  default: ['1ère année', '2ème année', '3ème année', '4ème année', '5ème année'],
 };
 
 const SEMESTRES = ['Semestre 1', 'Semestre 2'];
@@ -68,15 +57,6 @@ const norm = (s) =>
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 
-/* Mots-clés pour détecter le cycle dans les champs filière/discipline/niveau */
-const CYCLE_KEYWORDS = {
-  licence:      ['licence', 'license', 'glid', 'msi', 'genie logiciel', 'management des systemes'],
-  master:       ['master', 'mastere', 'intelligence artificielle', 'cybersecurite', 'cloud'],
-  ingenieur:    ['ingenieur', 'genie informatique', 'genie civil', 'genie mecanique', 'genie industriel', 'genie des procedes'],
-  prepa:        ['preparatoire', 'prepa'],
-  architecture: ['architecture'],
-};
-
 const ANNEE_KEYWORDS = {
   '1ère année': ['1ere', '1re', 'premiere', '1ere annee'],
   '2ème année': ['2eme', 'deuxieme', '2eme annee'],
@@ -85,18 +65,30 @@ const ANNEE_KEYWORDS = {
   '5ème année': ['5eme', '5eme annee'],
 };
 
-const matchesCycle = (exam, cycleId) => {
-  if (!cycleId) return true;
-  const haystack = norm(
-    [exam.filiere, exam.discipline, exam.niveau, exam.title].join(' ')
-  );
-  return (CYCLE_KEYWORDS[cycleId] || []).some(kw => haystack.includes(kw));
+const normalizeDepartementLabel = (exam) => String(exam?.Departement || '').trim();
+
+const getDepartementKey = (exam) => norm(normalizeDepartementLabel(exam)) || '__sans_departement__';
+
+const matchesDepartement = (exam, departementKey) => {
+  if (!departementKey) return true;
+  return getDepartementKey(exam) === departementKey;
+};
+
+const normalizeFiliereLabel = (exam) => String(
+  exam?.filiere || exam?.Filiere || exam?.specialite || exam?.Specialite || exam?.discipline || ''
+).trim();
+
+const getFiliereKey = (exam) => norm(normalizeFiliereLabel(exam)) || '__sans_filiere__';
+
+const matchesFiliere = (exam, filiereKey) => {
+  if (!filiereKey) return true;
+  return getFiliereKey(exam) === filiereKey;
 };
 
 const matchesAnnee = (exam, annee) => {
   if (!annee) return true;
   const haystack = norm(
-    [exam.filiere, exam.discipline, exam.niveau].join(' ')
+    [exam.filiere, exam.Filiere, exam.specialite, exam.Specialite, exam.discipline, exam.niveau].join(' ')
   );
   return (ANNEE_KEYWORDS[annee] || []).some(kw => haystack.includes(kw));
 };
@@ -127,16 +119,47 @@ const Pagination = ({ page, total, onChange }) => {
   if (total <= 1) return null;
   return (
     <div className="eb-pagination">
-      <button className="eb-page-btn" onClick={() => onChange(page - 1)} disabled={page === 1}>← Précédent</button>
+      <button className="eb-page-btn" onClick={() => onChange(page - 1)} disabled={page === 1} title="Page précédente"><FiChevronLeft size={16} /></button>
       <div className="eb-page-nums">
         {Array.from({ length: total }, (_, i) => i + 1).map((p) => (
           <button key={p} className={`eb-page-num ${p === page ? 'eb-page-num--active' : ''}`} onClick={() => onChange(p)}>{p}</button>
         ))}
       </div>
-      <button className="eb-page-btn" onClick={() => onChange(page + 1)} disabled={page === total}>Suivant →</button>
+      <button className="eb-page-btn" onClick={() => onChange(page + 1)} disabled={page === total} title="Page suivante"><FiChevronRight size={16} /></button>
     </div>
   );
 };
+
+/* ── Delete Dialog Modal ── */
+const DeleteModal = ({ exam, onConfirm, onClose }) => (
+  <div className="qb-modal-overlay" onClick={onClose}>
+    <div className="qb-modal qb-modal--confirm" onClick={(e) => e.stopPropagation()}>
+      <div className="qb-modal-header">
+        <div className="qb-modal-header-left">
+          <div className="qb-modal-num qb-modal-num--danger">
+            <FiTrash2 size={14} />
+          </div>
+          <div>
+            <div className="qb-modal-label">Supprimer l'examen</div>
+          </div>
+        </div>
+      </div>
+      <div className="qb-modal-body">
+        <p className="qb-confirm-text">
+          Voulez-vous vraiment supprimer <strong>"{exam?.title || 'cet examen'}"</strong> définitivement de votre banque ?
+        </p>
+      </div>
+      <div className="qb-modal-footer">
+        <button className="qb-btn qb-btn--ghost" onClick={onClose}>
+          <FiX size={14} /> Annuler
+        </button>
+        <button className="qb-btn qb-btn--danger-full" onClick={onConfirm}>
+          <FiTrash2 size={14} /> Supprimer définitivement
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
 /* ── Exam Card ── */
 const ExamCard = ({ exam, isMine, onOpen }) => {
@@ -312,11 +335,11 @@ const ExamModal = ({ exam, isMine, onClose, onDownload, onEdit, onCopy, onDelete
         if (mounted) {
           let html = data?.rawHtml || '';
           html = html.replace(
-            /(<p[^>]*>)([^<]*Feuille[^<]*◄[^<]*<\/p>)/gi,
+            /(<p[^>]*>)([^<<]*Feuille[^<<]*◄[^<<]*<<\/p>)/gi,
             '<p style="text-align:right;font-size:10px;color:#888">$2'
           );
           html = html.replace(
-            /(<p[^>]*>)((?:[^<]|<(?!\/p>))*Feuille[^<]*◄(?:[^<]|<(?!\/p>))*<\/p>)/gi,
+            /(<p[^>]*>)((?:[^<<]|<(?!\/p>))*Feuille[^<<]*◄(?:[^<<]|<(?!\/p>))*<<\/p>)/gi,
             (match, tag, content) => {
               const newTag = tag.replace(/style="[^"]*"/, '').replace('<p', '<p style="text-align:right"');
               return newTag + content;
@@ -373,7 +396,6 @@ const ExamModal = ({ exam, isMine, onClose, onDownload, onEdit, onCopy, onDelete
         {/* Header modal */}
         <div className="eb-modal-header">
           <div className="eb-modal-header-left">
-            <div className="eb-modal-icon">📄</div>
             <div>
               <h2 className="eb-modal-title">{exam.title || 'Examen sans titre'}</h2>
               <div className="eb-modal-meta-row">
@@ -389,7 +411,6 @@ const ExamModal = ({ exam, isMine, onClose, onDownload, onEdit, onCopy, onDelete
               )}
             </div>
           </div>
-          <button className="eb-modal-close" onClick={onClose}>✕</button>
         </div>
 
         {/* Body — aperçu Word complet (HTML mammoth) */}
@@ -416,24 +437,25 @@ const ExamModal = ({ exam, isMine, onClose, onDownload, onEdit, onCopy, onDelete
 
         {/* Footer */}
         <div className="eb-modal-footer">
-          <button className="eb-modal-btn eb-modal-btn--dl" onClick={() => onDownload(exam)}>
-            ↓ Télécharger .docx
+          <button className="eb-modal-btn eb-modal-btn--dl" onClick={() => onDownload(exam)} title="Télécharger">
+            <FiDownload size={16} />
           </button>
           {isMine ? (
             <>
-              <button className="eb-modal-btn eb-modal-btn--edit" onClick={() => { onEdit(exam); onClose(); }}>
-                ✏️ Modifier
+              <button className="eb-modal-btn eb-modal-btn--edit" onClick={() => { onEdit(exam); onClose(); }} title="Modifier">
+                <FiEdit2 size={16} />
               </button>
-              <button className="eb-modal-btn eb-modal-btn--del" onClick={() => { onDelete(exam); onClose(); }}>
-                🗑 Supprimer
+              {/* ✅ CORRECTION : ferme aussi le modal lors du clic sur Supprimer */}
+              <button className="eb-modal-btn eb-modal-btn--del" onClick={() => { onDelete(exam); onClose(); }} title="Supprimer">
+                <FiTrash2 size={16} />
               </button>
             </>
           ) : (
-            <button className="eb-modal-btn eb-modal-btn--copy" onClick={() => { onCopy(exam); onClose(); }}>
-              📋 Copier et modifier
+            <button className="eb-modal-btn eb-modal-btn--copy" onClick={() => { onCopy(exam); onClose(); }} title="Copier">
+              <FiCopy size={16} />
             </button>
           )}
-          <button className="eb-modal-btn eb-modal-btn--ghost" onClick={onClose}>Fermer</button>
+          <button className="eb-modal-btn eb-modal-btn--ghost" onClick={onClose} title="Fermer"><FiX size={16} /></button>
         </div>
       </div>
     </div>
@@ -455,7 +477,8 @@ const ExamBank = () => {
   const [search, setSearch]             = useState('');
   const [filterMatiere, setFilterMatiere] = useState('');
   const [filterStatus, setFilterStatus] = useState('tous');
-  const [filterCycle, setFilterCycle]   = useState('');
+  const [filterDepartement, setFilterDepartement] = useState('');
+  const [filterFiliere, setFilterFiliere]   = useState('');
   const [filterAnnee, setFilterAnnee]   = useState('');
   const [filterSemestre, setFilterSemestre] = useState('');
   const [activeTab, setActiveTab]       = useState('mes');
@@ -463,6 +486,7 @@ const ExamBank = () => {
   const [pageAutres, setPageAutres]     = useState(1);
   const [modalExam, setModalExam]       = useState(null);
   const [modalIsMine, setModalIsMine]   = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -481,10 +505,13 @@ const ExamBank = () => {
 
   useEffect(() => { setPageMes(1); setPageAutres(1); }, [search, filterMatiere, filterStatus]);
 
-  /* Quand le cycle change, reset l'année */
-  useEffect(() => { setFilterAnnee(''); setFilterSemestre(''); }, [filterCycle]);
+  /* Quand le département change, reset la filière et l'année */
+  useEffect(() => { setFilterFiliere(''); setFilterAnnee(''); setFilterSemestre(''); }, [filterDepartement]);
+  
+  /* Quand la filière change, reset l'année */
+  useEffect(() => { setFilterAnnee(''); setFilterSemestre(''); }, [filterFiliere]);
   useEffect(() => { setFilterSemestre(''); }, [filterAnnee]);
-  useEffect(() => { setPageMes(1); setPageAutres(1); }, [search, filterMatiere, filterStatus, filterCycle, filterAnnee, filterSemestre]);
+  useEffect(() => { setPageMes(1); setPageAutres(1); }, [search, filterMatiere, filterStatus, filterDepartement, filterFiliere, filterAnnee, filterSemestre]);
 
   useEffect(() => {
     if (!toast.message) return;
@@ -500,24 +527,73 @@ const ExamBank = () => {
     return [...new Set(all)].sort();
   }, [mesExamens, autresExamens]);
 
-  const applyFilters = useCallback((items, isMine) => {
+  const applyBaseFilters = useCallback((items, isMine) => {
     const q  = search.trim().toLowerCase();
     const st = normStatus(filterStatus);
     const m  = filterMatiere.trim().toLowerCase();
     return items.filter((item) => {
       if (isMine && st !== 'tous' && st && normStatus(item.status) !== st) return false;
       if (m && !(item.matiere || '').toLowerCase().includes(m)) return false;
-      if (!matchesCycle(item, filterCycle)) return false;
-      if (!matchesAnnee(item, filterAnnee)) return false;
-      if (!matchesSemestre(item, filterSemestre)) return false;
       if (!q) return true;
       return [item.title, item.filiere, item.matiere, item.niveau, item.createdByName, item.createdByEmail]
         .map(v => String(v || '').toLowerCase()).join(' ').includes(q);
     });
-  }, [search, filterMatiere, filterStatus, filterCycle, filterAnnee, filterSemestre]);
+  }, [search, filterMatiere, filterStatus]);
+
+  const applyFilters = useCallback((items, isMine) => {
+    return applyBaseFilters(items, isMine).filter((item) => {
+      if (!matchesDepartement(item, filterDepartement)) return false;
+      if (!matchesFiliere(item, filterFiliere)) return false;
+      if (!matchesAnnee(item, filterAnnee)) return false;
+      if (!matchesSemestre(item, filterSemestre)) return false;
+      return true;
+    });
+  }, [applyBaseFilters, filterDepartement, filterFiliere, filterAnnee, filterSemestre]);
 
   const myFiltered  = useMemo(() => applyFilters(mesExamens, true),    [applyFilters, mesExamens]);
   const othFiltered = useMemo(() => applyFilters(autresExamens, false), [applyFilters, autresExamens]);
+
+  const myTreeBase  = useMemo(() => applyBaseFilters(mesExamens, true), [applyBaseFilters, mesExamens]);
+  const othTreeBase = useMemo(() => applyBaseFilters(autresExamens, false), [applyBaseFilters, autresExamens]);
+
+  const departments = useMemo(() => {
+    const source = activeTab === 'mes' ? myTreeBase : othTreeBase;
+    const map = new Map();
+    source.forEach((exam) => {
+      const label = normalizeDepartementLabel(exam);
+      // Ignorer les examens sans département
+      if (!label || !label.trim()) return;
+      const key = getDepartementKey(exam);
+        // Filtrer aussi les clés "sans département"
+        if (key === '__sans_departement__') return;
+      if (!map.has(key)) map.set(key, { key, label, count: 0, items: [] });
+      const entry = map.get(key);
+      entry.count += 1;
+      entry.items.push(exam);
+    });
+    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label, 'fr'));
+  }, [activeTab, myTreeBase, othTreeBase]);
+
+  const filieres = useMemo(() => {
+    const source = activeTab === 'mes' ? myTreeBase : othTreeBase;
+    const deptFiltered = filterDepartement 
+      ? source.filter(exam => getDepartementKey(exam) === filterDepartement)
+      : source;
+    const map = new Map();
+    deptFiltered.forEach((exam) => {
+      const label = normalizeFiliereLabel(exam);
+      // Ignorer les examens sans filière
+      if (!label || !label.trim()) return;
+      const key = getFiliereKey(exam);
+      // Filtrer aussi les clés "sans filière"
+      if (key === '__sans_filiere__') return;
+      if (!map.has(key)) map.set(key, { key, label, count: 0, items: [] });
+      const entry = map.get(key);
+      entry.count += 1;
+      entry.items.push(exam);
+    });
+    return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label, 'fr'));
+  }, [activeTab, myTreeBase, othTreeBase, filterDepartement]);
 
   const myPage  = useMemo(() => myFiltered.slice((pageMes - 1) * PER_PAGE, pageMes * PER_PAGE), [myFiltered, pageMes]);
   const othPage = useMemo(() => othFiltered.slice((pageAutres - 1) * PER_PAGE, pageAutres * PER_PAGE), [othFiltered, pageAutres]);
@@ -550,20 +626,38 @@ const ExamBank = () => {
     }
   };
 
-  const handleDelete = async (exam) => {
-    if (!window.confirm(`Supprimer définitivement "${exam.title || 'cet examen'}" ?`)) return;
-    const id = toId(exam.id);
+  /* ✅ CORRECTION : ferme l'ExamModal avant d'ouvrir la confirmation de suppression */
+  const handleDelete = (exam) => {
+    setModalExam(null);   // ← ferme l'aperçu
+    setDeleteConfirm(exam);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+    const id = toId(deleteConfirm.id);
     try {
       await deleteExamBankItem(id);
       setMesExamens(prev => prev.filter(e => toId(e.id) !== id));
       showToast('Examen supprimé.');
     } catch {
       showToast('Impossible de supprimer.', 'error');
+    } finally {
+      setDeleteConfirm(null);
     }
   };
 
-  const resetFilters = () => { setSearch(''); setFilterMatiere(''); setFilterStatus('tous'); setFilterCycle(''); setFilterAnnee(''); setFilterSemestre(''); };
-  const hasFilters = search || filterMatiere || filterStatus !== 'tous' || filterCycle || filterAnnee || filterSemestre;
+  const resetFilters = () => { setSearch(''); setFilterMatiere(''); setFilterStatus('tous'); setFilterDepartement(''); setFilterFiliere(''); setFilterAnnee(''); setFilterSemestre(''); };
+  const hasFilters = search || filterMatiere || filterStatus !== 'tous' || filterDepartement || filterFiliere || filterAnnee || filterSemestre;
+  const treeSource = activeTab === 'mes' ? myTreeBase : othTreeBase;
+
+  /* Exclure les examens sans département ET sans filière du compte */
+  const validTreeSource = useMemo(() => {
+    return treeSource.filter(exam => {
+      const deptLabel = normalizeDepartementLabel(exam);
+      const filiereLabel = normalizeFiliereLabel(exam);
+      return (deptLabel && deptLabel.trim()) || (filiereLabel && filiereLabel.trim());
+    });
+  }, [treeSource]);
 
   return (
     <div className="eb-layout">
@@ -627,74 +721,97 @@ const ExamBank = () => {
 
             {/* Nœud "Tous" */}
             <button
-              className={`eb-tree-all ${!filterCycle ? 'eb-tree-all--active' : ''}`}
-              onClick={() => { setFilterCycle(''); setFilterAnnee(''); setFilterSemestre(''); }}
+              className={`eb-tree-all ${!filterDepartement && !filterFiliere ? 'eb-tree-all--active' : ''}`}
+              onClick={() => { setFilterDepartement(''); setFilterFiliere(''); setFilterAnnee(''); setFilterSemestre(''); }}
             >
               <span className="eb-tree-all-icon">◈</span>
               Tous les examens
-              <span className="eb-tree-count">{(activeTab === 'mes' ? myFiltered : othFiltered).length}</span>
+              <span className="eb-tree-count">{validTreeSource.length}</span>
             </button>
 
-            {/* Cycles */}
-            {CYCLES.map((cycle) => {
-              const cycleOpen = filterCycle === cycle.id;
-              const cycleItems = (activeTab === 'mes' ? mesExamens : autresExamens)
-                .filter(e => matchesCycle(e, cycle.id));
-              if (cycleItems.length === 0) return null;
+            {/* Départements */}
+            {departments.map((dept) => {
+              const deptOpen = filterDepartement === dept.key;
+              const deptItems = dept.items;
+              if (deptItems.length === 0) return null;
 
               return (
-                <div key={cycle.id} className="eb-tree-cycle">
+                <div key={dept.key} className="eb-tree-department">
                   <button
-                    className={`eb-tree-node eb-tree-node--cycle ${cycleOpen ? 'eb-tree-node--open' : ''}`}
+                    className={`eb-tree-node eb-tree-node--dept ${deptOpen ? 'eb-tree-node--open' : ''}`}
                     onClick={() => {
-                      if (cycleOpen) { setFilterCycle(''); setFilterAnnee(''); setFilterSemestre(''); }
-                      else { setFilterCycle(cycle.id); setFilterAnnee(''); setFilterSemestre(''); }
+                      if (deptOpen) { setFilterDepartement(''); setFilterFiliere(''); setFilterAnnee(''); setFilterSemestre(''); }
+                      else { setFilterDepartement(dept.key); setFilterFiliere(''); setFilterAnnee(''); setFilterSemestre(''); }
                     }}
                   >
-                    <span className="eb-tree-arrow">{cycleOpen ? '▾' : '▸'}</span>
-                    <span className="eb-tree-icon">{cycle.icon}</span>
-                    <span className="eb-tree-node-label">{cycle.label}</span>
-                    <span className="eb-tree-count">{cycleItems.length}</span>
+                    <span className="eb-tree-arrow">{deptOpen ? '▾' : '▸'}</span>
+                    <span className="eb-tree-icon">🏢</span>
+                    <span className="eb-tree-node-label">{dept.label}</span>
+                    <span className="eb-tree-count">{dept.count}</span>
                   </button>
 
-                  {/* Années */}
-                  {cycleOpen && (ANNEES_PAR_CYCLE[cycle.id] || []).map((annee) => {
-                    const anneeItems = cycleItems.filter(e => matchesAnnee(e, annee));
-                    if (anneeItems.length === 0) return null;
-                    const anneeOpen = filterAnnee === annee;
+                  {/* Filières (sous département) */}
+                  {deptOpen && filieres.map((filiere) => {
+                    const filiereOpen = filterFiliere === filiere.key;
+                    const filiereItems = filiere.items;
+                    if (filiereItems.length === 0) return null;
 
                     return (
-                      <div key={annee} className="eb-tree-annee">
+                      <div key={filiere.key} className="eb-tree-filiere">
                         <button
-                          className={`eb-tree-node eb-tree-node--annee ${anneeOpen ? 'eb-tree-node--open' : ''}`}
+                          className={`eb-tree-node eb-tree-node--filiere ${filiereOpen ? 'eb-tree-node--open' : ''}`}
                           onClick={() => {
-                            if (anneeOpen) { setFilterAnnee(''); setFilterSemestre(''); }
-                            else { setFilterAnnee(annee); setFilterSemestre(''); }
+                            if (filiereOpen) { setFilterFiliere(''); setFilterAnnee(''); setFilterSemestre(''); }
+                            else { setFilterFiliere(filiere.key); setFilterAnnee(''); setFilterSemestre(''); }
                           }}
                         >
-                          <span className="eb-tree-arrow">{anneeOpen ? '▾' : '▸'}</span>
-                          <span className="eb-tree-icon">📁</span>
-                          <span className="eb-tree-node-label">{annee}</span>
-                          <span className="eb-tree-count">{anneeItems.length}</span>
+                          <span className="eb-tree-arrow">{filiereOpen ? '▾' : '▸'}</span>
+                          <span className="eb-tree-icon">📘</span>
+                          <span className="eb-tree-node-label">{filiere.label}</span>
+                          <span className="eb-tree-count">{filiere.count}</span>
                         </button>
 
-                        {/* Semestres */}
-                        {anneeOpen && SEMESTRES.map((sem) => {
-                          const semItems = anneeItems.filter(e => matchesSemestre(e, sem));
-                          if (semItems.length === 0) return null;
-                          const semActive = filterSemestre === sem;
+                        {/* Années */}
+                        {filiereOpen && ANNEES_PAR_CYCLE.default.map((annee) => {
+                          const anneeItems = filiereItems.filter(e => matchesAnnee(e, annee));
+                          if (anneeItems.length === 0) return null;
+                          const anneeOpen = filterAnnee === annee;
 
                           return (
-                            <button
-                              key={sem}
-                              className={`eb-tree-node eb-tree-node--sem ${semActive ? 'eb-tree-node--active' : ''}`}
-                              onClick={() => setFilterSemestre(semActive ? '' : sem)}
-                            >
-                              <span className="eb-tree-arrow eb-tree-arrow--leaf">—</span>
-                              <span className="eb-tree-icon">📄</span>
-                              <span className="eb-tree-node-label">{sem}</span>
-                              <span className="eb-tree-count">{semItems.length}</span>
-                            </button>
+                            <div key={annee} className="eb-tree-annee">
+                              <button
+                                className={`eb-tree-node eb-tree-node--annee ${anneeOpen ? 'eb-tree-node--open' : ''}`}
+                                onClick={() => {
+                                  if (anneeOpen) { setFilterAnnee(''); setFilterSemestre(''); }
+                                  else { setFilterAnnee(annee); setFilterSemestre(''); }
+                                }}
+                              >
+                                <span className="eb-tree-arrow">{anneeOpen ? '▾' : '▸'}</span>
+                                <span className="eb-tree-icon">📁</span>
+                                <span className="eb-tree-node-label">{annee}</span>
+                                <span className="eb-tree-count">{anneeItems.length}</span>
+                              </button>
+
+                              {/* Semestres */}
+                              {anneeOpen && SEMESTRES.map((sem) => {
+                                const semItems = anneeItems.filter(e => matchesSemestre(e, sem));
+                                if (semItems.length === 0) return null;
+                                const semActive = filterSemestre === sem;
+
+                                return (
+                                  <button
+                                    key={sem}
+                                    className={`eb-tree-node eb-tree-node--sem ${semActive ? 'eb-tree-node--active' : ''}`}
+                                    onClick={() => setFilterSemestre(semActive ? '' : sem)}
+                                  >
+                                    <span className="eb-tree-arrow eb-tree-arrow--leaf">—</span>
+                                    <span className="eb-tree-icon">📄</span>
+                                    <span className="eb-tree-node-label">{sem}</span>
+                                    <span className="eb-tree-count">{semItems.length}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
                           );
                         })}
                       </div>
@@ -719,16 +836,24 @@ const ExamBank = () => {
             </div>
 
             {/* Fil d'Ariane */}
-            {(filterCycle || filterAnnee || filterSemestre) && (
+            {(filterDepartement || filterFiliere || filterAnnee || filterSemestre) && (
               <div className="eb-breadcrumb">
-                <button className="eb-bc-item eb-bc-item--link" onClick={() => { setFilterCycle(''); setFilterAnnee(''); setFilterSemestre(''); }}>
+                <button className="eb-bc-item eb-bc-item--link" onClick={() => { setFilterDepartement(''); setFilterFiliere(''); setFilterAnnee(''); setFilterSemestre(''); }}>
                   Tous
                 </button>
-                {filterCycle && (
+                {filterDepartement && (
+                  <>
+                    <span className="eb-bc-sep">›</span>
+                    <button className="eb-bc-item eb-bc-item--link" onClick={() => { setFilterFiliere(''); setFilterAnnee(''); setFilterSemestre(''); }}>
+                      {departments.find(d => d.key === filterDepartement)?.label || 'Département'}
+                    </button>
+                  </>
+                )}
+                {filterFiliere && (
                   <>
                     <span className="eb-bc-sep">›</span>
                     <button className="eb-bc-item eb-bc-item--link" onClick={() => { setFilterAnnee(''); setFilterSemestre(''); }}>
-                      {CYCLES.find(c => c.id === filterCycle)?.label}
+                      {filieres.find(f => f.key === filterFiliere)?.label || 'Filière'}
                     </button>
                   </>
                 )}
@@ -806,6 +931,7 @@ const ExamBank = () => {
         <Toast message={toast.message} type={toast.type} />
       </main>
 
+      {/* ✅ Les modals sont rendues en dehors du <main> mais dans le même layout */}
       <ExamModal
         exam={modalExam}
         isMine={modalIsMine}
@@ -815,6 +941,14 @@ const ExamBank = () => {
         onCopy={handleCopy}
         onDelete={handleDelete}
       />
+
+      {deleteConfirm && (
+        <DeleteModal
+          exam={deleteConfirm}
+          onConfirm={confirmDelete}
+          onClose={() => setDeleteConfirm(null)}
+        />
+      )}
     </div>
   );
 };

@@ -13,7 +13,7 @@ const wordTemplateSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      enum: ['final', 'cc', 'rattrapage', 'tp'],
+      enum: ['final', 'cc', 'rattrapage'],
       default: 'final',
     },
 

@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const { generateAIQuestions, generateAIExam, chatWithAIController } = require('../controllers/ai.controller');
+
 const { verifyToken } = require("../../middleware/auth.middleware");
 const { getDepartements } = require("../../admin/controllers/departement.controller");
 const {
@@ -34,6 +36,9 @@ const {
   deleteExamBankItem,
   copyExamBankItem,
 } = require("../controllers/enseignant.examBank.controller");
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+// Chat controller imported from ai.controller.js
 
 // Toutes ces routes nécessitent d'être connecté en tant qu'enseignant
 router.use(verifyToken);
@@ -62,5 +67,13 @@ router.get("/exams/bank/:id", getExamBankItemById); // Récupérer un examen sp�
 router.get("/exams/filtered", getFilteredExams); // Récupérer examens filtrés
 router.delete("/exams/bank/:id", deleteExamBankItem); // Supprimer mon examen
 router.post("/exams/bank/:id/copy", copyExamBankItem); // Copier un examen
+router.post('/ai/questions', generateAIQuestions); // Générer des questions par IA
+router.post('/ai/exam', generateAIExam); // Générer un examen complet par IA
+
+// === AJOUTER EN HAUT DU FICHIER ===
+
+// === AJOUTER AVANT module.exports = router ===
+// Chatbot IA avec fichiers
+router.post('/ai/chat', upload.array('files', 5), chatWithAIController);
 
 module.exports = router;

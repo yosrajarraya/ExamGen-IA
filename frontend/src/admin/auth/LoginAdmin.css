@@ -28,6 +28,13 @@ body {
   padding: 10px;
 }
 
+body.auth-login-page {
+  height: 100vh;
+  min-height: 100vh;
+  padding: 0;
+  overflow: hidden;
+}
+
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-15px); }
@@ -36,7 +43,7 @@ body {
 .auth-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  min-height: calc(100vh - 20px);
+  min-height: 100vh;
   max-width: 1320px;
   margin: 0 auto;
   border-radius: 14px;
@@ -326,7 +333,9 @@ body {
 }
 
 @media (max-width: 900px) {
-  body { padding: 0; }
+  body.auth-login-page {
+    overflow-y: auto;
+  }
 
   .auth-container {
     grid-template-columns: 1fr;

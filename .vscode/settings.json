@@ -1,2 +1,4 @@
 {
+    "workbench.browser.openLocalhostLinks": true,
+    "workbench.browser.dataStorage": "workspace"
 }

@@ -141,3 +141,40 @@ export const getExamContent = async (id) => {
   const response = await api.get(`/enseignant/exams/bank/${id}/content`);
   return response.data;
 };
+/**
+* Générer des questions par IA
+* @param {{ matiere, niveau, type, count, contexte }} params
+*/
+export const generateAIQuestions = async ({ matiere, niveau, type, count, contexte = '' }) => {
+  const response = await api.post('/enseignant/ai/questions', {
+    matiere, niveau, type, count, contexte,
+  });
+  return response.data;
+};
+/**
+* Générer un examen complet par IA
+* @param {{ matiere, niveau, duree, noteTotale, nbQuestions, types }} params
+*/
+export const generateAIExam = async ({ matiere, niveau, duree, noteTotale, nbQuestions, types }) => {
+  const response = await api.post('/enseignant/ai/exam', {
+    matiere, niveau, duree, noteTotale, nbQuestions, types,
+  });
+  return response.data;
+};
+
+
+// === AJOUTER À LA FIN DE : frontend/src/api/enseignant/Enseignant.api.js ===
+
+/* ── Chatbot IA avec fichiers ── */
+export const chatWithAI = async ({ message, files = [], history = [], context = {} }) => {
+  const formData = new FormData();
+  formData.append('message', message);
+  formData.append('history', JSON.stringify(history));
+  formData.append('context', JSON.stringify(context));
+  files.forEach((file) => formData.append('files', file));
+
+  const res = await api.post('/enseignant/ai/chat', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return res.data;
+};

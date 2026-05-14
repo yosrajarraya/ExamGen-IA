@@ -11,15 +11,65 @@ import CreateEnseignant from './CreateEnseignant';
 import ImportEnseignantsExcel from './ImportEnseignantsExcel';
 import './EnseignantsList.css';
 
+/* ── Icônes SVG inline ── */
+const IconEdit = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+);
+
+const IconActivate = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+    <polyline points="22 4 12 14.01 9 11.01"/>
+  </svg>
+);
+
+const IconDeactivate = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="15" y1="9" x2="9" y2="15"/>
+    <line x1="9" y1="9" x2="15" y2="15"/>
+  </svg>
+);
+
+const IconTrash = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"/>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+  </svg>
+);
+
+const IconUsers = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+);
+
+const IconShield = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+);
+
+const IconShieldOff = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+);
+
+const IconFolder = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+);
+
+/* ── Toast ── */
 const Toast = ({ message }) =>
   message ? <div className="toast" role="status">{message}</div> : null;
 
+/* ── Carte de statistique (thème TeacherDashboard) ── */
 const StatCard = ({ icon, label, value, color }) => (
-  <div className="stat-card">
-    <div className="stat-icon" style={{ background: color }}>{icon}</div>
-    <div className="stat-info">
-      <div className="stat-label">{label}</div>
-      <div className="stat-value">{value}</div>
+  <div className="teacher-stat-card">
+    <div className="teacher-stat-icon-wrap" style={{ background: color }}>
+      {icon}
+    </div>
+    <div className="teacher-stat-info">
+      <div className="teacher-stat-value" style={{ color }}>{value}</div>
+      <div className="teacher-stat-label">{label}</div>
     </div>
   </div>
 );
@@ -33,7 +83,7 @@ const EnseignantsList = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [editingEnseignant, setEditingEnseignant] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState(null); // { id, nom }
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const [search, setSearch] = useState('');
   const [filterStatut, setFilterStatut] = useState('tous');
   const [filterDept, setFilterDept] = useState('tous');
@@ -72,7 +122,6 @@ const EnseignantsList = () => {
 
   const confirmDeleteEnseignant = async () => {
     if (!confirmDelete) return;
-
     try {
       await deleteEnseignant(confirmDelete.id);
       setEnseignants((prev) => prev.filter((e) => e._id !== confirmDelete.id));
@@ -90,16 +139,13 @@ const EnseignantsList = () => {
 
   const totalEns = enseignants.length;
   const actifs   = enseignants.filter((e) => e.Active).length;
-  const inactifs  = enseignants.filter((e) => !e.Active).length;
-  
-  // Créer une liste de départements uniques insensibles à la casse
-  const deptMap = new Map(); // { lowercase: originalValue }
+  const inactifs = enseignants.filter((e) => !e.Active).length;
+
+  const deptMap = new Map();
   enseignants.forEach((e) => {
     if (e.Departement) {
       const key = e.Departement.toLowerCase();
-      if (!deptMap.has(key)) {
-        deptMap.set(key, e.Departement);
-      }
+      if (!deptMap.has(key)) deptMap.set(key, e.Departement);
     }
   });
   const depts = deptMap.size;
@@ -107,7 +153,12 @@ const EnseignantsList = () => {
 
   const filtered = enseignants.filter((e) => {
     const q = search.toLowerCase();
-    const matchSearch = !q || e.Nom?.toLowerCase().includes(q) || e.Prenom?.toLowerCase().includes(q) || e.Email?.toLowerCase().includes(q) || e.Departement?.toLowerCase().includes(q) || e.Grade?.toLowerCase().includes(q);
+    const matchSearch = !q ||
+      e.Nom?.toLowerCase().includes(q) ||
+      e.Prenom?.toLowerCase().includes(q) ||
+      e.Email?.toLowerCase().includes(q) ||
+      e.Departement?.toLowerCase().includes(q) ||
+      e.Grade?.toLowerCase().includes(q);
     const matchStatut = filterStatut === 'tous' || (filterStatut === 'actif' && e.Active) || (filterStatut === 'inactif' && !e.Active);
     const matchDept = filterDept === 'tous' || e.Departement?.toLowerCase() === filterDept.toLowerCase();
     return matchSearch && matchStatut && matchDept;
@@ -116,8 +167,8 @@ const EnseignantsList = () => {
   const adminName = user?.Prenom || user?.name || 'Administrateur';
 
   return (
-    <div className="new-admin-layout">
-      {/* ✅ Sidebar partagée — aucun code sidebar ici */}
+    <div className="teacher-shell">
+      {/* Sidebar partagée */}
       <Sidebar
         roleLabel="Administration"
         navItems={adminNavItems}
@@ -125,100 +176,159 @@ const EnseignantsList = () => {
         onLogout={logout}
       />
 
-      <main className="new-admin-main">
-        <div className="new-topbar">
-          <div className="new-topbar-left">
-            <h1 className="new-topbar-title">Bonjour, {adminName}</h1>
-            <p className="new-topbar-sub">Statistiques globales et gestion des comptes enseignants.</p>
+      <main className="teacher-main">
+        {/* ── En-tête ── */}
+        <div className="teacher-header">
+          <div className="teacher-header-left">
+            <div className="teacher-header-greeting">Espace Administration</div>
           </div>
-          <div className="new-topbar-actions">
-            <button className="new-btn-secondary" onClick={() => setShowImport(true)}>
-              📊 Importer fichier Excel
-            </button>
-            <button className="new-btn-primary" onClick={() => setShowCreate(true)}>
-              + Nouveau compte enseignant
-            </button>
-          </div>
+         
         </div>
 
-        <div className="new-admin-body">
-          <div className="stats-grid">
-            <StatCard label="Total enseignants" value={totalEns} color="#3b82f6"
-              icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>}
-            />
-            <StatCard label="Comptes actifs" value={actifs} color="#22c55e"
-              icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>}
-            />
-            <StatCard label="Comptes inactifs" value={inactifs} color="#f97316"
-              icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>}
-            />
-            <StatCard label="Departements" value={depts} color="#a855f7"
-              icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>}
-            />
-          </div>
+        {/* ── Stats ── */}
+        <div className="teacher-stats-grid">
+          <StatCard label="Total enseignants" value={totalEns} color="#1d4ed8" icon={<IconUsers />} />
+          <StatCard label="Comptes actifs"   value={actifs}   color="#059669" icon={<IconShield />} />
+          <StatCard label="Comptes inactifs" value={inactifs}  color="#dc2626" icon={<IconShieldOff />} />
+          <StatCard label="Départements"     value={depts}     color="#7c3aed" icon={<IconFolder />} />
+        </div>
 
-          <div className="new-table-card">
-            <div className="new-filters">
-              <input className="new-search" type="text" placeholder="Filtre dynamique: nom, prenom, email, departement, grade..." value={search} onChange={(e) => setSearch(e.target.value)} />
-              <select className="new-select" value={filterStatut} onChange={(e) => setFilterStatut(e.target.value)}>
+        {/* ── Tableau des enseignants ── */}
+        <div className="teacher-content-grid" style={{ gridTemplateColumns: '1fr' }}>
+          <div className="teacher-panel teacher-table-panel">
+            <div className="teacher-panel-header">
+              <div className="teacher-panel-title-group">
+                <div className="teacher-panel-icon activity">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <div>
+                  <h3 style={{ fontFamily: 'var(--td-font-display)', fontSize: '0.95rem', fontWeight: 600, margin: 0, padding: 0, border: 'none' }}>
+                    Liste des enseignants
+                  </h3>
+                  <div className="teacher-panel-subtitle">Gérez les comptes, les statuts et les informations</div>
+                </div>
+              </div>
+              <div className="teacher-panel-count">{filtered.length}</div>
+            </div>
+
+            {/* Filtres */}
+            <div className="teacher-filters">
+              <input
+                className="teacher-search"
+                type="text"
+                placeholder="Rechercher par nom, prénom, email, département, grade..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <select className="teacher-select" value={filterStatut} onChange={(e) => setFilterStatut(e.target.value)}>
                 <option value="tous">Tous statuts</option>
                 <option value="actif">Actif</option>
                 <option value="inactif">Inactif</option>
               </select>
-              <select className="new-select" value={filterDept} onChange={(e) => setFilterDept(e.target.value)}>
-                <option value="tous">Tous departements</option>
+              <select className="teacher-select" value={filterDept} onChange={(e) => setFilterDept(e.target.value)}>
+                <option value="tous">Tous départements</option>
                 {allDepts.map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
+              <div className="teacher-filters-actions">
+                <button className="teacher-secondary-action" onClick={() => setShowImport(true)}>
+                  📊 Importer Excel
+                </button>
+                <button className="teacher-primary-action" onClick={() => setShowCreate(true)}>
+                  + Nouveau compte
+                </button>
+              </div>
             </div>
 
+            {/* Table */}
             {pageLoading ? (
-              <div className="new-state-empty">Chargement...</div>
+              <div className="teacher-empty-state">
+                <div className="teacher-empty-icon">⏳</div>
+                <div className="teacher-empty-title">Chargement des données…</div>
+              </div>
             ) : filtered.length === 0 ? (
-              <div className="new-state-empty">Aucun enseignant enregistré.<br />Créez le premier compte en cliquant sur le bouton ci-dessus.</div>
+              <div className="teacher-empty-state">
+                <div className="teacher-empty-icon">📭</div>
+                <div className="teacher-empty-title">Aucun enseignant trouvé</div>
+                <div className="teacher-empty-sub">Ajustez les filtres ou créez un nouveau compte.</div>
+              </div>
             ) : (
-              <table className="new-table">
-                <thead>
-                  <tr><th>NOM</th><th>PRENOM</th><th>EMAIL</th><th>DEPARTEMENT</th><th>GRADE</th><th>TELEPHONE</th><th>STATUT</th><th>ACTIONS</th></tr>
-                </thead>
-                <tbody>
-                  {filtered.map((ens) => (
-                    <tr key={ens._id}>
-                      <td>{ens.Nom}</td>
-                      <td>{ens.Prenom}</td>
-                      <td className="td-email">{ens.Email}</td>
-                      <td>{ens.Departement || '—'}</td>
-                      <td>{ens.Grade || '—'}</td>
-                      <td>{ens.Telephone || '—'}</td>
-                      <td>
-                        <span className={`new-badge ${ens.Active ? 'new-badge-active' : 'new-badge-inactive'}`}>
-                          {ens.Active ? 'Actif' : 'Inactif'}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="new-action-btns">
-                          <button className="new-btn-link new-btn-modifier" onClick={() => openEditModal(ens)}>Modifier</button>
-                          <button className={`new-btn-link ${ens.Active ? 'new-btn-desactiver' : 'new-btn-activer'}`} onClick={() => handleToggle(ens._id)}>
-                            {ens.Active ? 'Desactiver' : 'Activer'}
-                          </button>
-                          <button className="new-btn-link new-btn-supprimer" onClick={() => handleDelete(ens._id, `${ens.Prenom} ${ens.Nom}`)}>Supprimer</button>
-                        </div>
-                      </td>
+              <div className="teacher-table-wrap">
+                <table className="teacher-table">
+                  <thead>
+                    <tr>
+                      <th>NOM</th>
+                      <th>PRÉNOM</th>
+                      <th>EMAIL</th>
+                      <th>DÉPARTEMENT</th>
+                      <th>GRADE</th>
+                      <th>TÉLÉPHONE</th>
+                      <th>STATUT</th>
+                      <th style={{ width: '140px', textAlign: 'center' }}>ACTIONS</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {filtered.map((ens) => (
+                      <tr key={ens._id}>
+                        <td className="td-strong">{ens.Nom}</td>
+                        <td>{ens.Prenom}</td>
+                        <td className="td-email">{ens.Email}</td>
+                        <td>{ens.Departement || '—'}</td>
+                        <td>{ens.Grade || '—'}</td>
+                        <td>{ens.Telephone || '—'}</td>
+                        <td>
+                          <span className={`teacher-badge ${ens.Active ? 'teacher-badge-active' : 'teacher-badge-inactive'}`}>
+                            {ens.Active ? 'Actif' : 'Inactif'}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="teacher-action-btns">
+                            <button
+                              className="teacher-icon-btn teacher-icon-btn--edit"
+                              onClick={() => openEditModal(ens)}
+                              title="Modifier"
+                              aria-label="Modifier"
+                            >
+                              <IconEdit />
+                            </button>
+                            <button
+                              className={`teacher-icon-btn ${ens.Active ? 'teacher-icon-btn--deactivate' : 'teacher-icon-btn--activate'}`}
+                              onClick={() => handleToggle(ens._id)}
+                              title={ens.Active ? 'Désactiver' : 'Activer'}
+                              aria-label={ens.Active ? 'Désactiver' : 'Activer'}
+                            >
+                              {ens.Active ? <IconDeactivate /> : <IconActivate />}
+                            </button>
+                            <button
+                              className="teacher-icon-btn teacher-icon-btn--delete"
+                              onClick={() => handleDelete(ens._id, `${ens.Prenom} ${ens.Nom}`)}
+                              title="Supprimer"
+                              aria-label="Supprimer"
+                            >
+                              <IconTrash />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
+
+        {/* ── Footer ── */}
+        <div className="teacher-footer">
+          <span className="teacher-dot" />
+          Système ExamGen-IA • Administration • {new Date().getFullYear()}
+        </div>
       </main>
 
+      {/* ── Modales ── */}
       <ImportEnseignantsExcel
         isOpen={showImport}
         onClose={() => setShowImport(false)}
-        onImported={async () => {
-          setShowImport(false);
-          await fetchEnseignants();
-        }}
+        onImported={async () => { setShowImport(false); await fetchEnseignants(); }}
         showToast={showToast}
       />
 
@@ -234,21 +344,15 @@ const EnseignantsList = () => {
         mode="edit"
         initialData={editingEnseignant}
         onClose={() => setEditingEnseignant(null)}
-        onCreated={async () => {
-          setEditingEnseignant(null);
-          await fetchEnseignants();
-        }}
+        onCreated={async () => { setEditingEnseignant(null); await fetchEnseignants(); }}
         showToast={showToast}
       />
 
       {confirmDelete && (
-        <div
-          className="confirmation-overlay"
-          onClick={() => setConfirmDelete(null)}
-        >
+        <div className="confirmation-overlay" onClick={() => setConfirmDelete(null)}>
           <div className="confirmation-dialog" onClick={(e) => e.stopPropagation()}>
             <h3>Confirmer la suppression</h3>
-            <p>Supprimer l'enseignant "{confirmDelete.nom}" ?</p>
+            <p>Supprimer l'enseignant « {confirmDelete.nom} » ?</p>
             <div className="confirmation-actions">
               <button className="btn-cancel" onClick={() => setConfirmDelete(null)}>Annuler</button>
               <button className="btn-confirm" onClick={confirmDeleteEnseignant}>Supprimer</button>

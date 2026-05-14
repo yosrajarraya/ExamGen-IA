@@ -797,93 +797,287 @@
 /* Count label */
 .eb-count-label { text-align: center; font-size: .75rem; color: var(--eb-text-muted); margin-top: 8px; }
 
-/* Modal — exam content */
-.eb-exam-content { padding: 24px; }
+/* ═══════════════════════════════════════════════════════
+   Modal "Reader" — affichage doux & aéré
+   ═══════════════════════════════════════════════════════ */
 
-.eb-exam-meta-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 20px;
-  padding: 16px;
-  background: var(--eb-elevated);
-  border-radius: var(--eb-radius-sm);
-  border: 1px solid var(--eb-border);
+/* Overlay : fond assourdi avec flou */
+.eb-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+  animation: ebFadeIn 0.2s ease;
 }
 
-.eb-exam-meta-grid > div {
+@keyframes ebFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Boîte du modal */
+.eb-modal--reader {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  width: 100%;
+  max-width: 980px;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-}
-
-.eb-exam-meta-grid strong {
-  font-size: .68rem;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--eb-text-muted);
-}
-
-.eb-exam-meta-grid span {
-  font-size: .875rem;
-  color: var(--eb-text-primary);
-  font-weight: 500;
-}
-
-.eb-exam-sections { display: flex; flex-direction: column; gap: 16px; }
-
-.eb-exam-section {
-  border: 1.5px solid var(--eb-border);
-  border-radius: var(--eb-radius-sm);
   overflow: hidden;
+  animation: ebSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.eb-exam-section-title {
-  padding: 10px 16px;
-  background: var(--eb-navy);
-  color: #e8dcc4;
-  font-size: .85rem;
-  font-weight: 600;
+@keyframes ebSlideUp {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.eb-exam-lines {
-  padding: 12px 16px 12px 32px;
-  margin: 0;
+/* ── Header ── */
+.eb-reader-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 26px 18px;
+  border-bottom: 1px solid var(--eb-border, #e5e7eb);
+}
+
+.eb-reader-header-main {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  min-width: 0; /* pour ellipsis */
+}
+
+/* Barre verticale colorée selon statut */
+.eb-reader-status-strip {
+  width: 4px;
+  flex-shrink: 0;
+  align-self: stretch;
+  border-radius: 99px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+.eb-reader-status-strip--exported { background: #10b981; }
+.eb-reader-status-strip--ongoing  { background: #f59e0b; }
+.eb-reader-status-strip--draft    { background: #94a3b8; }
+
+.eb-reader-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.eb-reader-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--eb-text-primary, #111827);
+  margin: 0 0 8px 0;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.eb-reader-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.eb-reader-by {
+  font-size: 0.8rem;
+  color: var(--eb-text-muted, #6b7280);
+  margin-top: 6px;
+}
+
+.eb-reader-close {
+  background: var(--eb-elevated, #f3f4f6);
+  border: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--eb-text-muted, #6b7280);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.eb-reader-close:hover {
+  background: #e5e7eb;
+  color: #111827;
+  transform: rotate(90deg);
+}
+
+/* ── Body : fond gris très clair + page A4 ── */
+.eb-reader-body {
+  flex: 1;
+  overflow-y: auto;
+  background: #f8fafc; /* gris bleuté très doux */
+  padding: 28px;
+}
+
+.eb-doc-canvas {
+  display: flex;
+  justify-content: center;
+}
+
+/* La "page" blanche */
+.eb-doc-page {
+  background: #ffffff;
+  width: 100%;
+  max-width: 794px; /* ~ A4 */
+  min-height: 420px;
+  padding: 48px 56px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04);
+  border-radius: 2px;
+  color: #000;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.eb-doc-page--center {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--eb-text-muted, #9ca3af);
+  text-align: center;
+}
+
+.eb-reader-hint {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* ── Footer ── */
+.eb-reader-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 26px;
+  border-top: 1px solid var(--eb-border, #e5e7eb);
+  background: #fff;
+  flex-wrap: wrap;
+}
+
+.eb-reader-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Boutons */
+.eb-btn-elegant {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
-.eb-exam-line {
-  font-size: .875rem;
-  color: var(--eb-text-body);
-  line-height: 1.55;
+.eb-btn-elegant--primary {
+  background: var(--eb-navy, #1e4fa8);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(30,79,168,0.12);
+}
+.eb-btn-elegant--primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(30,79,168,0.2);
 }
 
-.eb-exam-empty-sec {
-  padding: 12px 16px;
-  font-size: .82rem;
-  color: var(--eb-text-muted);
-  font-style: italic;
+.eb-btn-elegant--secondary {
+  background: var(--eb-elevated, #f3f4f6);
+  color: var(--eb-text-primary, #374151);
+  border-color: var(--eb-border, #e5e7eb);
+}
+.eb-btn-elegant--secondary:hover {
+  background: #e5e7eb;
 }
 
-.eb-modal-by {
-  font-size: .78rem;
-  color: var(--eb-text-muted);
-  margin-top: 4px;
+.eb-btn-elegant--danger {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+.eb-btn-elegant--danger:hover {
+  background: #fee2e2;
+}
+
+.eb-btn-elegant--ghost {
+  background: transparent;
+  color: var(--eb-text-muted, #6b7280);
+  border-color: var(--eb-border, #e5e7eb);
+}
+.eb-btn-elegant--ghost:hover {
+  background: var(--eb-elevated, #f3f4f6);
+  color: var(--eb-text-primary, #374151);
+}
+
+/* Chips du reader */
+.eb-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #4b5563;
+  background: var(--eb-elevated, #f3f4f6);
+  border: 1px solid var(--eb-border, #e5e7eb);
+}
+.eb-chip--muted {
+  color: #6b7280;
+  background: #f9fafb;
+}
+.eb-chip--gold {
+  color: #92400e;
+  background: #fef3c7;
+  border-color: #fde68a;
+}
+
+/* Scrollbar douce */
+.eb-reader-body::-webkit-scrollbar {
+  width: 8px;
+}
+.eb-reader-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.eb-reader-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+}
+.eb-reader-body::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* Responsive */
-@media (max-width: 1100px) {
-  .eb-cards-grid { grid-template-columns: repeat(2, 1fr); }
-  .eb-exam-meta-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
 @media (max-width: 640px) {
-  .eb-cards-grid { grid-template-columns: 1fr; }
-  .eb-exam-meta-grid { grid-template-columns: 1fr; }
+  .eb-modal--reader { max-height: 100vh; border-radius: 0; }
+  .eb-reader-body { padding: 16px; }
+  .eb-doc-page { padding: 24px 28px; }
+  .eb-reader-footer { justify-content: center; }
 }
-
 /* ══════════════════════════════════════════
    FILTRE EN CASCADE — Cycle → Année → Semestre
    ══════════════════════════════════════════ */
@@ -1105,15 +1299,29 @@
   font-weight: 500;
 }
 
-/* Année — niveau 2 */
-.eb-tree-node--annee {
+/* Département — niveau 1 */
+.eb-tree-node--dept {
+  padding-left: 14px;
+  font-weight: 600;
+  color: var(--eb-navy);
+}
+
+/* Filière — niveau 2 */
+.eb-tree-node--filiere {
   padding-left: 26px;
+  font-weight: 500;
+  font-size: .82rem;
+}
+
+/* Année — niveau 3 (or niveau 2 if no dept) */
+.eb-tree-node--annee {
+  padding-left: 38px;
   font-size: .8rem;
 }
 
-/* Semestre — niveau 3 */
+/* Semestre — niveau 4 */
 .eb-tree-node--sem {
-  padding-left: 40px;
+  padding-left: 52px;
   font-size: .78rem;
   color: var(--eb-text-muted);
 }

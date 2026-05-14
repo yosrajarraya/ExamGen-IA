@@ -7,10 +7,10 @@ const FIXED_EXAM_TOTAL = 20;
 
 /* ── Récupère département + filière du profil enseignant ── */
 const getTeacherInfo = async (teacherId) => {
-  const teacher = await Enseignant.findById(teacherId).select('Departement Filiere');
+  const teacher = await Enseignant.findById(teacherId).select('Departement Filiere Specialite');
   return {
     departement: String(teacher?.Departement || '').trim(),
-    filiere: String(teacher?.Filiere || '').trim(),
+    filiere: String(teacher?.Filiere || teacher?.Specialite || '').trim(),
   };
 };
 
@@ -19,7 +19,7 @@ const normalizeExam = (item) => ({
   id: item._id.toString(),
   title: item.title || item.fileName || 'Examen sans titre',
   Departement: item.Departement || '',
-  filiere: item.filiere || '',
+  filiere: item.filiere || item.Filiere || '',
   matiere: item.matiere,
   niveau: item.niveau,
   anneeUniversitaire: item.anneeUniversitaire,
@@ -59,6 +59,7 @@ const addExamToBank = async (req, res) => {
       questionsCount, status, visibility,
       fileName, fileMimeType, fileContentBase64,
       anneeUniversitaire, semestre,
+      departement, filiere,
     } = req.body || {};
 
     const cleanBase64 = String(fileContentBase64 || '').trim();
@@ -83,8 +84,10 @@ const addExamToBank = async (req, res) => {
       htmlContent = '';
     }
 
-    // Département et filière toujours issus du profil enseignant (source de vérité)
+    // Utiliser département et filière du formulaire, puis fallback au profil enseignant
     const teacherInfo = await getTeacherInfo(req.user.id);
+    const finalDepartement = String(departement || teacherInfo.departement || '').trim();
+    const finalFiliere = String(filiere || teacherInfo.filiere || '').trim();
 
     const cleanVisibility = ['public', 'private'].includes(
       String(visibility || '').trim().toLowerCase()
@@ -92,8 +95,8 @@ const addExamToBank = async (req, res) => {
 
     const created = await ExamBankItem.create({
       title: String(title || '').trim(),
-      Departement: teacherInfo.departement,
-      filiere: teacherInfo.filiere,
+      Departement: finalDepartement,
+      filiere: finalFiliere,
       matiere: String(matiere || '').trim(),
       niveau: String(niveau || '').trim(),
       type: String(type || '').trim(),
@@ -253,7 +256,7 @@ const copyExamBankItem = async (req, res) => {
     const copiedExam = await ExamBankItem.create({
       title: sourceExam.title,
       Departement: teacherInfo.departement,
-      filiere: teacherInfo.filiere,
+      filiere: teacherInfo.filiere || sourceExam.filiere || sourceExam.Filiere || '',
       matiere: sourceExam.matiere,
       niveau: sourceExam.niveau,
       type: sourceExam.type,
@@ -263,6 +266,7 @@ const copyExamBankItem = async (req, res) => {
       status: sourceExam.status,
       visibility: 'private', // copie privée par défaut
       anneeUniversitaire: sourceExam.anneeUniversitaire,
+      semestre: sourceExam.semestre || '',
       createdBy: req.user.id,
       createdByName: `${enseignant.Prenom || ''} ${enseignant.Nom || ''}`.trim(),
       createdByEmail: enseignant.Email || req.user.email || '',

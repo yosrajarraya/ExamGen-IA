@@ -1,188 +1,395 @@
+/* ═══════════════════════════════════════════════════════════════
+   CreateEnseignant Modal — Ivory & Navy · ExamGen-IA
+   ═══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@300;400;500;600&display=swap');
+
+/* ──────────────────────────────────────────────────────
+   OVERLAY
+   ────────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.35);
+  background: rgba(14, 26, 43, 0.48);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 999;
+  padding: 20px;
+  animation: overlayIn 0.22s cubic-bezier(0.35, 0, 0.15, 1) both;
 }
 
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ──────────────────────────────────────────────────────
+   MODAL CARD
+   ────────────────────────────────────────────────────── */
 .modal {
-  background: #fff;
-  border-radius: 12px;
-  width: min(560px, 95vw);
-  padding: 1.6rem;
-  box-shadow: 0 8px 30px rgba(0,0,0,.18);
+  background: #ffffff;
+  border: 1px solid #e8e4dc;
+  border-radius: 18px;
+  width: min(580px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 0;
+  box-shadow:
+    0 24px 60px rgba(14, 26, 43, 0.16),
+    0 6px 16px rgba(14, 26, 43, 0.08);
+  animation: modalIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  scrollbar-width: thin;
+  scrollbar-color: #e8e4dc transparent;
 }
 
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.94) translateY(14px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal::-webkit-scrollbar { width: 4px; }
+.modal::-webkit-scrollbar-track { background: transparent; }
+.modal::-webkit-scrollbar-thumb { background: #e8e4dc; border-radius: 4px; }
+
+/* ──────────────────────────────────────────────────────
+   MODAL HEADER
+   ────────────────────────────────────────────────────── */
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.2rem;
+  padding: 26px 30px 22px;
+  border-bottom: 1px solid #f0ece4;
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 2;
+  border-radius: 18px 18px 0 0;
 }
 
 .modal-header h2 {
-  font-size: 18px;
-  font-weight: 700;
-  color: #111827;
+  font-family: 'Cormorant Garamond', 'Palatino Linotype', serif;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #0e1a2b;
+  letter-spacing: 0.01em;
+}
+
+/* Trait décoratif doré sous le titre */
+.modal-header h2::after {
+  content: '';
+  display: block;
+  margin-top: 5px;
+  width: 32px;
+  height: 2px;
+  background: linear-gradient(90deg, #b8922a, transparent);
+  border-radius: 2px;
 }
 
 .modal-close {
-  background: none;
-  border: none;
-  font-size: 1.2rem;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e8e4dc;
+  border-radius: 8px;
+  background: #faf9f7;
+  color: #8a97a8;
+  font-size: 0.85rem;
   cursor: pointer;
-  color: #6b7280;
-  transition: color .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
-  padding: 4px;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
+  flex-shrink: 0;
 }
 
-.modal-close:hover { color: #111827; }
+.modal-close:hover {
+  background: #fff0f0;
+  border-color: rgba(178, 44, 44, 0.22);
+  color: #b22c2c;
+  transform: scale(1.08);
+}
 
+/* ──────────────────────────────────────────────────────
+   FORM BODY
+   ────────────────────────────────────────────────────── */
 .modal-form {
   display: flex;
   flex-direction: column;
   gap: 0;
+  padding: 24px 30px 28px;
 }
 
+/* ── Rangée double ── */
 .modal-form .form-row {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
 }
 
+/* ── Groupe de champ ── */
 .modal-form .form-group {
-  flex: 1;
-  min-width: 160px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  margin-bottom: 14px;
+  gap: 6px;
+  margin-bottom: 16px;
 }
 
 .modal-form .form-row .form-group {
   margin-bottom: 0;
 }
 
+/* ── Labels ── */
 .modal-form label {
-  font-size: 13px;
-  font-weight: 500;
-  color: #374151;
+  font-family: 'Jost', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #3d4f63;
 }
 
-/* ── Fix principal : tous les inputs sauf checkbox ── */
-.modal-form input:not([type="checkbox"]) {
-  width: 100%;
-  padding: 9px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 13px;
-  font-family: inherit;
-  color: #111827;
-  background: white;
-  outline: none;
-  transition: border-color .2s, box-shadow .2s;
-  -webkit-appearance: none;
-  appearance: none;
+.req {
+  color: #b8922a;
+  margin-left: 2px;
 }
 
-.modal-form input:not([type="checkbox"]):focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37,99,235,.1);
-}
-
+/* ──────────────────────────────────────────────────────
+   INPUTS & SELECTS
+   ────────────────────────────────────────────────────── */
+.modal-form input:not([type="checkbox"]),
 .modal-form select {
   width: 100%;
-  padding: 9px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 13px;
-  font-family: inherit;
-  color: #111827;
-  background: white;
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid #e8e4dc;
+  border-radius: 10px;
+  font-family: 'Jost', sans-serif;
+  font-size: 0.83rem;
+  font-weight: 400;
+  color: #0e1a2b;
+  background: #faf9f7;
   outline: none;
-  transition: border-color .2s, box-shadow .2s;
+  transition:
+    border-color 0.22s ease,
+    background 0.22s ease,
+    box-shadow 0.22s ease;
   -webkit-appearance: none;
   appearance: none;
+}
+
+.modal-form input:not([type="checkbox"]):focus,
+.modal-form select:focus {
+  border-color: rgba(22, 32, 50, 0.35);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(22, 32, 50, 0.06);
+}
+
+.modal-form input:not([type="checkbox"]):hover:not(:focus),
+.modal-form select:hover:not(:focus) {
+  border-color: #d4cfc6;
+  background: #ffffff;
+}
+
+.modal-form input::placeholder {
+  color: #b8c1cc;
+  font-weight: 300;
+  font-size: 0.8rem;
+}
+
+/* Flèche custom pour les selects */
+.modal-form select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a97a8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 34px;
+  cursor: pointer;
 }
 
 .modal-form select:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23162032' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
 }
 
-.modal-form input:not([type="checkbox"])::placeholder {
-  color: #9ca3af;
+/* ──────────────────────────────────────────────────────
+   CHECKBOX
+   ────────────────────────────────────────────────────── */
+.form-check {
+  margin-bottom: 4px !important;
 }
 
-/* ── Checkbox ── */
 .form-check label {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #374151;
+  gap: 9px;
+  font-size: 0.82rem !important;
+  letter-spacing: 0.02em !important;
+  text-transform: none !important;
+  color: #3d4f63;
   cursor: pointer;
+  font-weight: 400 !important;
 }
 
 .form-check input[type="checkbox"] {
   width: 16px;
   height: 16px;
   cursor: pointer;
-  accent-color: #2563eb;
+  accent-color: #162032;
+  flex-shrink: 0;
 }
 
-.req { color: #ef4444; }
-
-/* ── Error ── */
+/* ──────────────────────────────────────────────────────
+   MESSAGE D'ERREUR
+   ────────────────────────────────────────────────────── */
 .form-error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: rgba(178, 44, 44, 0.06);
+  border: 1px solid rgba(178, 44, 44, 0.18);
+  border-left: 3px solid #b22c2c;
   border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 13px;
-  color: #dc2626;
-  text-align: center;
+  padding: 11px 16px;
+  font-family: 'Jost', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #b22c2c;
   margin-top: 4px;
+  animation: shakeIn 0.3s ease both;
 }
 
-/* ── Actions ── */
+@keyframes shakeIn {
+  0%   { opacity: 0; transform: translateX(-6px); }
+  60%  { transform: translateX(3px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+/* ──────────────────────────────────────────────────────
+   ACTIONS
+   ────────────────────────────────────────────────────── */
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 16px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid #f0ece4;
 }
 
+/* Bouton Annuler */
 .btn-secondary {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 9px 20px;
-  font-size: 13px;
+  height: 40px;
+  padding: 0 20px;
+  background: transparent;
+  border: 1px solid #e8e4dc;
+  border-radius: 10px;
+  font-family: 'Jost', sans-serif;
+  font-size: 0.8rem;
   font-weight: 500;
+  color: #3d4f63;
   cursor: pointer;
-  font-family: inherit;
-  transition: background .15s;
+  letter-spacing: 0.03em;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.btn-secondary:hover { background: #f9fafb; }
 
-.btn-primary {
-  background: #1a2b4a;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  padding: 9px 20px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background .15s;
+.btn-secondary:hover {
+  background: #faf9f7;
+  border-color: rgba(22, 32, 50, 0.18);
+  color: #162032;
+  transform: translateY(-1px);
 }
-.btn-primary:hover:not(:disabled) { background: #243d6a; }
-.btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+
+.btn-secondary:active {
+  transform: translateY(0);
+}
+
+/* Bouton Créer / Enregistrer */
+.btn-primary {
+  height: 40px;
+  padding: 0 22px;
+  background: linear-gradient(135deg, #1e3050, #162032);
+  border: none;
+  border-radius: 10px;
+  font-family: 'Jost', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #ffffff;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  box-shadow: 0 3px 12px rgba(22, 32, 50, 0.22);
+  transition:
+    filter 0.18s ease,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.18s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Reflet doré subtil au survol */
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(184,146,42,0.15), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.22s ease;
+  border-radius: inherit;
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.12);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(22, 32, 50, 0.28);
+}
+
+.btn-primary:hover:not(:disabled)::after {
+  opacity: 1;
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(0.97);
+}
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ──────────────────────────────────────────────────────
+   RESPONSIVE
+   ────────────────────────────────────────────────────── */
+@media (max-width: 540px) {
+  .modal-form .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-form {
+    padding: 20px;
+  }
+
+  .modal-header {
+    padding: 20px 20px 16px;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .btn-secondary,
+  .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+}

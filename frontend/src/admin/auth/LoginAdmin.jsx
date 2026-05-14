@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../../context/useAuth';
 import { loginAdmin } from '../../api/admin/auth.admin.api';
@@ -37,6 +37,11 @@ const LoginAdmin = () => {
   const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+
+  useEffect(() => {
+    document.body.classList.add('auth-login-page');
+    return () => document.body.classList.remove('auth-login-page');
+  }, []);
 
   const handleChange = (e) => {
     setError('');

@@ -20,6 +20,7 @@ import {
   getFilteredQuestions,
   getWordTemplates,
 } from '../../api/enseignant/Enseignant.api';
+import { estimatePageCount } from '../../utils/exportHelpers';
 
 import ModelesTab from './tabs/ModelesTab';
 import QuestionsTab, { makeSection } from './tabs/QuestionsTab';
@@ -45,7 +46,7 @@ const loadIITLogo = async () => {
   }
 };
 
-const TABS = ['Modèles', 'Questions', 'Export'];
+const TABS = ['Modèles', 'Exercices', 'Export'];
 const FIXED_EXAM_TOTAL = 20;
 
 // ─── Helpers parsing (inchangés) ─────────────────────────────────────────────
@@ -222,7 +223,7 @@ const parseQuestionElement = (questionEl) => {
     isEditing: false,
   };
 
-  if (type === 'ouverte' || type === 'pratique') {
+  if (type === 'ouverte') {
     question.answerLines = answerLinesCount;
   }
 
@@ -600,6 +601,26 @@ const getTypeLabel = (type) => {
   }
 };
 
+const parseQuestionSubparts = (text) => {
+  const lines = String(text || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length < 2) return null;
+
+  const mainLine = lines[0];
+  const subparts = [];
+
+  for (const line of lines.slice(1)) {
+    const match = line.match(/^([a-h])\s*[).:-]\s*(.+)$/i);
+    if (!match) return null;
+    subparts.push({ label: match[1].toLowerCase(), text: match[2].trim() });
+  }
+
+  return subparts.length > 0 ? { mainLine, subparts } : null;
+};
+
 const isQcmType = (t) =>
   t === 'qcm' || t === 'qcm_unique' || t === 'qcm_multiple' || t === 'vrai_faux';
 
@@ -626,7 +647,7 @@ const CreateExam = () => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [sections, setSections] = useState([makeSection(1)]);
   const [examForm, setExamForm] = useState({
-    titre: '', filiere: '', matiere: '', niveau: '', type: '', duree: '',
+    titre: '', departement: '', filiere: '', matiere: '', niveau: '', type: '', duree: '',
     noteTotale: String(FIXED_EXAM_TOTAL), statut: 'Brouillon', templateId: null,
   });
   const [isSavingExam, setIsSavingExam] = useState(false);
@@ -729,7 +750,7 @@ const CreateExam = () => {
         } catch {
           setSections([makeSection(1)]);
         }
-        setActiveTab('Questions');
+        setActiveTab('Exercices');
         setSuccessMessage(`"${exam.title}" chargé avec ses exercices.`);
       } catch {
         setError("Erreur lors du chargement de l'examen");
@@ -780,7 +801,7 @@ const CreateExam = () => {
         return next;
       });
       importedQuestionRef.current = imported.id || true;
-      setActiveTab('Questions');
+      setActiveTab('Exercices');
       setSuccessMessage('Question importée depuis la banque.');
       // Clear state to avoid re-import on refresh
       try { window.history.replaceState({}, document.title, location.pathname + location.search.replace(/(&?importQuestion=[^&]*)/, '')); } catch (e) {}
@@ -867,6 +888,7 @@ const CreateExam = () => {
       const tplCampusTextEn = tpl?.campusTextEn || 'North American Private University';
       const tplCampusText = tpl?.campusText || 'SFAX - TUNISIA';
       const tplCampusTagline = tpl?.campusTagline || 'TECHNOLOGY · BUSINESS · ARCHITECTURE';
+      const pageCount = Math.max(1, estimatePageCount(sections));
 
       const sec = tpl?.sections;
       const showNP = !sec || sec.zoneNomPrenom;
@@ -958,7 +980,7 @@ const CreateExam = () => {
               ]}),
               new TableRow({ children: [
                 mkCell(`Documents : ${tplDocs}`, c1),
-                mkCell('Nombre de pages : Auto', c2),
+                mkCell(`Nombre de pages : ${pageCount}`, c2),
                 mkCell(`Durée : ${tplDuree}`, c3),
               ]}),
             ],
@@ -1120,7 +1142,7 @@ const CreateExam = () => {
                   new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Année Universitaire : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: tplAnnee, font: 'Times New Roman', size: 20 })] }),
                   new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Semestre : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: tplSemestre, font: 'Times New Roman', size: 20 })] }),
                   new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Durée : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: tplDuree, font: 'Times New Roman', size: 20 })] }),
-                  new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Nombre de pages : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: '  ——  ', font: 'Times New Roman', size: 20 })] }),
+                  new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Nombre de pages : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: String(pageCount), font: 'Times New Roman', size: 20 })] }),
                 ],
               }),
             ]
@@ -1306,10 +1328,13 @@ const CreateExam = () => {
             })],
           }));
 
+          let visibleQuestionIndex = 0;
           for (const [qi, q] of exo.questions.entries()) {
             const pts = q.points ? ` [${q.points} pts]` : '';
-            const qNum = qi + 1;
+            const qNum = q.type === 'enonce' ? null : ++visibleQuestionIndex;
             const _typeLabel = getTypeLabel(q.type);
+            const structuredText = parseQuestionSubparts(q.text);
+            const mainText = structuredText ? structuredText.mainLine : (q.text || '');
 
             // ── Énoncé de l'énoncé / question ──
             if (q.type === 'enonce') {
@@ -1317,7 +1342,7 @@ const CreateExam = () => {
               docChildren.push(new Paragraph({
                 spacing: { before: 100, after: 60 },
                 indent: { left: 360 },
-                children: [new TextRun({ text: q.text || '', font: 'Times New Roman', size: 20, italics: true })],
+                children: [new TextRun({ text: mainText, font: 'Times New Roman', size: 20, italics: true })],
               }));
             } else {
               // Numéro + texte + type
@@ -1326,10 +1351,23 @@ const CreateExam = () => {
                 indent: { left: 360 },
                 children: [
                   new TextRun({ text: `${qNum}. `, bold: true, font: 'Times New Roman', size: 20 }),
-                  new TextRun({ text: q.text || '', font: 'Times New Roman', size: 20 }),
+                  new TextRun({ text: mainText, font: 'Times New Roman', size: 20 }),
                   ...(pts ? [new TextRun({ text: pts, bold: true, font: 'Times New Roman', size: 18, color: '1e4fa8' })] : []),
                 ],
               }));
+            }
+
+            if (structuredText) {
+              structuredText.subparts.forEach((part) => {
+                docChildren.push(new Paragraph({
+                  spacing: { before: 40, after: 30 },
+                  indent: { left: 720 },
+                  children: [
+                    new TextRun({ text: `${part.label}) `, bold: true, font: 'Times New Roman', size: 19 }),
+                    new TextRun({ text: part.text, font: 'Times New Roman', size: 19 }),
+                  ],
+                }));
+              });
             }
 
             // ── Image éventuelle ──
@@ -1371,7 +1409,7 @@ const CreateExam = () => {
             }
 
             // ── Lignes de réponse (questions ouvertes, pratique, etc.) ──
-            const isOpenType = ['ouverte', 'calcul', 'definition', 'code', 'completement', 'schema', 'pratique'].includes(q.type);
+            const isOpenType = ['ouverte', 'calcul', 'definition', 'code', 'completement', 'schema'].includes(q.type);
             if (isOpenType) {
               const rawLines = q.answerLines;
               const nbLines = (rawLines !== null && rawLines !== undefined && Number(rawLines) > 0)
@@ -1468,6 +1506,7 @@ const CreateExam = () => {
       // ─── Sauvegarde en base ───────────────────────────────────────────
       await addExamToBank({
         title: titre,
+        departement: examForm.departement.trim(),
         filiere: examForm.filiere.trim(),
         matiere: examForm.matiere.trim(),
         niveau: examForm.niveau.trim(),
@@ -1554,12 +1593,6 @@ const CreateExam = () => {
       />
 
       <main className="exam-create-main">
-        <header className="exam-create-header">
-          <div className="exam-create-header-left">
-            <h2 className="eb-header-title">Création d&apos;<span>examen</span></h2>
-          </div>
-        </header>
-
         {/* ── Onglets — style original ── */}
         <nav className="exam-tabs" role="tablist">
           {TABS.map((tab, i) => (
@@ -1586,7 +1619,7 @@ const CreateExam = () => {
           />
         )}
 
-        {activeTab === 'Questions' && (
+        {activeTab === 'Exercices' && (
           <QuestionsTab
             sections={sections}
             setSections={setSections}

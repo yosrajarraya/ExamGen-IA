@@ -35,7 +35,32 @@
   transition: all 0.2s var(--ce-ease);
   outline: none;
 }
+/* Astérisque champ obligatoire */
+.field-required {
+  color: #dc2626;           /* rouge vif */
+  font-weight: 700;
+  margin-left: 3px;
+  font-size: 1.05em;
+  line-height: 1;
+  vertical-align: top;
+}
 
+/* Optionnel : petite note sous le formulaire */
+.teacher-form-hint {
+  font-size: 0.82rem;
+  color: var(--td-text-muted, #94a3b8);
+  margin-bottom: 20px;
+}
+
+/* Optionnel : style des labels pour plus de lisibilité */
+.form-group label {
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--td-text-primary, #0f172a);
+  margin-bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+}
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {

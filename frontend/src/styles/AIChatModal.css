@@ -1,0 +1,77 @@
+/* ═══════════════════════════════════════════════════════════════
+   AIChatModal — Styles additionnels
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Animation typing dots */
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+
+.typing-dots span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #9ca3af;
+  margin: 0 2px;
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+.typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+/* Spin loader */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 0.8s linear infinite;
+}
+
+/* Scrollbar messages */
+.messages-area::-webkit-scrollbar {
+  width: 5px;
+}
+.messages-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+.messages-area::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+/* Hover close button */
+.close-btn:hover {
+  background: rgba(255,255,255,0.18) !important;
+  color: #e8dcc4 !important;
+}
+
+/* Hover send */
+.send-btn:hover {
+  background: #0f2040 !important;
+}
+
+/* Hover attach */
+.icon-btn:hover {
+  background: #e5e7eb !important;
+  color: #374151 !important;
+}
+
+/* Insert button hover */
+.insert-btn:hover {
+  background: #bbf7d0 !important;
+  transform: translateY(-1px);
+}
+
+/* File chip hover */
+.file-chip:hover {
+  border-color: #d1d5db !important;
+}
+
+/* Drag overlay fade */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

@@ -12,7 +12,7 @@ const Sidebar = ({
 }) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true); // fermé par défaut
 
   const isActive = (item) =>
     item.matchStartsWith ? pathname.startsWith(item.path) : pathname === item.path;
@@ -24,7 +24,11 @@ const Sidebar = ({
   }, [collapsed]);
 
   return (
-    <aside className={`app-sidebar ${collapsed ? 'app-sidebar--collapsed' : ''}`}>
+    <aside
+      className={`app-sidebar ${collapsed ? 'app-sidebar--collapsed' : ''}`}
+      onMouseEnter={() => setCollapsed(false)}
+      onMouseLeave={() => setCollapsed(true)}
+    >
 
       {/* ── Logo ── */}
       <div className="app-sidebar-logo">
@@ -36,35 +40,6 @@ const Sidebar = ({
           <div className="app-sidebar-logo-sub">{roleLabel}</div>
         </div>
       </div>
-
-      {/* ── Bouton toggle ── */}
-      <button
-        type="button"
-        className="app-sidebar-toggle"
-        onClick={() => setCollapsed((c) => !c)}
-        aria-label={collapsed ? 'Ouvrir le menu' : 'Fermer le menu'}
-        title={collapsed ? 'Ouvrir' : 'Réduire'}
-      >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="app-sidebar-toggle-icon"
-        >
-          {collapsed ? (
-            /* chevron right */
-            <polyline points="9 18 15 12 9 6" />
-          ) : (
-            /* chevron left */
-            <polyline points="15 18 9 12 15 6" />
-          )}
-        </svg>
-      </button>
 
       {/* ── Navigation ── */}
       <nav className="app-sidebar-nav">

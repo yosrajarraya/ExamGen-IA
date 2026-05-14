@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  FiX, FiSearch, FiCornerDownRight, FiDatabase, FiLoader
+  FiX, FiSearch, FiCornerDownRight, FiDatabase, FiLoader, FiCheck
 } from 'react-icons/fi';
 import { getQuestionBank } from '../../../api/enseignant/Enseignant.api';
 import '../../../styles/QuestionBankModal.css';
@@ -15,6 +15,7 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
   const [bankSearch, setBankSearch] = useState('');
   const [bankTypeFilter, setBankTypeFilter] = useState('');
   const [bankTab, setBankTab] = useState('mes');
+  const [selectedIds, setSelectedIds] = useState([]);
   const modalRef = useRef(null);
   const searchInputRef = useRef(null);
 
@@ -45,6 +46,12 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedIds([]);
+    }
+  }, [isOpen]);
+
   /* Fermeture par Escape */
   useEffect(() => {
     if (!isOpen) return;
@@ -64,6 +71,33 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
     }
   };
 
+  const toggleSelection = (questionId) => {
+    setSelectedIds((prev) => (
+      prev.includes(questionId)
+        ? prev.filter((id) => id !== questionId)
+        : [...prev, questionId]
+    ));
+  };
+
+  const clearSelection = () => setSelectedIds([]);
+
+  const handleInsertSelected = async () => {
+    const allQuestions = [...(bankItems.mes || []), ...(bankItems.autres || [])];
+    const questionsToInsert = allQuestions.filter((q) => selectedIds.includes(q.id));
+
+    if (questionsToInsert.length === 0) return;
+
+    for (const question of questionsToInsert) {
+      // on insère une à une pour garder le flux existant côté éditeur
+      // et conserver la même logique d'import.
+      // eslint-disable-next-line no-await-in-loop
+      await onInsertFromBank(question);
+    }
+
+    clearSelection();
+    onClose();
+  };
+
   /* Filtrer la liste */
   const currentList = (bankItems[bankTab] || []).filter(q => {
     const s = bankSearch.trim().toLowerCase();
@@ -77,6 +111,8 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
     
     return !s || (q.text || '').toLowerCase().includes(s) || (q.matiere || '').toLowerCase().includes(s);
   });
+
+  const selectedCount = selectedIds.length;
 
   if (!isOpen) return null;
 
@@ -155,6 +191,15 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
             </select>
           </div>
 
+          {selectedCount > 0 && (
+            <div className="qbm-selection-bar">
+              <span>{selectedCount} question{selectedCount > 1 ? 's' : ''} sélectionnée{selectedCount > 1 ? 's' : ''}</span>
+              <button type="button" className="qbm-selection-clear" onClick={clearSelection}>
+                Effacer la sélection
+              </button>
+            </div>
+          )}
+
           {/* Liste des questions */}
           <div className="qbm-list">
             {bankLoading ? (
@@ -179,8 +224,31 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
             ) : (
               <div className="qbm-items">
                 {currentList.map((q) => (
-                  <div key={q.id} className="qbm-item">
+                  <div
+                    key={q.id}
+                    className={`qbm-item${selectedIds.includes(q.id) ? ' qbm-item--selected' : ''}`}
+                    onClick={() => toggleSelection(q.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleSelection(q.id);
+                      }
+                    }}
+                  >
                     <div className="qbm-item-header">
+                      <button
+                        type="button"
+                        className={`qbm-item-select${selectedIds.includes(q.id) ? ' qbm-item-select--on' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSelection(q.id);
+                        }}
+                        title={selectedIds.includes(q.id) ? 'Retirer de la sélection' : 'Sélectionner cette question'}
+                      >
+                        <FiCheck size={12} />
+                      </button>
                       <span className="qbm-item-type">
                         {q.type === 'qcm_unique' || q.type === 'qcm_multiple' || q.type === 'qcm'
                           ? '📋 QCM'
@@ -199,7 +267,10 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
                     </p>
                     <button
                       className="qbm-item-btn"
-                      onClick={() => onInsertFromBank(q)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onInsertFromBank(q);
+                      }}
                       title="Insérer cette question dans l'exercice actif"
                     >
                       <FiCornerDownRight size={14} />
@@ -221,6 +292,24 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
               ? 'Chargement…'
               : 'Aucune question'}
           </p>
+          <div className="qbm-footer-actions">
+            <button
+              type="button"
+              className="qbm-footer-btn qbm-footer-btn--ghost"
+              onClick={clearSelection}
+              disabled={selectedCount === 0}
+            >
+              Tout effacer
+            </button>
+            <button
+              type="button"
+              className="qbm-footer-btn qbm-footer-btn--primary"
+              onClick={handleInsertSelected}
+              disabled={selectedCount === 0}
+            >
+              Insérer la sélection{selectedCount > 0 ? ` (${selectedCount})` : ''}
+            </button>
+          </div>
         </div>
       </div>
     </div>

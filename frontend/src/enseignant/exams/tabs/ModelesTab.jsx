@@ -1,14 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   TYPE_LABELS,
   DISCIPLINES,
   DUREES,
   ANNEES,
   DOCUMENTS_OPTIONS,
+  DEPARTEMENTS,
+  DEPARTEMENT_MAPPING,
+  FILIERES,
 } from '../../../utils/template.utils';
 import { ExamPreview, ExamPreviewScaled } from '../../../components/ExamPreview';
 
 const ITEMS_PER_PAGE = 3;
+
+const NIVEAUX = ['1ère année', '2ème année', '3ème année'];
+
+const splitDiscipline = (discipline = '') => {
+  const raw = String(discipline || '').trim();
+  if (!raw) return { filiere: '', niveau: '' };
+  const parts = raw.split(/\s*[—-]\s*/);
+  if (parts.length < 2) return { filiere: raw, niveau: '' };
+  return {
+    filiere: String(parts.slice(0, -1).join(' - ') || '').trim(),
+    niveau: String(parts[parts.length - 1] || '').trim(),
+  };
+};
 
 const ModelesTab = ({
   allTemplates = [],
@@ -44,13 +60,28 @@ const ModelesTab = ({
     if (selectedTemplate === tplId) { onSelectTemplate(null); return; }
     const tpl = allTemplates.find(t => t._id === tplId);
     if (!tpl) return;
+
+    const rawDepartement = String(
+      tpl.departement || tpl.Departement || tpl.departementFr || ''
+    ).trim();
+    const mappedDepartement = DEPARTEMENT_MAPPING[rawDepartement] || rawDepartement;
+
+    const discipline = String(tpl.discipline || '').trim();
+    const fromDiscipline = splitDiscipline(discipline);
+    const prefFiliere = String(
+      tpl.filiere || tpl.Filiere || tpl.filiereFr || fromDiscipline.filiere || ''
+    ).trim();
+    const prefNiveau = String(tpl.niveau || tpl.Niveau || fromDiscipline.niveau || '').trim();
+
     onSelectTemplate(tplId);
     // Pré-remplissage des champs depuis le modèle
     onFormChange('templateId',          tpl._id);
     onFormChange('templateStyle',        tpl.templateStyle || 'long');
     onFormChange('titre',                tpl.titreExamen || tpl.nom || '');
     onFormChange('matiere',              tpl.matiere     || '');
-    onFormChange('filiere',              tpl.discipline  || tpl.filiere || '');
+    onFormChange('departement',          mappedDepartement || '');
+    onFormChange('filiere',              prefFiliere || '');
+    onFormChange('niveau',               prefNiveau  || '');
     onFormChange('enseignants',          tpl.enseignants || '');
     onFormChange('type',                 tpl.type        || '');
     onFormChange('duree',                tpl.duree       || '');
@@ -62,6 +93,19 @@ const ModelesTab = ({
   };
 
   const selectedTpl = allTemplates.find(tpl => tpl._id === selectedTemplate);
+
+  /* Calcul des filières disponibles selon le département sélectionné */
+  const availableFilieres = useMemo(() => {
+    if (!examForm.departement) return [];
+    const base = FILIERES[examForm.departement] || [];
+    if (examForm.filiere && !base.includes(examForm.filiere)) {
+      return [...base, examForm.filiere];
+    }
+    return base;
+  }, [examForm.departement, examForm.filiere]);
+
+  // Astérisque obligatoire réutilisable
+  const RequiredMark = () => <span className="field-required" aria-hidden="true"> *</span>;
 
   return (
     <section className="exam-card">
@@ -131,37 +175,67 @@ const ModelesTab = ({
         </>
       )}
 
-      {selectedTpl && (
-        <div className="selected-template-box">
-          <div><strong>Modèle sélectionné :</strong> {selectedTpl.nom || 'Modèle sans titre'}</div>
-          <button type="button" className="exam-btn-secondary" onClick={() => setPreviewModel(selectedTpl)}>👁 Aperçu du modèle</button>
-        </div>
-      )}
-
       {/* Formulaire enseignant */}
       <h3 style={{ marginTop: '34px', marginBottom: '20px' }}>Informations du devoir</h3>
       <p className="teacher-form-hint">Ces champs sont modifiables par l'enseignant pour adapter le modèle au devoir.</p>
 
       <div className="form-grid">
+        {/* === CHAMPS OBLIGATOIRES (avec astérisque rouge) === */}
         <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-          <label htmlFor="exp-titre">Titre du devoir *</label>
+          <label htmlFor="exp-titre">
+            Titre du devoir<RequiredMark />
+          </label>
           <input id="exp-titre" type="text" placeholder="Ex : Examen Final — Algorithmique" value={examForm.titre || ''} onChange={e => onFormChange('titre', e.target.value)} />
         </div>
+
         <div className="form-group">
-          <label htmlFor="exp-matiere">Matière *</label>
+          <label htmlFor="exp-matiere">
+            Matière<RequiredMark />
+          </label>
           <input id="exp-matiere" type="text" placeholder="Ex : Algorithmique" value={examForm.matiere || ''} onChange={e => onFormChange('matiere', e.target.value)} />
         </div>
+
         <div className="form-group">
-          <label htmlFor="exp-filiere">Discipline / Filière *</label>
-          <select id="exp-filiere" value={examForm.filiere || ''} onChange={e => onFormChange('filiere', e.target.value)}>
+          <label htmlFor="exp-departement">
+            Département<RequiredMark />
+          </label>
+          <select id="exp-departement" value={examForm.departement || ''} onChange={e => {
+            onFormChange('departement', e.target.value);
+            onFormChange('filiere', '');
+          }}>
             <option value="">— Choisir —</option>
-            {DISCIPLINES.map(d => <option key={d} value={d}>{d}</option>)}
+            {DEPARTEMENTS.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
         </div>
+
         <div className="form-group">
-          <label htmlFor="exp-enseignants">Enseignant(s) *</label>
+          <label htmlFor="exp-filiere">
+            Filière<RequiredMark />
+          </label>
+          <select id="exp-filiere" value={examForm.filiere || ''} onChange={e => onFormChange('filiere', e.target.value)} disabled={!examForm.departement}>
+            <option value="">— Choisir —</option>
+            {availableFilieres.map(f => <option key={f} value={f}>{f}</option>)}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="exp-niveau">
+            Niveau<RequiredMark />
+          </label>
+          <select id="exp-niveau" value={examForm.niveau || ''} onChange={e => onFormChange('niveau', e.target.value)}>
+            <option value="">— Choisir —</option>
+            {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="exp-enseignants">
+            Enseignant(s)<RequiredMark />
+          </label>
           <input id="exp-enseignants" type="text" placeholder="Nom et prénom de l'enseignant" value={examForm.enseignants || ''} onChange={e => onFormChange('enseignants', e.target.value)} />
         </div>
+
+        {/* === CHAMPS OPTIONNELS (sans astérisque) === */}
         <div className="form-group">
           <label htmlFor="exp-type">Type d'examen</label>
           <select id="exp-type" value={examForm.type || ''} onChange={e => onFormChange('type', e.target.value)}>
@@ -172,10 +246,12 @@ const ModelesTab = ({
             <option value="tp">TP noté</option>
           </select>
         </div>
+
         <div className="form-group">
           <label htmlFor="exp-date">Date du devoir</label>
-          <input id="exp-date" type="text" placeholder="Ex : 07/11/2024" value={examForm.dateExamen || ''} onChange={e => onFormChange('dateExamen', e.target.value)} />
+          <input id="exp-date" type="date" placeholder="Ex : 07/11/2026" value={examForm.dateExamen || ''} onChange={e => onFormChange('dateExamen', e.target.value)} />
         </div>
+
         <div className="form-group">
           <label htmlFor="exp-duree">Durée</label>
           <select id="exp-duree" value={examForm.duree || ''} onChange={e => onFormChange('duree', e.target.value)}>
@@ -183,6 +259,7 @@ const ModelesTab = ({
             {DUREES.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
         </div>
+
         <div className="form-group">
           <label htmlFor="exp-documents">Documents autorisés</label>
           <select id="exp-documents" value={examForm.documentsAutorises || ''} onChange={e => onFormChange('documentsAutorises', e.target.value)}>
@@ -190,6 +267,7 @@ const ModelesTab = ({
             {DOCUMENTS_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
         </div>
+
         <div className="form-group">
           <label htmlFor="exp-annee">Année universitaire</label>
           <select id="exp-annee" value={examForm.anneeUniversitaire || ''} onChange={e => onFormChange('anneeUniversitaire', e.target.value)}>
@@ -197,6 +275,7 @@ const ModelesTab = ({
             {ANNEES.map(a => <option key={a} value={a}>{a}</option>)}
           </select>
         </div>
+
         <div className="form-group">
           <label htmlFor="exp-semestre">Semestre</label>
           <select id="exp-semestre" value={examForm.semestre || ''} onChange={e => onFormChange('semestre', e.target.value)}>
@@ -205,6 +284,7 @@ const ModelesTab = ({
             <option value="2">Semestre 2</option>
           </select>
         </div>
+
         <div className="form-group">
           <label htmlFor="exp-note">Note totale</label>
           <input id="exp-note" type="text" value="20 / 20" disabled />

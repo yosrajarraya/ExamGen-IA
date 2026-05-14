@@ -52,39 +52,6 @@
   width: var(--sb-width-collapsed);
 }
 
-/* ── Bouton toggle ── */
-.app-sidebar-toggle {
-  position: absolute;
-  top: 50%;
-  right: -14px;
-  transform: translateY(-50%);
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--sb-bg);
-  border: 1.5px solid var(--sb-border);
-  color: var(--sb-text-muted);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 101;
-  transition: background var(--sb-transition), color var(--sb-transition), border-color var(--sb-transition), box-shadow var(--sb-transition);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
-
-.app-sidebar-toggle:hover {
-  background: var(--sb-accent-soft);
-  color: var(--sb-accent);
-  border-color: rgba(212,168,67,0.4);
-  box-shadow: 0 0 12px var(--sb-accent-glow);
-}
-
-.app-sidebar-toggle-icon {
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-  flex-shrink: 0;
-}
-
 /* Ligne d'accentuation dorée en haut */
 .app-sidebar::before {
   content: '';
@@ -445,53 +412,8 @@
   transform: translateX(2px);
 }
 
-/* ══════════════════════════════
-   RESPONSIVE — Collapsé mobile
-   ══════════════════════════════ */
-@media (max-width: 768px) {
-  .app-sidebar {
-    width: 64px;
-  }
-
-  .app-sidebar-logo-name,
-  .app-sidebar-logo-sub,
-  .app-sidebar-nav-item span:not(.app-sidebar-nav-icon),
-  .app-sidebar-user-info,
-  .app-sidebar-logout span {
-    display: none;
-  }
-
-  .app-sidebar-logo {
-    justify-content: center;
-    padding: 20px 10px;
-  }
-
-  .app-sidebar-nav-item {
-    justify-content: center;
-    padding: 12px;
-  }
-
-  .app-sidebar-nav-icon {
-    width: 22px;
-    height: 22px;
-    opacity: 0.8;
-  }
-
-  .app-sidebar-user {
-    justify-content: center;
-    padding: 8px;
-  }
-
-  .app-sidebar-logout {
-    justify-content: center;
-    padding: 10px;
-  }
-}
-
 /* ══════════════════════════════════════════
    ADAPTATION DU CONTENU PRINCIPAL
-   Quand body.sidebar-collapsed, tous les
-   conteneurs principaux réduisent leur marge
    ══════════════════════════════════════════ */
 
 /* Transition fluide sur tous les conteneurs principaux */
@@ -515,7 +437,7 @@ body.sidebar-collapsed .new-admin-main {
 }
 
 /* ══════════════════════════════
-   RESPONSIVE — Collapsé mobile
+   RESPONSIVE — Mobile
    ══════════════════════════════ */
 @media (max-width: 768px) {
   .app-sidebar {
@@ -556,10 +478,6 @@ body.sidebar-collapsed .new-admin-main {
     justify-content: center;
     padding: 10px;
     gap: 0;
-  }
-
-  .app-sidebar-toggle {
-    display: none;
   }
 
   /* Contenu principal en mobile */
