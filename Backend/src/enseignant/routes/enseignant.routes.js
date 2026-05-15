@@ -1,7 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const { generateAIQuestions, generateAIExam, chatWithAIController } = require('../controllers/ai.controller');
-
 const { verifyToken } = require("../../middleware/auth.middleware");
 const { getDepartements } = require("../../admin/controllers/departement.controller");
 const {
@@ -79,13 +77,12 @@ router.get('/exercises/bank', getExerciseBank);              // Récupérer la b
 router.put('/exercises/bank/:id', updateExercise);           // Modifier un exercice
 router.delete('/exercises/bank/:id', deleteExercise);        // Supprimer un exercice
 router.post('/exercises/bank/:id/copy', copyExercise);       // Copier un exercice
-router.post('/ai/questions', generateAIQuestions); // Générer des questions par IA
-router.post('/ai/exam', generateAIExam); // Générer un examen complet par IA
+router.use('/ai', require('./aiRoutes'));
 
 // === AJOUTER EN HAUT DU FICHIER ===
 
 // === AJOUTER AVANT module.exports = router ===
 // Chatbot IA avec fichiers
-router.post('/ai/chat', upload.array('files', 5), chatWithAIController);
+// Le contrôleur chatWithAIController n'existe plus ou est géré par aiRoutes
 
 module.exports = router;

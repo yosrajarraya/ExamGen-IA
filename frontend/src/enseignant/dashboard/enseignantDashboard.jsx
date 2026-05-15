@@ -197,7 +197,7 @@ function TeacherDashboard() {
                 <p style={{ fontSize: '0.85rem', color: 'var(--td-text-label)', marginBottom: '12px' }}>
                   Utilisez l'IA pour générer des questions à partir d'un texte ou d'un sujet.
                 </p>
-                <button className="teacher-secondary-action" style={{ width: '100%' }} onClick={() => navigate('/enseignant/questions/generator')}>
+                <button className="teacher-secondary-action" style={{ width: '100%' }} onClick={() => navigate('/enseignant/ai-generator')}>
                    Générer des questions par IA
                 </button>
               </div>

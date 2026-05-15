@@ -16,6 +16,7 @@ const ExerciseBank = lazy(() => import('../enseignant/questions/ExerciseBank'));
 const Profil = lazy(() => import('../enseignant/profil/Profil'));
 const WordTemplates = lazy(() => import('../enseignant/modeles/WordTemplates'));
 const WordTemplate = lazy(() => import('../admin/modeles/WordTemplate'));
+const AIGenerator = lazy(() => import('../enseignant/questions/AIGenerator'));
 
 const PageLoader = () => (
   <div
@@ -188,6 +189,15 @@ const AppRouter = () => {
             element={
               <ProtectedRoute role="enseignant">
                 <Profil />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/enseignant/ai-generator"
+            element={
+              <ProtectedRoute role="enseignant">
+                <AIGenerator />
               </ProtectedRoute>
             }
           />

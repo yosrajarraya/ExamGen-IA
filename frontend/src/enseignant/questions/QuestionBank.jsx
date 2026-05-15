@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiChevronLeft, FiChevronRight, FiX, FiEye, FiEdit2, FiTrash2, FiCopy, FiSave } from 'react-icons/fi';
 import useAuth from '../../context/useAuth';
 import Sidebar from '../../components/sidebar/Sidebar';
 import { enseignantNavItems, buildEnseignantProfile } from '../../components/sidebar/sidebarConfigs';
@@ -11,6 +10,8 @@ import {
   deleteQuestionBankItem,
   copyQuestionBankItem,
 } from '../../api/enseignant/Enseignant.api';
+import { FiPlus, FiCpu } from 'react-icons/fi';
+import AIGeneratorModal from '../exams/tabs/AIGeneratorModal';
 import './Questionbank.css';
 
 const PER_PAGE = 10;
@@ -21,13 +22,13 @@ const formatDate = (iso) => {
 };
 
 const TYPE_LABELS = {
-  ouverte:      { label: 'Ouverte',          cls: 'blue'   },
-  qcm:          { label: 'QCM',              cls: 'violet' },
-  qcm_unique:   { label: 'QCM — unique',     cls: 'violet' },
-  qcm_multiple: { label: 'QCM — multiple',   cls: 'indigo' },
-  vrai_faux:    { label: 'Vrai/Faux',        cls: 'green'  },
-  pratique:     { label: 'Pratique',         cls: 'gold'   },
-  enonce:       { label: 'Énoncé',           cls: 'gray'   },
+  ouverte: { label: 'Ouverte', cls: 'blue' },
+  qcm: { label: 'QCM', cls: 'violet' },
+  qcm_unique: { label: 'QCM — unique', cls: 'violet' },
+  qcm_multiple: { label: 'QCM — multiple', cls: 'indigo' },
+  vrai_faux: { label: 'Vrai/Faux', cls: 'green' },
+  pratique: { label: 'Pratique', cls: 'gold' },
+  enonce: { label: 'Énoncé', cls: 'gray' },
 };
 
 const QUESTION_TYPE_OPTIONS = [
@@ -35,6 +36,7 @@ const QUESTION_TYPE_OPTIONS = [
   { value: 'ouverte', label: 'Ouverte' },
   { value: 'qcm_unique', label: 'QCM — choix unique' },
   { value: 'qcm_multiple', label: 'QCM — choix multiple' },
+  { value: 'qcm', label: 'QCM (ancien)' },
   { value: 'vrai_faux', label: 'Vrai/Faux' },
   { value: 'pratique', label: 'Pratique' },
   { value: 'enonce', label: 'Énoncé' },
@@ -61,63 +63,24 @@ const Pagination = ({ page, total, onChange }) => {
   if (total <= 1) return null;
   return (
     <div className="qb-pagination">
-      <button className="qb-page-btn" onClick={() => onChange(page - 1)} disabled={page === 1} title="Page précédente">
-        <FiChevronLeft size={16} />
-      </button>
+      <button className="qb-page-btn" onClick={() => onChange(page - 1)} disabled={page === 1}>← Précédent</button>
       <div className="qb-page-nums">
         {Array.from({ length: total }, (_, i) => i + 1).map((p) => (
           <button key={p} className={`qb-page-num ${p === page ? 'qb-page-num--active' : ''}`} onClick={() => onChange(p)}>{p}</button>
         ))}
       </div>
-      <button className="qb-page-btn" onClick={() => onChange(page + 1)} disabled={page === total} title="Page suivante">
-        <FiChevronRight size={16} />
-      </button>
+      <button className="qb-page-btn" onClick={() => onChange(page + 1)} disabled={page === total}>Suivant →</button>
     </div>
   );
 };
 
-/* ── Delete Confirm Modal ── */
-const DeleteModal = ({ onConfirm, onClose }) => (
-  <div className="qb-modal-overlay" onClick={onClose}>
-    <div className="qb-modal qb-modal--confirm" onClick={(e) => e.stopPropagation()}>
-      <div className="qb-modal-header">
-        <div className="qb-modal-header-left">
-          <div className="qb-modal-num qb-modal-num--danger">
-            <FiTrash2 size={14} />
-          </div>
-          <div>
-            <div className="qb-modal-label">Supprimer la question</div>
-          </div>
-        </div>
-      </div>
-      <div className="qb-modal-body">
-        <div className="qb-confirm-icon-wrap">
-          
-        </div>
-        <p className="qb-confirm-text">
-          Voulez-vous vraiment supprimer cette question de votre banque ?
-        </p>
-        
-      </div>
-      <div className="qb-modal-footer">
-        <button className="qb-btn qb-btn--ghost" onClick={onClose}>
-          <FiX size={14} /> Annuler
-        </button>
-        <button className="qb-btn qb-btn--danger-full" onClick={onConfirm}>
-          <FiTrash2 size={14} /> Supprimer définitivement
-        </button>
-      </div>
-    </div>
-  </div>
-);
-
 /* ── Add Question Modal ── */
 const AddModal = ({ onSave, onClose }) => {
-  const [text, setText]       = useState('');
+  const [text, setText] = useState('');
   const [matiere, setMatiere] = useState('');
-  const [type, setType]       = useState('ouverte');
-  const [saving, setSaving]   = useState(false);
-  const [err, setErr]         = useState('');
+  const [type, setType] = useState('ouverte');
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState('');
 
   const handleSave = async () => {
     const clean = text.trim();
@@ -141,7 +104,7 @@ const AddModal = ({ onSave, onClose }) => {
             <div className="qb-modal-num">+</div>
             <div><div className="qb-modal-label">Nouvelle question</div></div>
           </div>
-          <button className="qb-modal-close" onClick={onClose} title="Fermer"><FiX size={16} /></button>
+          <button className="qb-modal-close" onClick={onClose}>✕</button>
         </div>
         <div className="qb-modal-body">
           <label className="qb-field-label">Matière <span className="qb-optional">(optionnel)</span></label>
@@ -170,9 +133,9 @@ const AddModal = ({ onSave, onClose }) => {
           {err && <p className="qb-field-error">{err}</p>}
         </div>
         <div className="qb-modal-footer">
-          <button className="qb-btn qb-btn--ghost" onClick={onClose} title="Annuler"><FiX size={14} /></button>
-          <button className="qb-btn qb-btn--save" onClick={handleSave} disabled={saving} title="Ajouter">
-            {saving ? <><span className="qb-btn-spinner" aria-hidden="true" /> Ajout…</> : <><FiSave size={14} /> Ajouter</>}
+          <button className="qb-btn qb-btn--ghost" onClick={onClose}>Annuler</button>
+          <button className="qb-btn qb-btn--save" onClick={handleSave} disabled={saving}>
+            {saving ? 'Ajout…' : 'Ajouter'}
           </button>
         </div>
       </div>
@@ -182,23 +145,24 @@ const AddModal = ({ onSave, onClose }) => {
 
 /* ── Edit Modal ── */
 const EditModal = ({ question, onSave, onClose }) => {
-  const [text, setText]         = useState(question.text || '');
-  const [type, setType]         = useState(normalizeQuestionType(question.type));
+  const [text, setText] = useState(question.text || '');
+  const [type, setType] = useState(normalizeQuestionType(question.type));
   const [imageUrl, setImageUrl] = useState(question.imageUrl || '');
-  const [options, setOptions]   = useState(
+  const [options, setOptions] = useState(
     Array.isArray(question.options) && question.options.length > 0
       ? question.options.map((o, i) => ({
-          id: o.id || `opt_${i}`,
-          text: typeof o === 'string' ? o : (o.text || ''),
-          correct: !!o.correct,
-        }))
+        id: o.id || `opt_${i}`,
+        text: typeof o === 'string' ? o : (o.text || ''),
+        correct: !!o.correct,
+      }))
       : []
   );
   const [saving, setSaving] = useState(false);
-  const [err, setErr]       = useState('');
+  const [err, setErr] = useState('');
 
   const isQcmType = (t) => ['qcm', 'qcm_unique', 'qcm_multiple', 'vrai_faux'].includes(t);
 
+  /* Quand le type change, initialise les options par défaut si vides */
   const handleTypeChange = (newType) => {
     setType(newType);
     if (isQcmType(newType) && options.length === 0) {
@@ -209,8 +173,8 @@ const EditModal = ({ question, onSave, onClose }) => {
         ]);
       } else {
         setOptions([
-          { id: 'opt_0', text: 'Option A', correct: false },
-          { id: 'opt_1', text: 'Option B', correct: false },
+          { id: `opt_0`, text: 'Option A', correct: false },
+          { id: `opt_1`, text: 'Option B', correct: false },
         ]);
       }
     }
@@ -222,14 +186,14 @@ const EditModal = ({ question, onSave, onClose }) => {
   const removeOption = (id) =>
     setOptions(prev => prev.filter(o => o.id !== id));
 
-  const updateOptionText = (id, val) =>
-    setOptions(prev => prev.map(o => o.id === id ? { ...o, text: val } : o));
+  const updateOptionText = (id, text) =>
+    setOptions(prev => prev.map(o => o.id === id ? { ...o, text } : o));
 
   const toggleCorrect = (id) => {
     const isUnique = type === 'qcm_unique' || type === 'qcm';
     setOptions(prev => prev.map(o => {
       if (o.id === id) return { ...o, correct: !o.correct };
-      if (isUnique) return { ...o, correct: false };
+      if (isUnique && o.id !== id) return { ...o, correct: false }; // radio behavior
       return o;
     }));
   };
@@ -251,7 +215,7 @@ const EditModal = ({ question, onSave, onClose }) => {
     }
   };
 
-  const isVF     = type === 'vrai_faux';
+  const isVF = type === 'vrai_faux';
   const isUnique = type === 'qcm_unique' || type === 'qcm';
 
   return (
@@ -262,7 +226,7 @@ const EditModal = ({ question, onSave, onClose }) => {
             <div className="qb-modal-num">✎</div>
             <div><div className="qb-modal-label">Modifier la question</div></div>
           </div>
-          <button className="qb-modal-close" onClick={onClose} title="Fermer"><FiX size={16} /></button>
+          <button className="qb-modal-close" onClick={onClose}>✕</button>
         </div>
         <div className="qb-modal-body">
           <label className="qb-field-label">Type de question *</label>
@@ -275,6 +239,7 @@ const EditModal = ({ question, onSave, onClose }) => {
           <label className="qb-field-label" style={{ marginTop: '14px' }}>Texte de la question *</label>
           <textarea className="qb-edit-textarea" value={text} onChange={(e) => setText(e.target.value)} rows={4} autoFocus />
 
+          {/* Options QCM */}
           {isQcmType(type) && (
             <div className="qb-options-section">
               <label className="qb-field-label" style={{ marginTop: '14px' }}>
@@ -290,6 +255,7 @@ const EditModal = ({ question, onSave, onClose }) => {
                       type="button"
                       className={`qb-option-check${opt.correct ? ' qb-option-check--on' : ''}`}
                       onClick={() => toggleCorrect(opt.id)}
+                      title={isUnique ? 'Bonne réponse' : 'Cocher comme correcte'}
                     >
                       {isUnique ? (opt.correct ? '●' : '○') : (opt.correct ? '✓' : String.fromCharCode(65 + i))}
                     </button>
@@ -321,9 +287,9 @@ const EditModal = ({ question, onSave, onClose }) => {
           {err && <p className="qb-field-error">{err}</p>}
         </div>
         <div className="qb-modal-footer">
-          <button className="qb-btn qb-btn--ghost" onClick={onClose} title="Annuler"><FiX size={14} /></button>
-          <button className="qb-btn qb-btn--save" onClick={handleSave} disabled={saving} title="Enregistrer">
-            {saving ? <><span className="qb-btn-spinner" aria-hidden="true" /> Enregistrement…</> : <><FiSave size={14} /> Enregistrer</>}
+          <button className="qb-btn qb-btn--ghost" onClick={onClose}>Annuler</button>
+          <button className="qb-btn qb-btn--save" onClick={handleSave} disabled={saving}>
+            {saving ? 'Enregistrement…' : 'Enregistrer'}
           </button>
         </div>
       </div>
@@ -343,7 +309,7 @@ const ViewModal = ({ question, index, isMine, onClose, onCopy }) => (
             {!isMine && <div className="qb-modal-author">{question.createdByName || question.createdByEmail || 'Professeur'}</div>}
           </div>
         </div>
-        <button className="qb-modal-close" onClick={onClose} title="Fermer"><FiX size={16} /></button>
+        <button className="qb-modal-close" onClick={onClose}>✕</button>
       </div>
       <div className="qb-modal-body">
         <div className="qb-modal-matiere" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -376,11 +342,11 @@ const ViewModal = ({ question, index, isMine, onClose, onCopy }) => (
       </div>
       <div className="qb-modal-footer">
         {!isMine && (
-          <button className="qb-btn qb-btn--copy" onClick={() => { onCopy(question); onClose(); }} title="Copier">
-            <FiCopy size={14} />
+          <button className="qb-btn qb-btn--copy" onClick={() => { onCopy(question); onClose(); }}>
+            Copier dans ma banque
           </button>
         )}
-        <button className="qb-btn qb-btn--ghost" onClick={onClose} title="Fermer"><FiX size={14} /></button>
+        <button className="qb-btn qb-btn--ghost" onClick={onClose}>Fermer</button>
       </div>
     </div>
   </div>
@@ -389,9 +355,9 @@ const ViewModal = ({ question, index, isMine, onClose, onCopy }) => (
 /* ── Question Card ── */
 const QuestionCard = ({ item, index, isMine, onView, onEdit, onDelete, onCopy }) => {
   const normalizedType = normalizeQuestionType(item.type);
-  const typeMeta   = TYPE_LABELS[normalizedType] || { label: 'Question', cls: 'blue' };
-  const truncated  = (item.text || '').length > 120;
-  const display    = truncated ? item.text.slice(0, 120) + '…' : item.text;
+  const typeMeta = TYPE_LABELS[normalizedType] || { label: 'Question', cls: 'blue' };
+  const truncated = (item.text || '').length > 120;
+  const display = truncated ? item.text.slice(0, 120) + '…' : item.text;
 
   return (
     <div className={`qb-card ${!isMine ? 'qb-card--other' : ''}`}>
@@ -412,14 +378,14 @@ const QuestionCard = ({ item, index, isMine, onView, onEdit, onDelete, onCopy })
       <div className="qb-card-footer">
         <span className="qb-card-date">{formatDate(item.createdAt)}</span>
         <div className="qb-card-actions">
-          <button className="qb-btn qb-btn--view"  onClick={() => onView(item, index)} title="Voir"><FiEye size={14} /></button>
+          <button className="qb-btn qb-btn--view" onClick={() => onView(item, index)}>Voir</button>
           {isMine ? (
             <>
-              <button className="qb-btn qb-btn--edit"   onClick={() => onEdit(item)}    title="Modifier"><FiEdit2 size={14} /></button>
-              <button className="qb-btn qb-btn--danger" onClick={() => onDelete(item.id)} title="Supprimer"><FiTrash2 size={14} /></button>
+              <button className="qb-btn qb-btn--edit" onClick={() => onEdit(item)}>Modifier</button>
+              <button className="qb-btn qb-btn--danger" onClick={() => onDelete(item.id)}>Supprimer</button>
             </>
           ) : (
-            <button className="qb-btn qb-btn--copy" onClick={() => onCopy(item)} title="Copier"><FiCopy size={14} /></button>
+            <button className="qb-btn qb-btn--copy" onClick={() => onCopy(item)}>Copier</button>
           )}
         </div>
       </div>
@@ -433,21 +399,21 @@ const QuestionCard = ({ item, index, isMine, onView, onEdit, onDelete, onCopy })
 const QuestionBank = () => {
   const { user, logout } = useAuth();
 
-  const [loading, setLoading]                 = useState(true);
-  const [error, setError]                     = useState('');
-  const [mesQuestions, setMesQuestions]       = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [mesQuestions, setMesQuestions] = useState([]);
   const [autresQuestions, setAutresQuestions] = useState([]);
-  const [toast, setToast]                     = useState({ message: '', type: 'success' });
-  const [search, setSearch]                   = useState('');
-  const [filterMatiere, setFilterMatiere]     = useState('');
-  const [filterType, setFilterType]           = useState('');
-  const [activeTab, setActiveTab]             = useState('mes');
-  const [pageMes, setPageMes]                 = useState(1);
-  const [pageAutres, setPageAutres]           = useState(1);
-  const [viewModal, setViewModal]             = useState(null);
-  const [editModal, setEditModal]             = useState(null);
-  const [showAddModal, setShowAddModal]       = useState(false);
-  const [deleteConfirm, setDeleteConfirm]     = useState(null); // id à supprimer
+  const [toast, setToast] = useState({ message: '', type: 'success' });
+  const [search, setSearch] = useState('');
+  const [filterMatiere, setFilterMatiere] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [activeTab, setActiveTab] = useState('mes');
+  const [pageMes, setPageMes] = useState(1);
+  const [pageAutres, setPageAutres] = useState(1);
+  const [viewModal, setViewModal] = useState(null);
+  const [editModal, setEditModal] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [isShowingAIModal, setIsShowingAIModal] = useState(false);
 
   const loadData = async () => {
     try {
@@ -479,30 +445,30 @@ const QuestionBank = () => {
   }, [mesQuestions, autresQuestions]);
 
   const applyFilters = (items) => {
-    const q    = search.trim().toLowerCase();
-    const m    = filterMatiere.trim().toLowerCase();
+    const q = search.trim().toLowerCase();
+    const m = filterMatiere.trim().toLowerCase();
     const type = filterType.trim();
     return items.filter((item) => {
       if (m && !(item.matiere || '').toLowerCase().includes(m)) return false;
       if (type && normalizeQuestionType(item.type) !== type) return false;
       if (!q) return true;
       return (item.text || '').toLowerCase().includes(q) ||
-             (item.createdByName || '').toLowerCase().includes(q) ||
-             (item.matiere || '').toLowerCase().includes(q);
+        (item.createdByName || '').toLowerCase().includes(q) ||
+        (item.matiere || '').toLowerCase().includes(q);
     });
   };
 
-  const filteredMes    = useMemo(() => applyFilters(mesQuestions),    [mesQuestions,    search, filterMatiere, filterType]);
+  const filteredMes = useMemo(() => applyFilters(mesQuestions), [mesQuestions, search, filterMatiere, filterType]);
   const filteredAutres = useMemo(() => applyFilters(autresQuestions), [autresQuestions, search, filterMatiere, filterType]);
 
-  const totalPagesMes    = Math.max(1, Math.ceil(filteredMes.length / PER_PAGE));
+  const totalPagesMes = Math.max(1, Math.ceil(filteredMes.length / PER_PAGE));
   const totalPagesAutres = Math.max(1, Math.ceil(filteredAutres.length / PER_PAGE));
-  const safeMes    = Math.min(pageMes,    totalPagesMes);
+  const safeMes = Math.min(pageMes, totalPagesMes);
   const safeAutres = Math.min(pageAutres, totalPagesAutres);
 
-  const pageMesItems    = filteredMes.slice((safeMes - 1) * PER_PAGE, safeMes * PER_PAGE);
+  const pageMesItems = filteredMes.slice((safeMes - 1) * PER_PAGE, safeMes * PER_PAGE);
   const pageAutresItems = filteredAutres.slice((safeAutres - 1) * PER_PAGE, safeAutres * PER_PAGE);
-  const offsetMes    = (safeMes - 1) * PER_PAGE;
+  const offsetMes = (safeMes - 1) * PER_PAGE;
   const offsetAutres = (safeAutres - 1) * PER_PAGE;
 
   useEffect(() => { setPageMes(1); setPageAutres(1); }, [search, filterMatiere]);
@@ -510,7 +476,7 @@ const QuestionBank = () => {
   /* Actions */
   const handleAdd = async (text, matiere, type) => {
     const result = await addQuestionToBank(text, matiere, '', '', type);
-    const newQ   = normalizeQuestionItem(result.question || result);
+    const newQ = normalizeQuestionItem(result.question || result);
     setMesQuestions(prev => [newQ, ...prev]);
     showToast('Question ajoutée à votre banque.');
   };
@@ -526,28 +492,46 @@ const QuestionBank = () => {
     setEditModal(null);
   };
 
-  /* Ouvre le modal de confirmation */
-  const handleDelete = (id) => {
-    setDeleteConfirm(id);
-  };
-
-  /* Suppression effective après confirmation */
-  const confirmDelete = async () => {
+  const handleDelete = async (id) => {
+    if (!window.confirm('Supprimer cette question définitivement ?')) return;
     try {
-      await deleteQuestionBankItem(deleteConfirm);
-      setMesQuestions(prev => prev.filter(q => q.id !== deleteConfirm));
+      await deleteQuestionBankItem(id);
+      setMesQuestions(prev => prev.filter(q => q.id !== id));
       showToast('Question supprimée.');
     } catch (err) {
       showToast(err?.response?.data?.message || 'Erreur de suppression', 'error');
-    } finally {
-      setDeleteConfirm(null);
     }
   };
+
+  const handleInsertAIQuestions = async (aiQuestions) => {
+    if (!aiQuestions || aiQuestions.length === 0) return;
+    try {
+      setLoading(true);
+      for (const q of aiQuestions) {
+        await addQuestionToBank(
+          q.text,
+          q.matiere || '',
+          '',
+          '',
+          q.type === 'qcm' ? 'qcm_multiple' : q.type,
+          q.options || []
+        );
+      }
+      showToast(`${aiQuestions.length} question(s) ajoutée(s) à votre banque.`, 'success');
+      loadData(); // Recharger la liste
+    } catch (err) {
+      showToast(err?.response?.data?.message || "Erreur lors de l'ajout via IA", 'error');
+    } finally {
+      setLoading(false);
+      setIsShowingAIModal(false);
+    }
+  };
+
 
   const handleCopy = async (question) => {
     try {
       const result = await copyQuestionBankItem(question.id);
-      const newQ   = normalizeQuestionItem(result.question || result);
+      const newQ = normalizeQuestionItem(result.question || result);
       setMesQuestions(prev => [
         { ...newQ, copiedFrom: question.createdByName || question.createdByEmail },
         ...prev,
@@ -559,10 +543,11 @@ const QuestionBank = () => {
     }
   };
 
-  const hasFilters  = search || filterMatiere || filterType;
+  const hasFilters = search || filterMatiere || filterType;
   const resetFilters = () => { setSearch(''); setFilterMatiere(''); setFilterType(''); };
 
-  const navigate    = useNavigate();
+  const navigate = useNavigate();
+  // keep a ref to navigate to use inside render closures
   const navigateRef = useRef(navigate);
 
   return (
@@ -579,9 +564,31 @@ const QuestionBank = () => {
               {mesQuestions.length} personnelle{mesQuestions.length !== 1 ? 's' : ''} · {autresQuestions.length} partagée{autresQuestions.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <button className="qb-btn-new" onClick={() => setShowAddModal(true)}>
-            + Nouvelle question
-          </button>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              className="qb-btn-ai"
+              onClick={() => setIsShowingAIModal(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'linear-gradient(135deg, #0e2b50 0%, #1a3a6a 100%)',
+                color: 'white',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '8px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                fontSize: '0.88rem',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+              }}
+            >
+              <FiCpu /> Générer avec IA
+            </button>
+            <button className="qb-btn-new" onClick={() => setShowAddModal(true)}>
+              + Nouvelle question
+            </button>
+          </div>
         </header>
 
         {/* Filtres */}
@@ -637,11 +644,7 @@ const QuestionBank = () => {
               <div className="qb-empty">
                 <div className="qb-empty-icon">?</div>
                 <p className="qb-empty-msg">
-                  {hasFilters
-                    ? 'Aucun résultat pour ces filtres.'
-                    : activeTab === 'mes'
-                      ? "Vous n'avez pas encore de question."
-                      : 'Aucune question partagée.'}
+                  {hasFilters ? 'Aucun résultat pour ces filtres.' : activeTab === 'mes' ? "Vous n'avez pas encore de question." : 'Aucune question partagée.'}
                 </p>
                 {hasFilters && <button className="qb-btn-reset" onClick={resetFilters}>Réinitialiser</button>}
                 {!hasFilters && activeTab === 'mes' && (
@@ -659,14 +662,7 @@ const QuestionBank = () => {
                     index={activeTab === 'mes' ? offsetMes + i : offsetAutres + i}
                     isMine={activeTab === 'mes'}
                     onView={(q, idx) => setViewModal({ question: q, index: idx, isMine: activeTab === 'mes' })}
-                    onEdit={(q) => {
-                      try {
-                        const nav = navigateRef.current || navigate;
-                        nav('/enseignant/exams/create', { state: { importQuestion: q } });
-                      } catch (e) {
-                        setEditModal(q);
-                      }
-                    }}
+                    onEdit={(q) => setEditModal(q)}
                     onDelete={handleDelete}
                     onCopy={handleCopy}
                   />
@@ -674,6 +670,7 @@ const QuestionBank = () => {
               </div>
             )}
 
+            {/* Pagination + compteur */}
             {activeTab === 'mes' ? (
               <>
                 <Pagination page={safeMes} total={totalPagesMes} onChange={setPageMes} />
@@ -699,7 +696,7 @@ const QuestionBank = () => {
         <Toast message={toast.message} type={toast.type} />
       </main>
 
-      {/* ── Modals ── */}
+      {/* Modals */}
       {showAddModal && (
         <AddModal onSave={handleAdd} onClose={() => setShowAddModal(false)} />
       )}
@@ -719,12 +716,14 @@ const QuestionBank = () => {
           onClose={() => setEditModal(null)}
         />
       )}
-      {deleteConfirm && (
-        <DeleteModal
-          onConfirm={confirmDelete}
-          onClose={() => setDeleteConfirm(null)}
-        />
-      )}
+
+      {/* Modal IA */}
+      <AIGeneratorModal
+        isOpen={isShowingAIModal}
+        onClose={() => setIsShowingAIModal(false)}
+        onInsertQuestions={handleInsertAIQuestions}
+      />
+
     </div>
   );
 };

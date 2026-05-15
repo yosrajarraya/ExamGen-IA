@@ -6,14 +6,13 @@ import {
   HeightRule, ShadingType, VerticalAlign, ImageRun,
   LevelFormat,
 } from 'docx';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import useAuth from '../../context/useAuth';
 import Sidebar from '../../components/sidebar/Sidebar';
 import { enseignantNavItems, buildEnseignantProfile } from '../../components/sidebar/sidebarConfigs';
 import {
   addExamToBank,
   addQuestionToBank,
-  createExercise,
   getExamBank,
   getExamBankItem,
   getExamContent,
@@ -21,11 +20,12 @@ import {
   getFilteredQuestions,
   getWordTemplates,
 } from '../../api/enseignant/Enseignant.api';
-import { estimatePageCount } from '../../utils/exportHelpers';
 
 import ModelesTab from './tabs/ModelesTab';
-import QuestionsTab, { makeSection } from './tabs/QuestionsTab';
+import QuestionsTab from './tabs/QuestionsTab';
+import { makeSection } from './tabs/examUtils';
 import ExportTab from './tabs/ExportTab';
+import AIGeneratorModal from './tabs/AIGeneratorModal';
 import '../../styles/CreateExam.css';
 
 import iitLogoAsset from '../../assets/iit2.png';
@@ -47,7 +47,7 @@ const loadIITLogo = async () => {
   }
 };
 
-const TABS = ['Modèles', 'Exercices', 'Export'];
+const TABS = ['Modèles', 'Questions', 'Export'];
 const FIXED_EXAM_TOTAL = 20;
 
 // ─── Helpers parsing (inchangés) ─────────────────────────────────────────────
@@ -224,7 +224,7 @@ const parseQuestionElement = (questionEl) => {
     isEditing: false,
   };
 
-  if (type === 'ouverte') {
+  if (type === 'ouverte' || type === 'pratique') {
     question.answerLines = answerLinesCount;
   }
 
@@ -602,26 +602,6 @@ const getTypeLabel = (type) => {
   }
 };
 
-const parseQuestionSubparts = (text) => {
-  const lines = String(text || '')
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  if (lines.length < 2) return null;
-
-  const mainLine = lines[0];
-  const subparts = [];
-
-  for (const line of lines.slice(1)) {
-    const match = line.match(/^([a-h])\s*[).:-]\s*(.+)$/i);
-    if (!match) return null;
-    subparts.push({ label: match[1].toLowerCase(), text: match[2].trim() });
-  }
-
-  return subparts.length > 0 ? { mainLine, subparts } : null;
-};
-
 const isQcmType = (t) =>
   t === 'qcm' || t === 'qcm_unique' || t === 'qcm_multiple' || t === 'vrai_faux';
 
@@ -629,6 +609,7 @@ const isQcmType = (t) =>
 const CreateExam = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('Modèles');
   const [filter, setFilter] = useState({ matiere: '', niveau: '', annee: '' });
@@ -648,18 +629,112 @@ const CreateExam = () => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [sections, setSections] = useState([makeSection(1)]);
   const [examForm, setExamForm] = useState({
-    titre: '', departement: '', filiere: '', matiere: '', niveau: '', type: '', duree: '',
+    titre: '', filiere: '', matiere: '', niveau: '', type: '', duree: '',
     noteTotale: String(FIXED_EXAM_TOTAL), statut: 'Brouillon', templateId: null,
   });
   const [isSavingExam, setIsSavingExam] = useState(false);
   const [exportMessage, setExportMessage] = useState('');
   const [exportError, setExportError] = useState('');
+  const [isShowingAIModal, setIsShowingAIModal] = useState(false);
   const [editingExamId, setEditingExamId] = useState(null);
   const importedQuestionRef = useRef(null);
-  const importedExerciseRef = useRef(null);
+  const lastInsertedRef = useRef(null);
 
   const onFormChange = (field, value) =>
     setExamForm(prev => ({ ...prev, [field]: value }));
+
+  const handleOpenAI = () => setIsShowingAIModal(true);
+
+  const handleInsertAIQuestions = (aiQuestions) => {
+    if (!aiQuestions || aiQuestions.length === 0) return;
+
+    // Protection contre les doubles appels rapides (Modal etc)
+    const currentBlob = JSON.stringify(aiQuestions.map(q => q.text));
+    if (lastInsertedRef.current === currentBlob) return;
+    lastInsertedRef.current = currentBlob;
+
+    // Reset après 2 secondes pour permettre d'autres insertions légitimes
+    setTimeout(() => { lastInsertedRef.current = null; }, 2000);
+
+    // Extraction des textes existants pour éviter les doublons
+    const existingTexts = new Set();
+    sections.forEach(s => {
+      if (s.exercises) {
+        s.exercises.forEach(ex => {
+          if (ex.questions) {
+            ex.questions.forEach(q => {
+              if (q.text) existingTexts.add(q.text.trim().toLowerCase());
+            });
+          }
+        });
+      }
+    });
+
+    // Filtrer les questions qui existent déjà (dans l'examen OU dans la nouvelle liste)
+    const seenInThisBatch = new Set();
+    const filteredAIQuestions = aiQuestions.filter(q => {
+      const txt = (q.text || '').trim().toLowerCase();
+      if (!txt) return false;
+
+      const isDuplicate = existingTexts.has(txt) || seenInThisBatch.has(txt);
+      if (!isDuplicate) {
+        seenInThisBatch.add(txt);
+        return true;
+      }
+      return false;
+    });
+
+    if (filteredAIQuestions.length === 0) {
+      setSuccessMessage('Ces questions sont déjà présentes dans l\'examen.');
+      return;
+    }
+
+    const mapped = filteredAIQuestions.map(q => {
+      const nid = `ai_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      let t = q.type || 'ouverte';
+      if (t === 'qcm') t = 'qcm_multiple';
+
+      return {
+        id: nid,
+        type: t,
+        text: q.text || '',
+        points: q.points ? String(q.points) : '',
+        imageUrl: q.imageUrl || '',
+        isEditing: false,
+        answerLines: q.answerLines || 3,
+        options: Array.isArray(q.options) ? q.options.map(o => ({
+          id: o.id || `opt_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+          text: o.text || '',
+          correct: !!o.correct
+        })) : []
+      };
+    });
+
+    setSections(prev => {
+      const next = [...prev];
+      if (next.length === 0) next.push(makeSection(1));
+      const lastSec = next[next.length - 1];
+      if (!lastSec.exercises || lastSec.exercises.length === 0) {
+        lastSec.exercises = [{ id: `exo_${Date.now()}`, title: 'Exercice 1', points: '', collapsed: false, questions: [] }];
+      }
+      const lastEx = lastSec.exercises[lastSec.exercises.length - 1];
+      lastEx.questions = [...lastEx.questions, ...mapped];
+      return next;
+    });
+
+    setSuccessMessage(`${mapped.length} question(s) générée(s) et insérée(s).`);
+  };
+
+  // ─── Import depuis AIGenerator ───────────────────────────────────────────
+  useEffect(() => {
+    if (location.state?.importQuestion && !importedQuestionRef.current) {
+      handleInsertAIQuestions([location.state.importQuestion]);
+      importedQuestionRef.current = true;
+      setActiveTab('Questions');
+      // On nettoie le state pour éviter les ré-insertions au refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, handleInsertAIQuestions]);
 
   // ─── Chargement initial ───────────────────────────────────────────────────
   useEffect(() => {
@@ -752,7 +827,7 @@ const CreateExam = () => {
         } catch {
           setSections([makeSection(1)]);
         }
-        setActiveTab('Exercices');
+        setActiveTab('Questions');
         setSuccessMessage(`"${exam.title}" chargé avec ses exercices.`);
       } catch {
         setError("Erreur lors du chargement de l'examen");
@@ -760,14 +835,21 @@ const CreateExam = () => {
     })();
   }, [location, editingExamId]);
 
-  // Import a single question passed via navigation state (from QuestionBank 'Modifier')
+  // Import a single question passed via navigation state (from AIGenerator or QuestionBank)
   useEffect(() => {
     const imported = location.state?.importQuestion;
-    if (!imported || importedQuestionRef.current) return;
+    if (!imported) return;
+
+    // Utiliser la clé unique de la navigation (location.key) pour s'assurer qu'on ne traite pas deux fois le même événement
+    const navKey = location.key;
+    if (importedQuestionRef.current === navKey) return;
+
+    // Marquer immédiatement comme traité pour cette navigation précise
+    importedQuestionRef.current = navKey;
 
     try {
       const mapQ = (q) => {
-        const nid = `imp_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+        const nid = `imp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
         let t = (q.type || 'ouverte').toString();
         if (t === 'qcm') t = 'qcm_multiple';
         const opts = Array.isArray(q.options) ? q.options.map((o, i) => ({
@@ -780,7 +862,7 @@ const CreateExam = () => {
           id: nid,
           type: t,
           text: q.text || '',
-          points: '',
+          points: q.points ? String(q.points) : '',
           isEditing: false,
           answerLines: q.answerLines || 3,
           image: null,
@@ -802,71 +884,16 @@ const CreateExam = () => {
         lastEx.questions.push(qToAdd);
         return next;
       });
-      importedQuestionRef.current = imported.id || true;
-      setActiveTab('Exercices');
-      setSuccessMessage('Question importée depuis la banque.');
-      // Clear state to avoid re-import on refresh
-      try { window.history.replaceState({}, document.title, location.pathname + location.search.replace(/(&?importQuestion=[^&]*)/, '')); } catch (e) {}
+
+      setActiveTab('Questions');
+      setSuccessMessage('Question importée avec succès.');
+
+      // Nettoyer l'état de navigation pour éviter les ré-imports au refresh
+      navigate(location.pathname, { replace: true, state: {} });
     } catch (e) {
       console.warn('Import question failed', e);
     }
-  }, [location]);
-
-  // Import an exercise passed via navigation state (from ExerciseBank 'Copier dans l\'éditeur')
-  useEffect(() => {
-    const importedEx = location.state?.importExercise;
-    if (!importedEx || importedExerciseRef.current) return;
-
-    try {
-      const mapQuestion = (q) => {
-        const nid = `imp_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
-        let t = (q.type || 'ouverte').toString();
-        if (t === 'qcm') t = 'qcm_multiple';
-        const opts = Array.isArray(q.options) ? q.options.map((o, i) => ({
-          id: o.id || `opt_${Date.now()}_${i}`,
-          text: typeof o === 'string' ? o : (o.text || ''),
-          correct: !!o.correct,
-        })) : [];
-
-        return {
-          id: nid,
-          type: t,
-          text: q.text || '',
-          points: '',
-          isEditing: false,
-          answerLines: q.answerLines || 3,
-          image: null,
-          imageUrl: q.imageUrl || null,
-          options: opts,
-        };
-      };
-
-      const exToInsert = {
-        id: `imp_exo_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
-        title: importedEx.title || 'Exercice importé',
-        points: importedEx.points || '',
-        collapsed: false,
-        questions: Array.isArray(importedEx.questions) ? importedEx.questions.filter(q => q.text?.trim()).map(mapQuestion) : [],
-      };
-
-      setSections((prev) => {
-        const next = Array.isArray(prev) ? JSON.parse(JSON.stringify(prev)) : [];
-        if (next.length === 0) next.push(makeSection(1));
-        const lastSec = next[next.length - 1];
-        if (!Array.isArray(lastSec.exercises)) lastSec.exercises = [];
-        lastSec.exercises.push(exToInsert);
-        return next;
-      });
-
-      importedExerciseRef.current = importedEx.id || true;
-      setActiveTab('Exercices');
-      setSuccessMessage('Exercice importé dans l\'éditeur.');
-      // Clear state to avoid re-import on refresh
-      try { window.history.replaceState({}, document.title, location.pathname + location.search.replace(/(&?importExercise=[^&]*)/, '')); } catch (e) {}
-    } catch (e) {
-      console.warn('Import exercise failed', e);
-    }
-  }, [location]);
+  }, [location, navigate]);
 
   const _handleFilterChange = (key, val) => setFilter(p => ({ ...p, [key]: val }));
 
@@ -919,6 +946,21 @@ const CreateExam = () => {
     );
     if (allQuestions.length === 0) { setExportError('Ajoutez au moins une question'); return; }
 
+    // ─── Vérification du barème total (doit être 20/20) ──────────────
+    const totalPoints = sections.reduce((total, sec) => {
+      return total + (sec.exercises || []).reduce((eTotal, exo) => {
+        return eTotal + (exo.questions || []).reduce((qTotal, q) => {
+          const p = parseFloat(String(q.points).replace(',', '.'));
+          return qTotal + (isNaN(p) ? 0 : p);
+        }, 0);
+      }, 0);
+    }, 0);
+
+    if (Math.abs(totalPoints - 20) > 0.01) {
+      setExportError(`Le barème total doit être exactement de 20/20 (actuel : ${totalPoints.toFixed(2)}/20). Veuillez ajuster vos points.`);
+      return;
+    }
+
     const statusToUse = overrideStatut || examForm.statut;
     setIsSavingExam(true); setExportError(''); setExportMessage('Génération du document Word…');
 
@@ -946,7 +988,6 @@ const CreateExam = () => {
       const tplCampusTextEn = tpl?.campusTextEn || 'North American Private University';
       const tplCampusText = tpl?.campusText || 'SFAX - TUNISIA';
       const tplCampusTagline = tpl?.campusTagline || 'TECHNOLOGY · BUSINESS · ARCHITECTURE';
-      const pageCount = Math.max(1, estimatePageCount(sections));
 
       const sec = tpl?.sections;
       const showNP = !sec || sec.zoneNomPrenom;
@@ -1026,21 +1067,27 @@ const CreateExam = () => {
             width: { size: CONTENT_W, type: WidthType.DXA },
             columnWidths: [c1, c2, c3],
             rows: [
-              new TableRow({ children: [
-                mkCell(`Matière : ${tplMatiere}`, c1),
-                mkCell(`Discipline : ${tplDiscipline}`, c2),
-                mkCell(`Semestre : ${rawSemestre}`, c3),
-              ]}),
-              new TableRow({ children: [
-                mkCell(`Enseignant : ${tplTeachers}`, c1),
-                mkCell(`Année universitaire : ${tplAnnee}`, c2),
-                mkCell(`Date : ${rawDate || '—'}`, c3),
-              ]}),
-              new TableRow({ children: [
-                mkCell(`Documents : ${tplDocs}`, c1),
-                mkCell(`Nombre de pages : ${pageCount}`, c2),
-                mkCell(`Durée : ${tplDuree}`, c3),
-              ]}),
+              new TableRow({
+                children: [
+                  mkCell(`Matière : ${tplMatiere}`, c1),
+                  mkCell(`Discipline : ${tplDiscipline}`, c2),
+                  mkCell(`Semestre : ${rawSemestre}`, c3),
+                ]
+              }),
+              new TableRow({
+                children: [
+                  mkCell(`Enseignant : ${tplTeachers}`, c1),
+                  mkCell(`Année universitaire : ${tplAnnee}`, c2),
+                  mkCell(`Date : ${rawDate || '—'}`, c3),
+                ]
+              }),
+              new TableRow({
+                children: [
+                  mkCell(`Documents : ${tplDocs}`, c1),
+                  mkCell('Nombre de pages : Auto', c2),
+                  mkCell(`Durée : ${tplDuree}`, c3),
+                ]
+              }),
             ],
           }));
 
@@ -1086,221 +1133,221 @@ const CreateExam = () => {
 
         } else {
           // ── Style LONG (Forme 1 — Session principale avec NB) ──
-        // ── 1. Colonnes en-tête université ──
-        const colLeft = Math.round(CONTENT_W * 0.27);
-        const colCenter = Math.round(CONTENT_W * 0.53);
-        const colRight = CONTENT_W - colLeft - colCenter;
+          // ── 1. Colonnes en-tête université ──
+          const colLeft = Math.round(CONTENT_W * 0.27);
+          const colCenter = Math.round(CONTENT_W * 0.53);
+          const colRight = CONTENT_W - colLeft - colCenter;
 
-        // Logo IIT en tant qu'ImageRun
-        const logoRun = await buildLogoImageRun();
-        const logoCell = new TableCell({
-          width: { size: colRight, type: WidthType.DXA },
-          borders: bordersAll,
-          margins: { top: 60, bottom: 60, left: 80, right: 80 },
-          verticalAlign: VerticalAlign.CENTER,
-          children: [new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: logoRun
-              ? [logoRun]
-              : [new TextRun({ text: 'IIT', bold: true, font: 'Times New Roman', size: 32 })],
-          })],
-        });
+          // Logo IIT en tant qu'ImageRun
+          const logoRun = await buildLogoImageRun();
+          const logoCell = new TableCell({
+            width: { size: colRight, type: WidthType.DXA },
+            borders: bordersAll,
+            margins: { top: 60, bottom: 60, left: 80, right: 80 },
+            verticalAlign: VerticalAlign.CENTER,
+            children: [new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: logoRun
+                ? [logoRun]
+                : [new TextRun({ text: 'IIT', bold: true, font: 'Times New Roman', size: 32 })],
+            })],
+          });
 
-        docChildren.push(new Table({
-          width: { size: CONTENT_W, type: WidthType.DXA },
-          columnWidths: [colLeft, colCenter, colRight],
-          borders: { top: bNone, bottom: bNone, left: bNone, right: bNone, insideH: bNone, insideV: bNone },
-          rows: [new TableRow({
-            children: [
-              // Colonne gauche — texte campus anglais
-              new TableCell({
-                width: { size: colLeft, type: WidthType.DXA },
-                borders: bordersNone,
-                margins: { top: 60, bottom: 60, left: 0, right: 80 },
-                children: [
-                  tp(tplCampusTextEn, { size: 18 }),
-                  tp(tplCampusText, { size: 18 }),
-                  tp(tplCampusTagline, { size: 14, color: '888888' }),
-                ],
-              }),
-              // Colonne centre — noms arabe / français
-              new TableCell({
-                width: { size: colCenter, type: WidthType.DXA },
-                borders: bordersNone,
-                margins: { top: 60, bottom: 60, left: 80, right: 80 },
-                children: [
-                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: tpl.universiteAr || 'الجامعة الشمالية الأمريكية الخاصة', font: 'Times New Roman', size: 18 })] }),
-                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: tpl.universiteFr || 'Université Nord-Américaine Privée', font: 'Times New Roman', size: 18 })] }),
-                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: tpl.institutFr || 'Institut International de Technologie', font: 'Times New Roman', size: 18, bold: true })] }),
-                  new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: tpl.departementFr || '', font: 'Times New Roman', size: 18 })] }),
-                ],
-              }),
-              // Colonne droite — logo
-              logoCell,
-            ]
-          })],
-        }));
-
-        docChildren.push(new Paragraph({ children: [], spacing: { after: 160 } }));
-
-        // ── 2. Boîte titre (DEVOIR SURVEILLÉ + case réservée) ──
-        const colTitleMain = Math.round(CONTENT_W * 0.68);
-        const colTitleRight = CONTENT_W - colTitleMain;
-
-        docChildren.push(new Table({
-          width: { size: CONTENT_W, type: WidthType.DXA },
-          columnWidths: [colTitleMain, colTitleRight],
-          rows: [new TableRow({
-            height: { value: 600, rule: HeightRule.ATLEAST },
-            children: [
-              new TableCell({
-                width: { size: colTitleMain, type: WidthType.DXA },
-                borders: bordersAll,
-                margins: { top: 80, bottom: 80, left: 120, right: 120 },
-                verticalAlign: VerticalAlign.CENTER,
-                children: [new Paragraph({
-                  children: [new TextRun({ text: tplTitre, bold: true, font: 'Times New Roman', size: 34, allCaps: true })],
-                })],
-              }),
-              new TableCell({
-                width: { size: colTitleRight, type: WidthType.DXA },
-                borders: bordersAll,
-                margins: { top: 60, bottom: 60, left: 80, right: 80 },
-                children: [tp(feuilleType, { size: 18, color: '888888' })],
-              }),
-            ],
-          })],
-        }));
-
-        // ── 3. Grille méta (matière / semestre / durée…) ──
-        const colMeta = Math.round(CONTENT_W / 2);
-        const colMeta2 = CONTENT_W - colMeta;
-
-        docChildren.push(new Table({
-          width: { size: CONTENT_W, type: WidthType.DXA },
-          columnWidths: [colMeta, colMeta2],
-          rows: [new TableRow({
-            children: [
-              new TableCell({
-                width: { size: colMeta, type: WidthType.DXA },
-                borders: { top: bNone, bottom: bSingle, left: bSingle, right: bNone },
-                margins: { top: 80, bottom: 80, left: 120, right: 80 },
-                children: [
-                  new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Matière : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: tplMatiere, font: 'Times New Roman', size: 20 })] }),
-                  new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Discipline : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: tplDiscipline, font: 'Times New Roman', size: 20 })] }),
-                  new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Enseignants : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: tplTeachers, font: 'Times New Roman', size: 20 })] }),
-                  new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Documents autorisés : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: tplDocs, font: 'Times New Roman', size: 20 })] }),
-                ],
-              }),
-              new TableCell({
-                width: { size: colMeta2, type: WidthType.DXA },
-                borders: { top: bNone, bottom: bSingle, left: bSingle, right: bSingle },
-                margins: { top: 80, bottom: 80, left: 120, right: 80 },
-                children: [
-                  new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Année Universitaire : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: tplAnnee, font: 'Times New Roman', size: 20 })] }),
-                  new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Semestre : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: tplSemestre, font: 'Times New Roman', size: 20 })] }),
-                  new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Durée : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: tplDuree, font: 'Times New Roman', size: 20 })] }),
-                  new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Nombre de pages : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: String(pageCount), font: 'Times New Roman', size: 20 })] }),
-                ],
-              }),
-            ]
-          })],
-        }));
-
-        // ── 4. Ligne étudiant ──
-        if (showNP || showGrp) {
-          const colStudent = Math.round(CONTENT_W * 0.68);
-          const colGroup = CONTENT_W - colStudent;
           docChildren.push(new Table({
             width: { size: CONTENT_W, type: WidthType.DXA },
-            columnWidths: [colStudent, colGroup],
+            columnWidths: [colLeft, colCenter, colRight],
+            borders: { top: bNone, bottom: bNone, left: bNone, right: bNone, insideH: bNone, insideV: bNone },
             rows: [new TableRow({
-              height: { value: 500, rule: HeightRule.ATLEAST },
+              children: [
+                // Colonne gauche — texte campus anglais
+                new TableCell({
+                  width: { size: colLeft, type: WidthType.DXA },
+                  borders: bordersNone,
+                  margins: { top: 60, bottom: 60, left: 0, right: 80 },
+                  children: [
+                    tp(tplCampusTextEn, { size: 18 }),
+                    tp(tplCampusText, { size: 18 }),
+                    tp(tplCampusTagline, { size: 14, color: '888888' }),
+                  ],
+                }),
+                // Colonne centre — noms arabe / français
+                new TableCell({
+                  width: { size: colCenter, type: WidthType.DXA },
+                  borders: bordersNone,
+                  margins: { top: 60, bottom: 60, left: 80, right: 80 },
+                  children: [
+                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: tpl.universiteAr || 'الجامعة الشمالية الأمريكية الخاصة', font: 'Times New Roman', size: 18 })] }),
+                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: tpl.universiteFr || 'Université Nord-Américaine Privée', font: 'Times New Roman', size: 18 })] }),
+                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: tpl.institutFr || 'Institut International de Technologie', font: 'Times New Roman', size: 18, bold: true })] }),
+                    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: tpl.departementFr || '', font: 'Times New Roman', size: 18 })] }),
+                  ],
+                }),
+                // Colonne droite — logo
+                logoCell,
+              ]
+            })],
+          }));
+
+          docChildren.push(new Paragraph({ children: [], spacing: { after: 160 } }));
+
+          // ── 2. Boîte titre (DEVOIR SURVEILLÉ + case réservée) ──
+          const colTitleMain = Math.round(CONTENT_W * 0.68);
+          const colTitleRight = CONTENT_W - colTitleMain;
+
+          docChildren.push(new Table({
+            width: { size: CONTENT_W, type: WidthType.DXA },
+            columnWidths: [colTitleMain, colTitleRight],
+            rows: [new TableRow({
+              height: { value: 600, rule: HeightRule.ATLEAST },
               children: [
                 new TableCell({
-                  width: { size: colStudent, type: WidthType.DXA },
-                  borders: { top: bNone, bottom: bSingle, left: bSingle, right: bNone },
-                  margins: { top: 100, bottom: 100, left: 120, right: 80 },
+                  width: { size: colTitleMain, type: WidthType.DXA },
+                  borders: bordersAll,
+                  margins: { top: 80, bottom: 80, left: 120, right: 120 },
                   verticalAlign: VerticalAlign.CENTER,
                   children: [new Paragraph({
-                    children: [new TextRun({ text: showNP ? 'Prénom & Nom :   _______________________________________' : '', font: 'Times New Roman', size: 20 })],
+                    children: [new TextRun({ text: tplTitre, bold: true, font: 'Times New Roman', size: 34, allCaps: true })],
                   })],
                 }),
                 new TableCell({
-                  width: { size: colGroup, type: WidthType.DXA },
-                  borders: { top: bNone, bottom: bSingle, left: bSingle, right: bSingle },
-                  margins: { top: 100, bottom: 100, left: 80, right: 80 },
-                  verticalAlign: VerticalAlign.CENTER,
-                  children: [new Paragraph({
-                    alignment: AlignmentType.CENTER,
-                    children: [new TextRun({ text: showGrp ? 'Groupe   ________' : '', font: 'Times New Roman', size: 20 })],
-                  })],
+                  width: { size: colTitleRight, type: WidthType.DXA },
+                  borders: bordersAll,
+                  margins: { top: 60, bottom: 60, left: 80, right: 80 },
+                  children: [tp(feuilleType, { size: 18, color: '888888' })],
                 }),
               ],
             })],
           }));
-        }
 
-        docChildren.push(new Paragraph({ children: [], spacing: { after: 180 } }));
+          // ── 3. Grille méta (matière / semestre / durée…) ──
+          const colMeta = Math.round(CONTENT_W / 2);
+          const colMeta2 = CONTENT_W - colMeta;
 
-        // ── 5. Cases note / commentaires / signature ──
-        if (showNote || showComm || showSign) {
-          const boxes = [];
-          if (showNote) boxes.push('Note /20');
-          if (showComm) boxes.push('Commentaires');
-          if (showSign) boxes.push('Signature');
-          const perBox = Math.floor(CONTENT_W / boxes.length);
-          const lastBox = CONTENT_W - perBox * (boxes.length - 1);
           docChildren.push(new Table({
             width: { size: CONTENT_W, type: WidthType.DXA },
-            columnWidths: boxes.map((_, i) => i === boxes.length - 1 ? lastBox : perBox),
+            columnWidths: [colMeta, colMeta2],
             rows: [new TableRow({
-              height: { value: 1200, rule: HeightRule.ATLEAST },
-              children: boxes.map((label, idx) => new TableCell({
-                width: { size: idx === boxes.length - 1 ? lastBox : perBox, type: WidthType.DXA },
-                borders: bordersAll,
-                margins: { top: 80, bottom: 80, left: 120, right: 80 },
-                children: [new Paragraph({
-                  children: [new TextRun({ text: label, bold: true, font: 'Times New Roman', size: 20 })],
-                })],
-              })),
+              children: [
+                new TableCell({
+                  width: { size: colMeta, type: WidthType.DXA },
+                  borders: { top: bNone, bottom: bSingle, left: bSingle, right: bNone },
+                  margins: { top: 80, bottom: 80, left: 120, right: 80 },
+                  children: [
+                    new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Matière : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: tplMatiere, font: 'Times New Roman', size: 20 })] }),
+                    new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Discipline : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: tplDiscipline, font: 'Times New Roman', size: 20 })] }),
+                    new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Enseignants : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: tplTeachers, font: 'Times New Roman', size: 20 })] }),
+                    new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Documents autorisés : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: tplDocs, font: 'Times New Roman', size: 20 })] }),
+                  ],
+                }),
+                new TableCell({
+                  width: { size: colMeta2, type: WidthType.DXA },
+                  borders: { top: bNone, bottom: bSingle, left: bSingle, right: bSingle },
+                  margins: { top: 80, bottom: 80, left: 120, right: 80 },
+                  children: [
+                    new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Année Universitaire : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: tplAnnee, font: 'Times New Roman', size: 20 })] }),
+                    new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Semestre : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: tplSemestre, font: 'Times New Roman', size: 20 })] }),
+                    new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Durée : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: tplDuree, font: 'Times New Roman', size: 20 })] }),
+                    new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'Nombre de pages : ', bold: true, font: 'Times New Roman', size: 20 }), new TextRun({ text: '  ——  ', font: 'Times New Roman', size: 20 })] }),
+                  ],
+                }),
+              ]
             })],
           }));
-        }
 
-        docChildren.push(new Paragraph({ children: [], spacing: { after: 180 } }));
-
-        // ── 6. Bloc NB (remarques) ──
-        if (showNB) {
-          const remarquesRaw = (tpl?.remarques || '').trim();
-          const nbLines = remarquesRaw
-            ? remarquesRaw.split('\n').filter(l => l.trim())
-            : [
-              '— Le barème est fourni à titre indicatif et peut être ajusté',
-              `— La durée de l'examen est de ${tplDuree}`,
-              "— Les ordinateurs, l'accès à Internet sont strictement interdits",
-            ];
-
-          docChildren.push(new Table({
-            width: { size: CONTENT_W, type: WidthType.DXA },
-            columnWidths: [CONTENT_W],
-            rows: [new TableRow({
-              children: [new TableCell({
-                width: { size: CONTENT_W, type: WidthType.DXA },
-                borders: bordersAll,
-                margins: { top: 80, bottom: 80, left: 120, right: 120 },
+          // ── 4. Ligne étudiant ──
+          if (showNP || showGrp) {
+            const colStudent = Math.round(CONTENT_W * 0.68);
+            const colGroup = CONTENT_W - colStudent;
+            docChildren.push(new Table({
+              width: { size: CONTENT_W, type: WidthType.DXA },
+              columnWidths: [colStudent, colGroup],
+              rows: [new TableRow({
+                height: { value: 500, rule: HeightRule.ATLEAST },
                 children: [
-                  new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'NB.', bold: true, font: 'Times New Roman', size: 20 })] }),
-                  ...nbLines.map(line =>
-                    new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: line, font: 'Times New Roman', size: 18 })] })
-                  ),
+                  new TableCell({
+                    width: { size: colStudent, type: WidthType.DXA },
+                    borders: { top: bNone, bottom: bSingle, left: bSingle, right: bNone },
+                    margins: { top: 100, bottom: 100, left: 120, right: 80 },
+                    verticalAlign: VerticalAlign.CENTER,
+                    children: [new Paragraph({
+                      children: [new TextRun({ text: showNP ? 'Prénom & Nom :   _______________________________________' : '', font: 'Times New Roman', size: 20 })],
+                    })],
+                  }),
+                  new TableCell({
+                    width: { size: colGroup, type: WidthType.DXA },
+                    borders: { top: bNone, bottom: bSingle, left: bSingle, right: bSingle },
+                    margins: { top: 100, bottom: 100, left: 80, right: 80 },
+                    verticalAlign: VerticalAlign.CENTER,
+                    children: [new Paragraph({
+                      alignment: AlignmentType.CENTER,
+                      children: [new TextRun({ text: showGrp ? 'Groupe   ________' : '', font: 'Times New Roman', size: 20 })],
+                    })],
+                  }),
                 ],
-              })]
-            })],
-          }));
-        }
+              })],
+            }));
+          }
 
-        docChildren.push(new Paragraph({ children: [], spacing: { after: 360 } }));
+          docChildren.push(new Paragraph({ children: [], spacing: { after: 180 } }));
+
+          // ── 5. Cases note / commentaires / signature ──
+          if (showNote || showComm || showSign) {
+            const boxes = [];
+            if (showNote) boxes.push('Note /20');
+            if (showComm) boxes.push('Commentaires');
+            if (showSign) boxes.push('Signature');
+            const perBox = Math.floor(CONTENT_W / boxes.length);
+            const lastBox = CONTENT_W - perBox * (boxes.length - 1);
+            docChildren.push(new Table({
+              width: { size: CONTENT_W, type: WidthType.DXA },
+              columnWidths: boxes.map((_, i) => i === boxes.length - 1 ? lastBox : perBox),
+              rows: [new TableRow({
+                height: { value: 1200, rule: HeightRule.ATLEAST },
+                children: boxes.map((label, idx) => new TableCell({
+                  width: { size: idx === boxes.length - 1 ? lastBox : perBox, type: WidthType.DXA },
+                  borders: bordersAll,
+                  margins: { top: 80, bottom: 80, left: 120, right: 80 },
+                  children: [new Paragraph({
+                    children: [new TextRun({ text: label, bold: true, font: 'Times New Roman', size: 20 })],
+                  })],
+                })),
+              })],
+            }));
+          }
+
+          docChildren.push(new Paragraph({ children: [], spacing: { after: 180 } }));
+
+          // ── 6. Bloc NB (remarques) ──
+          if (showNB) {
+            const remarquesRaw = (tpl?.remarques || '').trim();
+            const nbLines = remarquesRaw
+              ? remarquesRaw.split('\n').filter(l => l.trim())
+              : [
+                '— Le barème est fourni à titre indicatif et peut être ajusté',
+                `— La durée de l'examen est de ${tplDuree}`,
+                "— Les ordinateurs, l'accès à Internet sont strictement interdits",
+              ];
+
+            docChildren.push(new Table({
+              width: { size: CONTENT_W, type: WidthType.DXA },
+              columnWidths: [CONTENT_W],
+              rows: [new TableRow({
+                children: [new TableCell({
+                  width: { size: CONTENT_W, type: WidthType.DXA },
+                  borders: bordersAll,
+                  margins: { top: 80, bottom: 80, left: 120, right: 120 },
+                  children: [
+                    new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: 'NB.', bold: true, font: 'Times New Roman', size: 20 })] }),
+                    ...nbLines.map(line =>
+                      new Paragraph({ spacing: { before: 40, after: 40 }, children: [new TextRun({ text: line, font: 'Times New Roman', size: 18 })] })
+                    ),
+                  ],
+                })]
+              })],
+            }));
+          }
+
+          docChildren.push(new Paragraph({ children: [], spacing: { after: 360 } }));
 
         } // end else (long style)
 
@@ -1386,13 +1433,10 @@ const CreateExam = () => {
             })],
           }));
 
-          let visibleQuestionIndex = 0;
           for (const [qi, q] of exo.questions.entries()) {
             const pts = q.points ? ` [${q.points} pts]` : '';
-            const qNum = q.type === 'enonce' ? null : ++visibleQuestionIndex;
+            const qNum = qi + 1;
             const _typeLabel = getTypeLabel(q.type);
-            const structuredText = parseQuestionSubparts(q.text);
-            const mainText = structuredText ? structuredText.mainLine : (q.text || '');
 
             // ── Énoncé de l'énoncé / question ──
             if (q.type === 'enonce') {
@@ -1400,7 +1444,7 @@ const CreateExam = () => {
               docChildren.push(new Paragraph({
                 spacing: { before: 100, after: 60 },
                 indent: { left: 360 },
-                children: [new TextRun({ text: mainText, font: 'Times New Roman', size: 20, italics: true })],
+                children: [new TextRun({ text: q.text || '', font: 'Times New Roman', size: 20, italics: true })],
               }));
             } else {
               // Numéro + texte + type
@@ -1409,23 +1453,10 @@ const CreateExam = () => {
                 indent: { left: 360 },
                 children: [
                   new TextRun({ text: `${qNum}. `, bold: true, font: 'Times New Roman', size: 20 }),
-                  new TextRun({ text: mainText, font: 'Times New Roman', size: 20 }),
+                  new TextRun({ text: q.text || '', font: 'Times New Roman', size: 20 }),
                   ...(pts ? [new TextRun({ text: pts, bold: true, font: 'Times New Roman', size: 18, color: '1e4fa8' })] : []),
                 ],
               }));
-            }
-
-            if (structuredText) {
-              structuredText.subparts.forEach((part) => {
-                docChildren.push(new Paragraph({
-                  spacing: { before: 40, after: 30 },
-                  indent: { left: 720 },
-                  children: [
-                    new TextRun({ text: `${part.label}) `, bold: true, font: 'Times New Roman', size: 19 }),
-                    new TextRun({ text: part.text, font: 'Times New Roman', size: 19 }),
-                  ],
-                }));
-              });
             }
 
             // ── Image éventuelle ──
@@ -1467,7 +1498,7 @@ const CreateExam = () => {
             }
 
             // ── Lignes de réponse (questions ouvertes, pratique, etc.) ──
-            const isOpenType = ['ouverte', 'calcul', 'definition', 'code', 'completement', 'schema'].includes(q.type);
+            const isOpenType = ['ouverte', 'calcul', 'definition', 'code', 'completement', 'schema', 'pratique'].includes(q.type);
             if (isOpenType) {
               const rawLines = q.answerLines;
               const nbLines = (rawLines !== null && rawLines !== undefined && Number(rawLines) > 0)
@@ -1564,7 +1595,6 @@ const CreateExam = () => {
       // ─── Sauvegarde en base ───────────────────────────────────────────
       await addExamToBank({
         title: titre,
-        departement: examForm.departement.trim(),
         filiere: examForm.filiere.trim(),
         matiere: examForm.matiere.trim(),
         niveau: examForm.niveau.trim(),
@@ -1582,33 +1612,6 @@ const CreateExam = () => {
         semestre: examForm.semestre || '',
         ...(examForm.templateId && { templateId: examForm.templateId }),
       });
-
-      // ─── Sauvegarde des exercices dans la banque ──────────────────────
-      const exerciseSavePromises = sections.flatMap((sec, secIndex) =>
-        (sec.exercises || [])
-          .filter((exo) => Array.isArray(exo.questions) && exo.questions.some((q) => q.text?.trim()))
-          .map((exo, exoIndex) => {
-            const exerciseTitle = String(exo.title || '').trim() || `Exercice ${secIndex + 1}-${exoIndex + 1}`;
-            const questions = exo.questions
-              .filter((q) => q.text?.trim())
-              .map((q) => ({
-                text: q.text.trim(),
-                type: q.type || 'ouverte',
-                ...(typeof q.answerLines === 'number' ? { answerLines: q.answerLines } : {}),
-                ...(Array.isArray(q.options) && q.options.length > 0 ? { options: q.options } : {}),
-                ...(q.imageUrl ? { imageUrl: q.imageUrl } : {}),
-              }));
-
-            return createExercise({
-              title: exerciseTitle,
-              matiere: examForm.matiere.trim(),
-              niveau: examForm.niveau.trim(),
-              anneeUniversitaire: examForm.anneeUniversitaire ||
-                `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
-              questions,
-            }).catch((err) => console.error('Erreur sauvegarde exercice:', err));
-          })
-      );
 
       // ─── Sauvegarde des questions dans la banque ─────────────────────
       const questionSavePromises = sections.flatMap(sec =>
@@ -1629,7 +1632,7 @@ const CreateExam = () => {
             )
         )
       );
-      await Promise.all([...exerciseSavePromises, ...questionSavePromises]);
+      await Promise.all(questionSavePromises);
 
       // ─── Téléchargement si statut "En cours" ou "Exporte" ────────────
       if (statusToUse === 'En cours' || statusToUse === 'Exporte') {
@@ -1678,6 +1681,14 @@ const CreateExam = () => {
       />
 
       <main className="exam-create-main">
+        <header className="exam-create-header">
+          <div className="exam-create-header-left">
+            <h2 className="eb-header-title">Création d&apos;<span>examen</span></h2>
+          </div>
+        </header>
+
+
+
         {/* ── Onglets — style original ── */}
         <nav className="exam-tabs" role="tablist">
           {TABS.map((tab, i) => (
@@ -1704,7 +1715,7 @@ const CreateExam = () => {
           />
         )}
 
-        {activeTab === 'Exercices' && (
+        {activeTab === 'Questions' && (
           <QuestionsTab
             sections={sections}
             setSections={setSections}
@@ -1715,6 +1726,11 @@ const CreateExam = () => {
             onTabChange={setActiveTab}
             onSetSuccessMessage={setSuccessMessage}
             onSetError={setError}
+            onOpenAI={handleOpenAI}
+            isShowingAIModal={isShowingAIModal}
+            setIsShowingAIModal={setIsShowingAIModal}
+            onInsertAIQuestions={handleInsertAIQuestions}
+            examForm={examForm}
           />
         )}
 
