@@ -29,13 +29,13 @@ const normalizeQuestionType = (type) => {
 };
 
 const TYPE_LABELS = {
-  ouverte:      { label: '✎ Ouverte', cls: 'blue' },
-  qcm:          { label: '📋 QCM', cls: 'violet' },
-  qcm_unique:   { label: '📋 QCM — unique', cls: 'violet' },
-  qcm_multiple: { label: '📋 QCM — multiple', cls: 'indigo' },
-  vrai_faux:    { label: '✓ Vrai/Faux', cls: 'green' },
-  pratique:     { label: '⚙ Pratique', cls: 'gold' },
-  enonce:       { label: '📄 Énoncé', cls: 'gray' },
+  ouverte:      { label: ' Ouverte', cls: 'blue' },
+  qcm:          { label: 'QCM', cls: 'violet' },
+  qcm_unique:   { label: 'QCM — unique', cls: 'violet' },
+  qcm_multiple: { label: 'QCM — multiple', cls: 'indigo' },
+  vrai_faux:    { label: 'Vrai/Faux', cls: 'green' },
+  pratique:     { label: 'Pratique', cls: 'gold' },
+  enonce:       { label: 'Énoncé', cls: 'gray' },
 };
 
 const normalizeExercise = (item) => ({
@@ -115,100 +115,6 @@ const DeleteModal = ({ exercise, onConfirm, onClose }) => (
   </div>
 );
 
-const ExerciseFormModal = ({ exercise, onSave, onClose }) => {
-  const [title, setTitle] = useState(exercise?.title || '');
-  const [matiere, setMatiere] = useState(exercise?.matiere || '');
-  const [niveau, setNiveau] = useState(exercise?.niveau || '');
-  const [anneeUniversitaire, setAnneeUniversitaire] = useState(exercise?.anneeUniversitaire || '');
-  const [questionsText, setQuestionsText] = useState(
-    Array.isArray(exercise?.questions) ? exercise.questions.map((question) => question.text).join('\n') : ''
-  );
-  const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState('');
-
-  const handleSave = async () => {
-    const cleanTitle = title.trim();
-    const questions = questionsText
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean)
-      .map((text) => ({ text, type: 'ouverte' }));
-
-    if (!cleanTitle) {
-      setErr("Le titre de l'exercice est requis.");
-      return;
-    }
-    if (questions.length === 0) {
-      setErr('Ajoutez au moins une question.');
-      return;
-    }
-
-    setSaving(true);
-    setErr('');
-    try {
-      await onSave({
-        title: cleanTitle,
-        matiere: matiere.trim(),
-        niveau: niveau.trim(),
-        anneeUniversitaire: anneeUniversitaire.trim(),
-        questions,
-      });
-      onClose();
-    } catch (error) {
-      setErr(error?.response?.data?.message || 'Erreur lors de l\'enregistrement.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="qb-modal-overlay" onClick={onClose}>
-      <div className="qb-modal qb-modal--wide" onClick={(e) => e.stopPropagation()}>
-        <div className="qb-modal-header">
-          <div className="qb-modal-header-left">
-            <div className="qb-modal-num">✎</div>
-            <div><div className="qb-modal-label">{exercise ? 'Modifier l\'exercice' : 'Nouvel exercice'}</div></div>
-          </div>
-          <button className="qb-modal-close" onClick={onClose} title="Fermer"><FiX size={16} /></button>
-        </div>
-        <div className="qb-modal-body">
-          <label className="qb-field-label">Titre de l'exercice *</label>
-          <input className="qb-field-input" type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex : Série 1 - Algorithmes" />
-
-          <div style={{ display: 'grid', gap: '12px', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', marginTop: '14px' }}>
-            <div>
-              <label className="qb-field-label">Matière</label>
-              <input className="qb-field-input" type="text" value={matiere} onChange={(e) => setMatiere(e.target.value)} placeholder="Ex : Mathématiques" />
-            </div>
-            <div>
-              <label className="qb-field-label">Niveau</label>
-              <input className="qb-field-input" type="text" value={niveau} onChange={(e) => setNiveau(e.target.value)} placeholder="Ex : L2" />
-            </div>
-          </div>
-
-          <label className="qb-field-label" style={{ marginTop: '14px' }}>Année universitaire</label>
-          <input className="qb-field-input" type="text" value={anneeUniversitaire} onChange={(e) => setAnneeUniversitaire(e.target.value)} placeholder="Ex : 2025-2026" />
-
-          <label className="qb-field-label" style={{ marginTop: '14px' }}>Questions de l'exercice *</label>
-          <textarea
-            className="qb-edit-textarea"
-            value={questionsText}
-            onChange={(e) => setQuestionsText(e.target.value)}
-            rows={8}
-            placeholder={'Saisissez une question par ligne.\nChaque ligne deviendra une question de l\'exercice.'}
-          />
-          {err && <p className="qb-field-error">{err}</p>}
-        </div>
-        <div className="qb-modal-footer">
-          <button className="qb-btn qb-btn--ghost" onClick={onClose} title="Annuler"><FiX size={14} /></button>
-          <button className="qb-btn qb-btn--save" onClick={handleSave} disabled={saving} title="Enregistrer">
-            {saving ? <><span className="qb-btn-spinner" aria-hidden="true" /> Enregistrement…</> : <><FiSave size={14} /> Enregistrer</>}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const ViewModal = ({ exercise, index, isMine, onClose, onCopy }) => (
   <div className="qb-modal-overlay" onClick={onClose}>
@@ -234,22 +140,30 @@ const ViewModal = ({ exercise, index, isMine, onClose, onCopy }) => (
           {Array.isArray(exercise.questions) && exercise.questions.length > 0 ? (
             exercise.questions.map((question, questionIndex) => {
               const qType = normalizeQuestionType(question.type);
-              const meta = TYPE_LABELS[qType] || { label: qType, cls: 'blue' };
+              // const meta = TYPE_LABELS[qType] || { label: qType, cls: 'blue' };
               return (
                 <div key={question.id || questionIndex} className="qb-modal-option" style={{ whiteSpace: 'pre-wrap' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                    <span className={`qb-type-badge qb-type-badge--${meta.cls}`} style={{ fontWeight: 700 }}>{meta.label}</span>
+                    {/* <span className={`qb-type-badge qb-type-badge--${meta.cls}`} style={{ fontWeight: 700 }}>{meta.label}</span> */}
                     <strong style={{ fontSize: '0.98rem' }}>{questionIndex + 1}.</strong>
                     <div style={{ flex: 1 }}>{question.text}</div>
                   </div>
+
+                  {question.imageUrl && (
+                    <div style={{ marginLeft: 36, marginTop: 8 }}>
+                      <img src={question.imageUrl} alt="Illustration" style={{ maxWidth: '100%', maxHeight: 220, borderRadius: 6 }} />
+                    </div>
+                  )}
 
                   {Array.isArray(question.options) && question.options.length > 0 && (
                     <div style={{ marginLeft: 36, marginTop: 6 }}>
                       {question.options.map((opt, oi) => (
                         <div key={oi} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
                           <div style={{ width: 18, textAlign: 'center' }}>{String.fromCharCode(65 + oi)}.</div>
-                          <div style={{ flex: 1 }}>{opt.text}</div>
-                          {opt.correct && <div style={{ color: '#0d7a55', fontWeight: 700 }}>✓</div>}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                            <div>{opt.text}</div>
+                            {opt.correct && <div style={{ color: '#0d7a55', fontWeight: 700 }}>✓</div>}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -274,14 +188,7 @@ const ViewModal = ({ exercise, index, isMine, onClose, onCopy }) => (
         </div>
         <div className="qb-modal-date">Ajouté le {formatDate(exercise.createdAt)}</div>
       </div>
-      <div className="qb-modal-footer">
-        {!isMine && (
-          <button className="qb-btn qb-btn--copy" onClick={() => { onCopy(exercise); onClose(); }} title="Copier">
-            <FiCopy size={14} />
-          </button>
-        )}
-        <button className="qb-btn qb-btn--ghost" onClick={onClose} title="Fermer"><FiX size={14} /></button>
-      </div>
+     
     </div>
   </div>
 );
@@ -468,9 +375,9 @@ const ExerciseBank = () => {
               {mesExercises.length} personnelle{mesExercises.length !== 1 ? 's' : ''} · {autresExercises.length} partagée{autresExercises.length !== 1 ? 's' : ''}
             </p>
           </div>
-          <button className="qb-btn-new" onClick={() => setShowAddModal(true)}>
+          {/* <button className="qb-btn-new" onClick={() => setShowAddModal(true)}>
             <FiPlus size={14} /> Nouvel exercice
-          </button>
+          </button> */}
         </header>
 
         <div className="qb-filters">

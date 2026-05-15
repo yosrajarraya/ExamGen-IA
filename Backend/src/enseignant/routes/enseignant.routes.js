@@ -43,6 +43,12 @@ const {
   deleteExamBankItem,
   copyExamBankItem,
 } = require("../controllers/enseignant.examBank.controller");
+const {
+  saveDraftExam,
+  getDraftExams,
+  getDraftExamById,
+  deleteDraftExam,
+} = require('../controllers/enseignant.draft.controller');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 // Chat controller imported from ai.controller.js
@@ -81,6 +87,12 @@ router.delete('/exercises/bank/:id', deleteExercise);        // Supprimer un exe
 router.post('/exercises/bank/:id/copy', copyExercise);       // Copier un exercice
 router.post('/ai/questions', generateAIQuestions); // Générer des questions par IA
 router.post('/ai/exam', generateAIExam); // Générer un examen complet par IA
+
+// Drafts
+router.post('/exams/draft', saveDraftExam); // Créer / mettre à jour un brouillon
+router.get('/exams/draft', getDraftExams); // Récupérer mes brouillons
+router.get('/exams/draft/:id', getDraftExamById); // Récupérer un brouillon
+router.delete('/exams/draft/:id', deleteDraftExam); // Supprimer un brouillon
 
 // === AJOUTER EN HAUT DU FICHIER ===
 

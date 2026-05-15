@@ -20,7 +20,9 @@ import {
   getFilteredExams,
   getFilteredQuestions,
   getWordTemplates,
+  deleteExamDraft,
 } from '../../api/enseignant/Enseignant.api';
+import { saveExamDraft, getExamDraftById } from '../../api/enseignant/Enseignant.api';
 import { estimatePageCount } from '../../utils/exportHelpers';
 
 import ModelesTab from './tabs/ModelesTab';
@@ -244,6 +246,24 @@ const parseQuestionElement = (questionEl) => {
   }
 
   return question;
+};
+
+// Canonicalize an exercise for reliable equality checks (ignore case, whitespace)
+const canonicalizeExercise = (exo) => {
+  try {
+    const title = String(exo.title || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const questions = (Array.isArray(exo.questions) ? exo.questions : []).map((q) => {
+      const text = String(q.text || '').replace(/\s+/g, ' ').trim().toLowerCase();
+      const options = (Array.isArray(q.options) ? q.options : []).map((o) => {
+        const s = typeof o === 'string' ? o : (o.text || '');
+        return String(s).replace(/\s+/g, ' ').trim().toLowerCase();
+      }).join('|');
+      return `${text}::${options}`;
+    }).join('||');
+    return `${title}|||${questions}`;
+  } catch (e) {
+    return null;
+  }
 };
 
 const parseExamSectionsFromHtml = (rawHtml = '') => {
@@ -646,15 +666,75 @@ const CreateExam = () => {
   const [_successMessage, setSuccessMessage] = useState('');
   const [allTemplates, setAllTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [editingExamId, setEditingExamId] = useState(null);
   const [sections, setSections] = useState([makeSection(1)]);
   const [examForm, setExamForm] = useState({
     titre: '', departement: '', filiere: '', matiere: '', niveau: '', type: '', duree: '',
     noteTotale: String(FIXED_EXAM_TOTAL), statut: 'Brouillon', templateId: null,
   });
+  // --- Autosave draft to server (debounced) ---------------------------
+  const saveDraftTimer = useRef(null);
+  const [draftSaving, setDraftSaving] = useState(false);
+  const [draftId, setDraftId] = useState(null);
+  const skipAutosaveRef = useRef(false);
+
+  // Load draft if editDraft query param present
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const draftParam = params.get('editDraft');
+    if (!draftParam) return;
+    (async () => {
+      try {
+        const { draft } = await getExamDraftById(draftParam);
+        if (draft) {
+          setDraftId(draft.id);
+          setExamForm((p) => ({ ...p, ...(draft.examForm || {}), titre: draft.title || p.titre }));
+          if (Array.isArray(draft.sections) && draft.sections.length > 0) setSections(draft.sections);
+          if (draft.templateId) setSelectedTemplate(draft.templateId);
+          setSuccessMessage('Brouillon chargé');
+        }
+      } catch (e) {
+        // ignore
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Save draft to server (debounced)
+  useEffect(() => {
+    if (skipAutosaveRef.current) { skipAutosaveRef.current = false; return; }
+    if (saveDraftTimer.current) clearTimeout(saveDraftTimer.current);
+    saveDraftTimer.current = setTimeout(async () => {
+      try {
+        setDraftSaving(true);
+        const payload = {
+          id: draftId,
+          title: examForm.titre || '',
+          departement: examForm.departement || '',
+          filiere: examForm.filiere || '',
+          matiere: examForm.matiere || '',
+          niveau: examForm.niveau || '',
+          sections,
+          examForm,
+          templateId: selectedTemplate,
+          status: 'Brouillon',
+          visibility: 'private',
+        };
+        const res = await saveExamDraft(payload);
+        if (res && res.draft && res.draft.id) setDraftId(res.draft.id);
+        setSuccessMessage('Brouillon sauvegardé');
+      } catch (e) {
+        setError('Impossible de sauvegarder le brouillon');
+      } finally {
+        setDraftSaving(false);
+      }
+    }, 1000);
+    return () => { if (saveDraftTimer.current) clearTimeout(saveDraftTimer.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [examForm, sections, selectedTemplate, draftId]);
   const [isSavingExam, setIsSavingExam] = useState(false);
   const [exportMessage, setExportMessage] = useState('');
   const [exportError, setExportError] = useState('');
-  const [editingExamId, setEditingExamId] = useState(null);
   const importedQuestionRef = useRef(null);
   const importedExerciseRef = useRef(null);
 
@@ -848,6 +928,14 @@ const CreateExam = () => {
         collapsed: false,
         questions: Array.isArray(importedEx.questions) ? importedEx.questions.filter(q => q.text?.trim()).map(mapQuestion) : [],
       };
+      // store original source id + snapshot to detect later if user modified it
+      try {
+        exToInsert.originalExerciseId = importedEx.id || null;
+        // store a canonicalized representation to detect edits (ignore case/whitespace)
+        exToInsert.originalExerciseCanon = canonicalizeExercise(importedEx) || null;
+      } catch (e) {
+        exToInsert.originalExerciseCanon = null;
+      }
 
       setSections((prev) => {
         const next = Array.isArray(prev) ? JSON.parse(JSON.stringify(prev)) : [];
@@ -1583,11 +1671,45 @@ const CreateExam = () => {
         ...(examForm.templateId && { templateId: examForm.templateId }),
       });
 
+      // If there was a draft for this exam, remove it so it doesn't remain in "Brouillons"
+      try {
+        if (draftId) {
+          await deleteExamDraft(draftId);
+          setDraftId(null);
+        }
+      } catch (e) {
+        // ignore deletion errors
+        console.warn('Impossible de supprimer le brouillon après export:', e?.message || e);
+      }
+
       // ─── Sauvegarde des exercices dans la banque ──────────────────────
+      const serializeEx = (exo) => JSON.stringify({
+        title: String(exo.title || '').trim(),
+        questions: (Array.isArray(exo.questions) ? exo.questions : []).filter(q => q.text?.trim()).map(q => ({
+          text: String(q.text || '').trim(),
+          type: q.type || 'ouverte',
+          options: Array.isArray(q.options) ? q.options.map(o => (typeof o === 'string' ? o : (o.text || ''))) : [],
+          answerLines: q.answerLines || undefined,
+        })),
+      });
+
       const exerciseSavePromises = sections.flatMap((sec, secIndex) =>
         (sec.exercises || [])
           .filter((exo) => Array.isArray(exo.questions) && exo.questions.some((q) => q.text?.trim()))
           .map((exo, exoIndex) => {
+            // if exercise was imported from a bank item and the snapshot matches current content, skip creating a new one
+            try {
+              if (exo.originalExerciseCanon) {
+                const currentCanon = canonicalizeExercise(exo);
+                if (currentCanon && currentCanon === exo.originalExerciseCanon) {
+                  // no change -> skip creating duplicate
+                  return Promise.resolve();
+                }
+              }
+            } catch (e) {
+              // on error, continue to save
+            }
+
             const exerciseTitle = String(exo.title || '').trim() || `Exercice ${secIndex + 1}-${exoIndex + 1}`;
             const questions = exo.questions
               .filter((q) => q.text?.trim())
@@ -1648,6 +1770,8 @@ const CreateExam = () => {
         `Examen "${titre}" sauvegardé${tplInfo} — ${allQuestions.length} question(s) · téléchargement en cours.`
       );
 
+      // Prevent autosave from running when we reset the form after export
+      skipAutosaveRef.current = true;
       setTimeout(() => {
         setExamForm({
           titre: '', filiere: '', matiere: '', niveau: '', type: '', duree: '',

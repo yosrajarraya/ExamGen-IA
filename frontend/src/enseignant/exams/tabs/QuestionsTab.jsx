@@ -50,7 +50,7 @@ const TOOLBAR_GROUPS = [
     label: 'Médias',
     icon: FiImage,
     items: [
-      { id: 'image', label: 'Ajouter une image', icon: FiImage, color: 'amber', desc: 'Image dans la dernière question' },
+      { id: 'image', label: 'Ajouter une image', icon: FiImage, color: 'amber', desc: "Ajouter une image à une question" },
     ],
   },
 ];
@@ -227,6 +227,62 @@ const QuestionItem = ({ question, qIndex, displayNumber, onUpdate, onUpdateMulti
     });
   };
 
+  const handleAddImage = () => {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*';
+    input.onchange = (ev) => {
+      const file = ev.target.files?.[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (re) => {
+        onUpdate(question.id, 'image', file);
+        onUpdate(question.id, 'imageUrl', re.target?.result);
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
+
+  const handleDragOver = (e) => {
+    // Allow dropping either the toolbar image tool or files from the OS
+    const types = e.dataTransfer.types ? Array.from(e.dataTransfer.types) : [];
+    if (types.includes(TOOLBAR_DRAG_KEY) || (e.dataTransfer.files && e.dataTransfer.files.length)) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  };
+
+  const handleDropOnQuestion = (e) => {
+    e.preventDefault();
+    const toolId = e.dataTransfer.getData(TOOLBAR_DRAG_KEY);
+    const fileFromTransfer = e.dataTransfer.files && e.dataTransfer.files[0];
+
+    if (fileFromTransfer) {
+      const reader = new FileReader();
+      reader.onload = (re) => {
+        onUpdate(question.id, 'image', fileFromTransfer);
+        onUpdate(question.id, 'imageUrl', re.target?.result);
+      };
+      reader.readAsDataURL(fileFromTransfer);
+      return;
+    }
+
+    if (toolId === 'image') {
+      // If the user dragged the image tool, open file picker for this question
+      const input = document.createElement('input');
+      input.type = 'file'; input.accept = 'image/*';
+      input.onchange = (ev) => {
+        const file = ev.target.files?.[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (re) => {
+          onUpdate(question.id, 'image', file);
+          onUpdate(question.id, 'imageUrl', re.target?.result);
+        };
+        reader.readAsDataURL(file);
+      };
+      input.click();
+    }
+  };
+
   const handleOptChange = (optId, field, value) =>
     onUpdate(question.id, 'options', (question.options || []).map((o) => o.id === optId ? { ...o, [field]: value } : o));
   const handleAddOpt = () =>
@@ -237,7 +293,7 @@ const QuestionItem = ({ question, qIndex, displayNumber, onUpdate, onUpdateMulti
   return (
     <div className="qitem" style={{ '--accent': accentColor }} draggable
       onDragStart={() => onDragStart(qIndex)} onDragEnter={() => onDragEnter(qIndex)}
-      onDragEnd={onDragEnd} onDragOver={(e) => e.preventDefault()}>
+      onDragEnd={onDragEnd} onDragOver={handleDragOver} onDrop={handleDropOnQuestion}>
       <div className="qitem-accent" />
       <div className="qitem-inner">
         <div className="qitem-row">
@@ -255,6 +311,7 @@ const QuestionItem = ({ question, qIndex, displayNumber, onUpdate, onUpdateMulti
               <span className="qitem-pts-label">pts</span>
             </div>
           )}
+          <button type="button" className="qitem-img-add" title="Ajouter une image" onClick={handleAddImage}><FiImage size={13} /></button>
           <button type="button" className="qitem-del" onClick={() => onDelete(question.id)}><FiTrash2 size={13} /></button>
         </div>
 

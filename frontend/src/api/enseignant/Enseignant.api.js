@@ -166,6 +166,26 @@ export const getExamContent = async (id) => {
   const response = await api.get(`/enseignant/exams/bank/${id}/content`);
   return response.data;
 };
+
+export const saveExamDraft = async (payload) => {
+  const response = await api.post('/enseignant/exams/draft', payload);
+  return response.data;
+};
+
+export const getExamDrafts = async () => {
+  const response = await api.get('/enseignant/exams/draft');
+  return response.data;
+};
+
+export const getExamDraftById = async (id) => {
+  const response = await api.get(`/enseignant/exams/draft/${id}`);
+  return response.data;
+};
+
+export const deleteExamDraft = async (id) => {
+  const response = await api.delete(`/enseignant/exams/draft/${id}`);
+  return response.data;
+};
 /**
 * Générer des questions par IA
 * @param {{ matiere, niveau, type, count, contexte }} params

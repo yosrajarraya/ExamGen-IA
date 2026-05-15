@@ -13,21 +13,21 @@ import './EnseignantsList.css';
 
 /* ── Icônes SVG inline ── */
 const IconEdit = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
   </svg>
 );
 
 const IconActivate = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
     <polyline points="22 4 12 14.01 9 11.01"/>
   </svg>
 );
 
 const IconDeactivate = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10"/>
     <line x1="15" y1="9" x2="9" y2="15"/>
     <line x1="9" y1="9" x2="15" y2="15"/>
@@ -35,37 +35,51 @@ const IconDeactivate = () => (
 );
 
 const IconTrash = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="3 6 5 6 21 6"/>
     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
   </svg>
 );
 
+/* Icônes stat cards — style image: outline sur fond coloré */
 const IconUsers = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+    <circle cx="9" cy="7" r="4"/>
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+  </svg>
 );
 
 const IconShield = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    <polyline points="9 12 11 14 15 10"/>
+  </svg>
 );
 
 const IconShieldOff = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+  </svg>
 );
 
 const IconFolder = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+  </svg>
 );
 
 /* ── Toast ── */
 const Toast = ({ message }) =>
   message ? <div className="toast" role="status">{message}</div> : null;
 
-/* ── Carte de statistique (thème TeacherDashboard) ── */
-const StatCard = ({ icon, label, value, color }) => (
-  <div className="teacher-stat-card">
-    <div className="teacher-stat-icon-wrap" style={{ background: color }}>
-      {icon}
+/* ── Stat Card — style image ── */
+const StatCard = ({ icon, label, value, color, bgColor }) => (
+  <div className="teacher-stat-card" style={{ color }}>
+    <div className="teacher-stat-icon-wrap" style={{ background: bgColor }}>
+      <span style={{ color }}>{icon}</span>
     </div>
     <div className="teacher-stat-info">
       <div className="teacher-stat-value" style={{ color }}>{value}</div>
@@ -133,9 +147,7 @@ const EnseignantsList = () => {
     }
   };
 
-  const openEditModal = (ens) => {
-    setEditingEnseignant(ens);
-  };
+  const openEditModal = (ens) => setEditingEnseignant(ens);
 
   const totalEns = enseignants.length;
   const actifs   = enseignants.filter((e) => e.Active).length;
@@ -164,11 +176,8 @@ const EnseignantsList = () => {
     return matchSearch && matchStatut && matchDept;
   });
 
-  const adminName = user?.Prenom || user?.name || 'Administrateur';
-
   return (
     <div className="teacher-shell">
-      {/* Sidebar partagée */}
       <Sidebar
         roleLabel="Administration"
         navItems={adminNavItems}
@@ -182,29 +191,55 @@ const EnseignantsList = () => {
           <div className="teacher-header-left">
             <div className="teacher-header-greeting">Espace Administration</div>
           </div>
-         
         </div>
 
-        {/* ── Stats ── */}
+        {/* ── Stats — couleurs douces comme l'image ── */}
         <div className="teacher-stats-grid">
-          <StatCard label="Total enseignants" value={totalEns} color="#1d4ed8" icon={<IconUsers />} />
-          <StatCard label="Comptes actifs"   value={actifs}   color="#059669" icon={<IconShield />} />
-          <StatCard label="Comptes inactifs" value={inactifs}  color="#dc2626" icon={<IconShieldOff />} />
-          <StatCard label="Départements"     value={depts}     color="#7c3aed" icon={<IconFolder />} />
+          <StatCard
+            label="Total enseignants"
+            value={totalEns}
+            color="#3b6ef5"
+            bgColor="rgba(59,110,245,0.10)"
+            icon={<IconUsers />}
+          />
+          <StatCard
+            label="Comptes actifs"
+            value={actifs}
+            color="#22a06b"
+            bgColor="rgba(34,160,107,0.10)"
+            icon={<IconShield />}
+          />
+          <StatCard
+            label="Comptes inactifs"
+            value={inactifs}
+            color="#e04040"
+            bgColor="rgba(224,64,64,0.08)"
+            icon={<IconShieldOff />}
+          />
+          <StatCard
+            label="Départements"
+            value={depts}
+            color="#7c5cdb"
+            bgColor="rgba(124,92,219,0.10)"
+            icon={<IconFolder />}
+          />
         </div>
 
-        {/* ── Tableau des enseignants ── */}
+        {/* ── Tableau ── */}
         <div className="teacher-content-grid" style={{ gridTemplateColumns: '1fr' }}>
           <div className="teacher-panel teacher-table-panel">
             <div className="teacher-panel-header">
               <div className="teacher-panel-title-group">
                 <div className="teacher-panel-icon activity">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
                 </div>
                 <div>
-                  <h3 style={{ fontFamily: 'var(--td-font-display)', fontSize: '0.95rem', fontWeight: 600, margin: 0, padding: 0, border: 'none' }}>
-                    Liste des enseignants
-                  </h3>
+                  <h3>Liste des enseignants</h3>
                   <div className="teacher-panel-subtitle">Gérez les comptes, les statuts et les informations</div>
                 </div>
               </div>
@@ -216,7 +251,7 @@ const EnseignantsList = () => {
               <input
                 className="teacher-search"
                 type="text"
-                placeholder="Rechercher par nom, prénom, email, département, grade..."
+                placeholder="Rechercher par nom, prénom, email, département, grade…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -263,7 +298,7 @@ const EnseignantsList = () => {
                       <th>GRADE</th>
                       <th>TÉLÉPHONE</th>
                       <th>STATUT</th>
-                      <th style={{ width: '140px', textAlign: 'center' }}>ACTIONS</th>
+                      <th style={{ width: '130px', textAlign: 'center' }}>ACTIONS</th>
                     </tr>
                   </thead>
                   <tbody>

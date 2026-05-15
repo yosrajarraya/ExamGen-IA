@@ -1,150 +1,208 @@
-/* ImportEnseignantsExcel.css */
+/* ═══════════════════════════════════════════════════════════════
+   ImportEnseignantsExcel Modal — ExamGen-IA
+   Thème : Ivory & Navy · aligné sur EnseignantsList.css
+   ═══════════════════════════════════════════════════════════════ */
 
+/* ──────────────────────────────────────────────────────
+   TAILLE SPÉCIFIQUE DE LA MODALE D'IMPORT
+   ────────────────────────────────────────────────────── */
 .import-modal {
   max-width: 600px;
   width: 90vw;
 }
 
+/* ──────────────────────────────────────────────────────
+   BLOC D'INFORMATION
+   ────────────────────────────────────────────────────── */
 .import-info {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
   padding: 20px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .info-section h3 {
-  margin: 0 0 12px 0;
-  color: #1e293b;
-  font-size: 16px;
+  margin: 0 0 10px;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 1rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .info-section p {
-  margin: 0 0 12px 0;
-  color: #64748b;
-  font-size: 14px;
+  margin: 0 0 10px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 300;
+  line-height: 1.55;
 }
 
 .info-section ul {
   margin: 0;
-  padding-left: 20px;
-  color: #475569;
+  padding-left: 18px;
+  color: var(--text-secondary);
 }
 
 .info-section li {
   margin-bottom: 4px;
-  font-size: 14px;
+  font-size: 0.82rem;
+  font-weight: 400;
 }
 
+/* ──────────────────────────────────────────────────────
+   SECTION TEMPLATE TÉLÉCHARGEMENT
+   ────────────────────────────────────────────────────── */
 .template-section {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #e2e8f0;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border-soft);
 }
 
 .template-btn {
-  background: #3b82f6;
-  color: white;
+  background: linear-gradient(135deg, var(--navy-mid, #1e3050), var(--navy));
+  color: #ffffff;
   border: none;
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
+  padding: 9px 16px;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition:
+    filter 0.18s var(--ease),
+    transform 0.2s var(--ease-bounce),
+    box-shadow 0.18s var(--ease);
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
+  box-shadow: 0 2px 8px rgba(22, 32, 50, 0.18);
 }
 
 .template-btn:hover {
-  background: #2563eb;
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(22, 32, 50, 0.22);
+}
+
+.template-btn:active {
+  transform: translateY(0);
+  filter: brightness(0.97);
 }
 
 .template-note {
-  margin: 8px 0 0 0;
-  font-size: 13px;
-  color: #64748b;
+  margin: 8px 0 0;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 300;
+  letter-spacing: 0.02em;
 }
 
+/* ──────────────────────────────────────────────────────
+   INPUT FICHIER
+   ────────────────────────────────────────────────────── */
 .file-input {
   width: 100%;
-  padding: 12px;
-  border: 2px dashed #cbd5e1;
-  border-radius: 8px;
-  background: #f8fafc;
+  padding: 12px 14px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
   cursor: pointer;
-  transition: border-color 0.2s;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  transition:
+    border-color 0.22s var(--ease),
+    background 0.22s var(--ease);
 }
 
 .file-input:hover {
-  border-color: #94a3b8;
+  border-color: rgba(184, 146, 42, 0.4);
+  background: var(--bg-card);
 }
 
 .file-input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: rgba(22, 32, 50, 0.3);
+  box-shadow: 0 0 0 3px rgba(22, 32, 50, 0.05);
+  background: var(--bg-card);
 }
 
+/* ──────────────────────────────────────────────────────
+   INFO FICHIER SÉLECTIONNÉ
+   ────────────────────────────────────────────────────── */
 .file-info {
   margin-top: 8px;
-  padding: 8px 12px;
-  background: #e0f2fe;
-  border: 1px solid #bae6fd;
-  border-radius: 6px;
-  color: #0369a1;
-  font-size: 14px;
+  padding: 8px 14px;
+  background: var(--emerald-soft);
+  border: 1px solid rgba(26, 122, 85, 0.2);
+  border-radius: var(--radius-xs);
+  color: var(--emerald);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
+/* ──────────────────────────────────────────────────────
+   APERÇU
+   ────────────────────────────────────────────────────── */
 .preview-section {
-  margin-top: 20px;
+  margin-top: 16px;
   padding: 16px;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
-  border-radius: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-sm);
 }
 
 .preview-section h4 {
-  margin: 0 0 12px 0;
-  color: #1e293b;
-  font-size: 15px;
-  font-weight: 600;
+  margin: 0 0 12px;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 
 .preview-content {
   max-height: 200px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
 
 .preview-item {
   padding: 8px 12px;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: #475569;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  margin-bottom: 6px;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
 }
 
 .preview-item:last-child {
   margin-bottom: 0;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* ──────────────────────────────────────────────────────
+   RESPONSIVE
+   ────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
   .import-modal {
     width: 95vw;
-    margin: 20px;
   }
 
   .import-info {
-    padding: 16px;
+    padding: 14px;
   }
 
   .info-section ul {
-    padding-left: 16px;
+    padding-left: 14px;
   }
 }

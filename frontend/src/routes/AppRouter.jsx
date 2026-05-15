@@ -12,6 +12,7 @@ const EnseignantsList = lazy(() => import('../admin/enseignants/EnseignantsList'
 const TeacherDashboard = lazy(() => import('../enseignant/dashboard/enseignantDashboard'));
 const CreateExam = lazy(() => import('../enseignant/exams/CreateExam'));
 const ExamBank = lazy(() => import('../enseignant/exams/ExamBank'));
+const Drafts = lazy(() => import('../enseignant/exams/Drafts'));
 const ExerciseBank = lazy(() => import('../enseignant/questions/ExerciseBank'));
 const Profil = lazy(() => import('../enseignant/profil/Profil'));
 const WordTemplates = lazy(() => import('../enseignant/modeles/WordTemplates'));
@@ -161,6 +162,15 @@ const AppRouter = () => {
             element={
               <ProtectedRoute role="enseignant">
                 <ExamBank />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/enseignant/exams/drafts"
+            element={
+              <ProtectedRoute role="enseignant">
+                <Drafts />
               </ProtectedRoute>
             }
           />

@@ -1,7 +1,7 @@
 ﻿import { useState, useCallback } from 'react';
 import {
   FiArrowLeft, FiCheck, FiLoader,
-  FiGlobe, FiLock, FiSave,
+  FiGlobe, FiLock,
   FiLayers, FiHelpCircle, FiBarChart2, FiLayout,
 } from 'react-icons/fi';
 
@@ -105,11 +105,11 @@ const ExportTab = ({
         );
       }
 
-      await onSave(key === 'draft' ? 'Brouillon' : 'Exporte', visibility);
+      await onSave('Exporte', visibility);
 
       setStatus({ type: 'done', key, error: '' });
 
-      if (onReset && key !== 'draft') {
+      if (onReset) {
         setTimeout(() => {
           onReset();
           onTabChange('Questions');
@@ -193,15 +193,6 @@ const ExportTab = ({
           variant="private"
           state={getState('private')}
           onClick={() => handleAction('private', 'private')}
-          disabled={!canExport}
-        />
-        <ActionCard
-          icon={FiSave}
-          title="Sauvegarder Brouillon"
-          desc="Enregistre l'examen sans téléchargement ni publication immédiate."
-          variant="draft"
-          state={getState('draft')}
-          onClick={() => handleAction('draft')}
           disabled={!canExport}
         />
       </div>

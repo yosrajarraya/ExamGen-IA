@@ -266,9 +266,9 @@
    ═══════════════════════════════════════ */
 .qt-main-layout {
   display: grid;
-  grid-template-columns: 1fr 260px;
-  gap: 24px;
-  padding: 20px 28px 28px;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+  padding: 16px 20px 18px;
   flex: 1;
   align-items: start;
 }
@@ -289,7 +289,7 @@
 .qt-sections-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 /* ═══════════════════════════════════════
@@ -306,7 +306,7 @@
   overflow-y: auto;        /* ← scroll vertical activé */
   overflow-x: hidden;      /* ← clip horizontal conservé */
   font-size: 0.8rem;
-  max-width: 220px;
+  max-width: 320px;
   max-height: calc(100vh - 88px - 72px); /* ← viewport - scorebar - footer */
   scrollbar-width: thin;
   scrollbar-color: var(--qt-border-hover) transparent;
@@ -384,21 +384,23 @@
 }
 
 .qt-sidebar-items {
-  padding: 4px 8px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  padding: 8px 8px 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  align-items: start;
 }
 
 .qt-sidebar-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 8px;
+  gap: 8px;
+  padding: 6px;
   border-radius: var(--qt-radius-sm);
   cursor: grab;
-  border: 1.5px solid transparent;
+  border: 1.25px solid transparent;
   transition: all var(--qt-transition);
+  min-height: 44px;
 }
 
 .qt-sidebar-item:hover {
