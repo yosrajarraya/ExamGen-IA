@@ -95,6 +95,31 @@ export const copyQuestionBankItem = async (id) => {
   return response.data;
 };
 
+export const createExercise = async (payload) => {
+  const response = await api.post('/enseignant/exercises/bank', payload);
+  return response.data;
+};
+
+export const getExerciseBank = async () => {
+  const response = await api.get('/enseignant/exercises/bank');
+  return response.data;
+};
+
+export const updateExercise = async (id, payload) => {
+  const response = await api.put(`/enseignant/exercises/bank/${id}`, payload);
+  return response.data;
+};
+
+export const deleteExercise = async (id) => {
+  const response = await api.delete(`/enseignant/exercises/bank/${id}`);
+  return response.data;
+};
+
+export const copyExercise = async (id) => {
+  const response = await api.post(`/enseignant/exercises/bank/${id}/copy`);
+  return response.data;
+};
+
 export const addExamToBank = async (payload) => {
   const response = await api.post('/enseignant/exams/bank', payload);
   return response.data;

@@ -26,6 +26,8 @@ const splitDiscipline = (discipline = '') => {
   };
 };
 
+const RequiredMark = () => <span className="field-required" aria-hidden="true"> *</span>;
+
 const ModelesTab = ({
   allTemplates = [],
   selectedTemplate,
@@ -92,8 +94,6 @@ const ModelesTab = ({
     onFormChange('noteTotale',           '20');
   };
 
-  const selectedTpl = allTemplates.find(tpl => tpl._id === selectedTemplate);
-
   /* Calcul des filières disponibles selon le département sélectionné */
   const availableFilieres = useMemo(() => {
     if (!examForm.departement) return [];
@@ -103,9 +103,6 @@ const ModelesTab = ({
     }
     return base;
   }, [examForm.departement, examForm.filiere]);
-
-  // Astérisque obligatoire réutilisable
-  const RequiredMark = () => <span className="field-required" aria-hidden="true"> *</span>;
 
   return (
     <section className="exam-card">
@@ -294,8 +291,8 @@ const ModelesTab = ({
 
       <div className="exam-actions">
         <button className="exam-btn-secondary" onClick={() => onTabChange('Bibliothèque')}>← Retour</button>
-        <button className="exam-btn-primary" onClick={() => onTabChange('Questions')} disabled={!selectedTemplate} title={!selectedTemplate ? 'Veuillez choisir un modèle' : ''}>
-          Continuer vers Questions →
+        <button className="exam-btn-primary" onClick={() => onTabChange('Exercices')} disabled={!selectedTemplate} title={!selectedTemplate ? 'Veuillez choisir un modèle' : ''}>
+          Continuer vers exercices →
         </button>
       </div>
 

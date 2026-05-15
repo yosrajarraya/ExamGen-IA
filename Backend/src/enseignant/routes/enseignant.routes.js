@@ -24,6 +24,13 @@ const {
   copyQuestionBankItem,
 } = require("../controllers/enseignant.questionBank.controller");
 const {
+  createExercise,
+  getExerciseBank,
+  updateExercise,
+  deleteExercise,
+  copyExercise,
+} = require('../controllers/enseignant.exerciseBank.controller');
+const {
   addExamToBank,
   getExamBank,
   getExamBankItemById,
@@ -67,6 +74,11 @@ router.get("/exams/bank/:id", getExamBankItemById); // Récupérer un examen sp�
 router.get("/exams/filtered", getFilteredExams); // Récupérer examens filtrés
 router.delete("/exams/bank/:id", deleteExamBankItem); // Supprimer mon examen
 router.post("/exams/bank/:id/copy", copyExamBankItem); // Copier un examen
+router.post('/exercises/bank', createExercise);              // Créer un exercice dans la banque
+router.get('/exercises/bank', getExerciseBank);              // Récupérer la banque d'exercices
+router.put('/exercises/bank/:id', updateExercise);           // Modifier un exercice
+router.delete('/exercises/bank/:id', deleteExercise);        // Supprimer un exercice
+router.post('/exercises/bank/:id/copy', copyExercise);       // Copier un exercice
 router.post('/ai/questions', generateAIQuestions); // Générer des questions par IA
 router.post('/ai/exam', generateAIExam); // Générer un examen complet par IA
 

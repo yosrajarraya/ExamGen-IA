@@ -203,7 +203,7 @@ function TeacherDashboard() {
               </div>
 
               <button className="teacher-secondary-action" onClick={() => navigate('/enseignant/questions/bank')}>
-                Consulter la banque de questions
+                Consulter la banque d'exercices
               </button>
             </div>
           </article>

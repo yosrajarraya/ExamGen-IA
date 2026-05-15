@@ -546,25 +546,34 @@ const QuestionsTab = ({ sections, setSections, selectedTemplate, allTemplates, o
     })));
   }, [setSections]);
 
-  const insertFromBank = useCallback((bankQ) => {
-    const newQ = makeQuestion('ouverte');
-    newQ.text = bankQ.text || '';
-    const sourceType = bankQ.type || (Array.isArray(bankQ.options) && bankQ.options.length ? 'qcm' : 'ouverte');
-    const mappedType = normalizeType(sourceType);
-    newQ.type = mappedType;
-    if (Array.isArray(bankQ.options) && bankQ.options.length > 0) {
-      newQ.options = bankQ.options.map(o => ({ id: uid(), text: typeof o === 'string' ? o : (o.text || ''), correct: !!o.correct }));
-    } else if (mappedType === 'vrai_faux') {
-      newQ.options = getDefaultOptions('vrai_faux');
-    } else {
-      newQ.options = getDefaultOptions(mappedType);
-    }
+  const insertFromBank = useCallback((bankItem) => {
+    const sourceQuestions = Array.isArray(bankItem?.questions) && bankItem.questions.length > 0
+      ? bankItem.questions
+      : [bankItem];
+
+    const questionsToInsert = sourceQuestions.map((sourceQuestion) => {
+      const newQ = makeQuestion('ouverte');
+      newQ.text = sourceQuestion?.text || '';
+      const sourceType = sourceQuestion?.type || (Array.isArray(sourceQuestion?.options) && sourceQuestion.options.length ? 'qcm' : 'ouverte');
+      const mappedType = normalizeType(sourceType);
+      newQ.type = mappedType;
+      if (Array.isArray(sourceQuestion?.options) && sourceQuestion.options.length > 0) {
+        newQ.options = sourceQuestion.options.map((o) => ({ id: uid(), text: typeof o === 'string' ? o : (o.text || ''), correct: !!o.correct }));
+      } else if (mappedType === 'vrai_faux') {
+        newQ.options = getDefaultOptions('vrai_faux');
+      } else {
+        newQ.options = getDefaultOptions(mappedType);
+      }
+      if (sourceQuestion?.imageUrl) newQ.imageUrl = sourceQuestion.imageUrl;
+      return newQ;
+    });
+
     setSections((prev) => {
-      if (prev.length === 0) { const sec = makeSection(1); sec.exercises[0].questions = [newQ]; return [sec]; }
+      if (prev.length === 0) { const sec = makeSection(1); sec.exercises[0].questions = questionsToInsert; return [sec]; }
       const last = prev[prev.length - 1];
       const lastExo = last.exercises[last.exercises.length - 1];
       return prev.map((s) => s.id !== last.id ? s : {
-        ...s, exercises: s.exercises.map((ex) => ex.id !== lastExo.id ? ex : { ...ex, questions: [...ex.questions, newQ] })
+        ...s, exercises: s.exercises.map((ex) => ex.id !== lastExo.id ? ex : { ...ex, questions: [...ex.questions, ...questionsToInsert] })
       });
     });
   }, [setSections]);
@@ -691,7 +700,7 @@ const QuestionsTab = ({ sections, setSections, selectedTemplate, allTemplates, o
       <QuestionBankModal
         isOpen={isShowingBankModal}
         onClose={() => setIsShowingBankModal(false)}
-        onInsertFromBank={(q) => { insertFromBank(q); setIsShowingBankModal(false); }}
+        onInsertFromBank={(exercise) => { insertFromBank(exercise); setIsShowingBankModal(false); }}
       />
       <AIChatModal
         isOpen={showAIChat}
@@ -718,7 +727,7 @@ const QuestionsTab = ({ sections, setSections, selectedTemplate, allTemplates, o
           sectionsCount={sections.length}
         >
           <button type="button" className="qt-btn-bank" onClick={() => setIsShowingBankModal(true)}>
-            <FiDatabase size={14} /> Banque de questions
+            <FiDatabase size={14} /> Banque d'exercices
           </button>
           <button type="button" className="qt-btn-ai" onClick={() => setShowAIChat(true)}>
             <FiZap size={14} /> Assistant IA

@@ -14,6 +14,9 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    if (String(config.url || '').includes('/enseignant/exercises/bank')) {
+      console.log('[API request]', String(config.method || 'get').toUpperCase(), config.url, config.data || config.params || '');
+    }
     return config;
   },
   (error) => Promise.reject(error)
@@ -23,6 +26,10 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (String(error.config?.url || '').includes('/enseignant/exercises/bank')) {
+      console.warn('[API response error]', String(error.config?.method || 'get').toUpperCase(), error.config?.url, error.response?.status, error.response?.data || error.message);
+    }
+
     // Token expiré ou invalide → déconnexion automatique
     // Mais NE PAS rediriger si c'est une tentative de connexion
     if (error.response?.status === 401) {

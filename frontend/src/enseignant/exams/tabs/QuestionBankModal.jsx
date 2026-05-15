@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import {
   FiX, FiSearch, FiCornerDownRight, FiDatabase, FiLoader, FiCheck
 } from 'react-icons/fi';
-import { getQuestionBank } from '../../../api/enseignant/Enseignant.api';
+import { getExerciseBank } from '../../../api/enseignant/Enseignant.api';
 import '../../../styles/QuestionBankModal.css';
 
 /**
- * Modal professionnelle pour la Banque de Questions
- * Affichage complet avec recherche, filtrage et insertion de questions
+ * Modal professionnelle pour la Banque d'Exercices
+ * Affichage complet avec recherche, filtrage et insertion d'exercices
  */
 const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
   const [bankItems, setBankItems] = useState({ mes: [], autres: [] });
@@ -26,9 +26,9 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
     (async () => {
       setBankLoading(true);
       try {
-        const data = await getQuestionBank();
-        const mes = Array.isArray(data?.mesQuestions) ? data.mesQuestions : [];
-        const autres = Array.isArray(data?.autresQuestions) ? data.autresQuestions : [];
+        const data = await getExerciseBank();
+        const mes = Array.isArray(data?.mesExercices) ? data.mesExercices : [];
+        const autres = Array.isArray(data?.autresExercices) ? data.autresExercices : [];
         setBankItems({ mes, autres });
       } catch (err) {
         console.error('Erreur chargement banque:', err);
@@ -71,27 +71,26 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
     }
   };
 
-  const toggleSelection = (questionId) => {
+  const toggleSelection = (exerciseId) => {
     setSelectedIds((prev) => (
-      prev.includes(questionId)
-        ? prev.filter((id) => id !== questionId)
-        : [...prev, questionId]
+      prev.includes(exerciseId)
+        ? prev.filter((id) => id !== exerciseId)
+        : [...prev, exerciseId]
     ));
   };
 
   const clearSelection = () => setSelectedIds([]);
 
   const handleInsertSelected = async () => {
-    const allQuestions = [...(bankItems.mes || []), ...(bankItems.autres || [])];
-    const questionsToInsert = allQuestions.filter((q) => selectedIds.includes(q.id));
+    const allExercises = [...(bankItems.mes || []), ...(bankItems.autres || [])];
+    const exercisesToInsert = allExercises.filter((exercise) => selectedIds.includes(exercise.id));
 
-    if (questionsToInsert.length === 0) return;
+    if (exercisesToInsert.length === 0) return;
 
-    for (const question of questionsToInsert) {
-      // on insère une à une pour garder le flux existant côté éditeur
-      // et conserver la même logique d'import.
+    for (const exercise of exercisesToInsert) {
+      // on insère un exercice à la fois pour garder le flux existant côté éditeur
       // eslint-disable-next-line no-await-in-loop
-      await onInsertFromBank(question);
+      await onInsertFromBank(exercise);
     }
 
     clearSelection();
@@ -104,12 +103,12 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
     const type = (bankTypeFilter || '').trim();
     
     if (type) {
-      const qType = q.type || (Array.isArray(q.options) && q.options.length ? 'qcm' : 'ouverte');
-      const normalized = (qType === 'qcm' || qType === 'qcm_multiple' || qType === 'qcm_unique') ? 'qcm' : qType;
-      if (normalized !== type) return false;
+      const exerciseType = Array.isArray(q.questions) && q.questions.length > 1 ? 'multiple' : 'single';
+      if (exerciseType !== type) return false;
     }
-    
-    return !s || (q.text || '').toLowerCase().includes(s) || (q.matiere || '').toLowerCase().includes(s);
+
+    const haystack = [q.title, q.matiere, q.niveau, q.anneeUniversitaire, ...(Array.isArray(q.questions) ? q.questions.map((question) => question.text) : [])].join(' ').toLowerCase();
+    return !s || haystack.includes(s);
   });
 
   const selectedCount = selectedIds.length;
@@ -126,8 +125,8 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
               <FiDatabase size={24} />
             </div>
             <div>
-              <h2 className="qbm-title">Banque de Questions</h2>
-              <p className="qbm-subtitle">Sélectionnez et insérez des questions existantes</p>
+              <h2 className="qbm-title">Banque d'Exercices</h2>
+              <p className="qbm-subtitle">Sélectionnez et insérez des exercices existants</p>
             </div>
           </div>
           <button className="qbm-close-btn" onClick={onClose} title="Fermer (Esc)">
@@ -143,14 +142,14 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
               className={`qbm-tab ${bankTab === 'mes' ? 'qbm-tab--active' : ''}`}
               onClick={() => setBankTab('mes')}
             >
-              <span>Mes Questions</span>
+              <span>Mes Exercices</span>
               <span className="qbm-tab-count">{bankItems.mes.length}</span>
             </button>
             <button
               className={`qbm-tab ${bankTab === 'autres' ? 'qbm-tab--active' : ''}`}
               onClick={() => setBankTab('autres')}
             >
-              <span>Questions Partagées</span>
+              <span>Exercices Partagés</span>
               <span className="qbm-tab-count">{bankItems.autres.length}</span>
             </button>
           </div>
@@ -162,7 +161,7 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Rechercher une question…"
+                placeholder="Rechercher un exercice…"
                 value={bankSearch}
                 onChange={(e) => setBankSearch(e.target.value)}
                 className="qbm-search-input"
@@ -182,30 +181,27 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
               value={bankTypeFilter}
               onChange={(e) => setBankTypeFilter(e.target.value)}
             >
-              <option value="">Tous les types</option>
-              <option value="ouverte">Ouverte</option>
-              <option value="qcm">QCM</option>
-              <option value="vrai_faux">Vrai / Faux</option>
-              <option value="pratique">Pratique</option>
-              <option value="enonce">Énoncé</option>
+              <option value="">Tous les formats</option>
+              <option value="single">Exercice simple</option>
+              <option value="multiple">Exercice multi-questions</option>
             </select>
           </div>
 
           {selectedCount > 0 && (
             <div className="qbm-selection-bar">
-              <span>{selectedCount} question{selectedCount > 1 ? 's' : ''} sélectionnée{selectedCount > 1 ? 's' : ''}</span>
+              <span>{selectedCount} exercice{selectedCount > 1 ? 's' : ''} sélectionné{selectedCount > 1 ? 's' : ''}</span>
               <button type="button" className="qbm-selection-clear" onClick={clearSelection}>
                 Effacer la sélection
               </button>
             </div>
           )}
 
-          {/* Liste des questions */}
+          {/* Liste des exercices */}
           <div className="qbm-list">
             {bankLoading ? (
               <div className="qbm-loading">
                 <FiLoader size={24} className="qbm-loading-icon" />
-                <p>Chargement des questions…</p>
+                <p>Chargement des exercices…</p>
               </div>
             ) : currentList.length === 0 ? (
               <div className="qbm-empty">
@@ -213,17 +209,20 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
                   <FiDatabase size={40} />
                 </div>
                 <p className="qbm-empty-title">
-                  {bankSearch ? 'Aucun résultat' : 'Aucune question disponible'}
+                  {bankSearch ? 'Aucun résultat' : 'Aucun exercice disponible'}
                 </p>
                 <p className="qbm-empty-text">
                   {bankSearch
                     ? 'Essayez une autre recherche ou un autre filtre'
-                    : 'Commencez par créer des questions'}
+                    : 'Commencez par créer des exercices'}
                 </p>
               </div>
             ) : (
               <div className="qbm-items">
-                {currentList.map((q) => (
+                {currentList.map((q) => {
+                  const questionsCount = Array.isArray(q.questions) ? q.questions.length : 0;
+                  const preview = questionsCount > 0 ? q.questions[0]?.text || '' : '';
+                  return (
                   <div
                     key={q.id}
                     className={`qbm-item${selectedIds.includes(q.id) ? ' qbm-item--selected' : ''}`}
@@ -245,25 +244,18 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
                           e.stopPropagation();
                           toggleSelection(q.id);
                         }}
-                        title={selectedIds.includes(q.id) ? 'Retirer de la sélection' : 'Sélectionner cette question'}
+                        title={selectedIds.includes(q.id) ? 'Retirer de la sélection' : 'Sélectionner cet exercice'}
                       >
                         <FiCheck size={12} />
                       </button>
                       <span className="qbm-item-type">
-                        {q.type === 'qcm_unique' || q.type === 'qcm_multiple' || q.type === 'qcm'
-                          ? '📋 QCM'
-                          : q.type === 'vrai_faux'
-                          ? '✓ Vrai/Faux'
-                          : q.type === 'ouverte'
-                          ? '✎ Ouverte'
-                          : q.type === 'pratique'
-                          ? '⚙ Pratique'
-                          : '📄 Énoncé'}
+                        {questionsCount > 1 ? '🧩 Exercice multi-questions' : '🧩 Exercice simple'}
                       </span>
                       {q.matiere && <span className="qbm-item-subject">{q.matiere}</span>}
                     </div>
-                    <p className="qbm-item-text">
-                      {(q.text || '').length > 120 ? q.text.slice(0, 120) + '…' : q.text}
+                    <p className="qbm-item-text">{q.title || 'Exercice sans titre'}</p>
+                    <p className="qbm-item-text" style={{ opacity: 0.8 }}>
+                      {preview || 'Aucune question disponible'}
                     </p>
                     <button
                       className="qbm-item-btn"
@@ -271,13 +263,13 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
                         e.stopPropagation();
                         onInsertFromBank(q);
                       }}
-                      title="Insérer cette question dans l'exercice actif"
+                      title="Insérer cet exercice dans l'examen actif"
                     >
                       <FiCornerDownRight size={14} />
                       <span>Insérer</span>
                     </button>
                   </div>
-                ))}
+                );})}
               </div>
             )}
           </div>
@@ -287,10 +279,10 @@ const QuestionBankModal = ({ isOpen, onClose, onInsertFromBank }) => {
         <div className="qbm-footer">
           <p className="qbm-footer-info">
             {currentList.length > 0
-              ? `${currentList.length} question${currentList.length > 1 ? 's' : ''} trouvée${currentList.length > 1 ? 's' : ''}`
+              ? `${currentList.length} exercice${currentList.length > 1 ? 's' : ''} trouvé${currentList.length > 1 ? 's' : ''}`
               : bankLoading
               ? 'Chargement…'
-              : 'Aucune question'}
+              : 'Aucun exercice'}
           </p>
           <div className="qbm-footer-actions">
             <button

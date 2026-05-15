@@ -12,7 +12,7 @@ const EnseignantsList = lazy(() => import('../admin/enseignants/EnseignantsList'
 const TeacherDashboard = lazy(() => import('../enseignant/dashboard/enseignantDashboard'));
 const CreateExam = lazy(() => import('../enseignant/exams/CreateExam'));
 const ExamBank = lazy(() => import('../enseignant/exams/ExamBank'));
-const QuestionBank = lazy(() => import('../enseignant/questions/QuestionBank'));
+const ExerciseBank = lazy(() => import('../enseignant/questions/ExerciseBank'));
 const Profil = lazy(() => import('../enseignant/profil/Profil'));
 const WordTemplates = lazy(() => import('../enseignant/modeles/WordTemplates'));
 const WordTemplate = lazy(() => import('../admin/modeles/WordTemplate'));
@@ -169,7 +169,7 @@ const AppRouter = () => {
             path="/enseignant/questions/bank"
             element={
               <ProtectedRoute role="enseignant">
-                <QuestionBank />
+                <ExerciseBank />
               </ProtectedRoute>
             }
           />

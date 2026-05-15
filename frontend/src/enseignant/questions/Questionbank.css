@@ -753,13 +753,13 @@
 }
 
 .qb-modal-option {
-  padding: 8px 12px;
-  border-radius: 7px;
-  font-size: .85rem;
-  background: var(--qb-elevated);
+  padding: 14px 16px;
+  border-radius: 10px;
+  font-size: .95rem;
+  background: var(--qb-bg-card, var(--qb-elevated));
   border: 1px solid var(--qb-border);
   color: var(--qb-text-body);
-  transition: all .15s ease;
+  transition: all .15s var(--qb-ease);
 }
 
 .qb-modal-option--correct {
@@ -767,6 +767,38 @@
   border-color: rgba(13, 122, 85, .2);
   color: var(--qb-green);
 }
+
+/* spacing between question blocks */
+.qb-modal-option + .qb-modal-option { margin-top: 12px; }
+
+/* Slightly larger badges inside modal */
+.qb-modal .qb-type-badge {
+  padding: 6px 10px;
+  font-size: .78rem;
+  border-radius: 9px;
+  font-weight: 700;
+}
+
+/* Option rows inside modal */
+.qb-modal-option .option-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 6px 0;
+}
+.qb-modal-option .option-row .option-letter {
+  width: 28px;
+  text-align: left;
+  color: var(--qb-text-muted);
+  font-weight: 700;
+}
+.qb-modal-option .option-row .option-text {
+  flex: 1;
+}
+
+/* Answer lines for open/practical questions */
+.qb-modal-answer-lines { margin-left: 36px; margin-top: 8px; }
+.qb-modal-answer-lines .answer-line { height: 10px; border-bottom: 1px dashed rgba(10,22,40,0.09); margin-bottom: 8px; }
 
 .qb-correct-mark { font-weight: 700; margin-left: 4px; }
 

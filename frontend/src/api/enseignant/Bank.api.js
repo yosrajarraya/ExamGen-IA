@@ -6,18 +6,20 @@ const normalizeParams = (params = {}) =>
   );
 
 export const QuestionBankApi = {
-  list: (params = {}) => api.get('/enseignant/question-bank', { params: normalizeParams(params) }),
-  getById: (id) => api.get(`/enseignant/question-bank/${id}`),
-  create: (payload) => api.post('/enseignant/question-bank', payload),
-  update: (id, payload) => api.put(`/enseignant/question-bank/${id}`, payload),
-  remove: (id) => api.delete(`/enseignant/question-bank/${id}`),
+  list: (params = {}) => api.get('/enseignant/exercises/bank', { params: normalizeParams(params) }),
+  getById: (id) => api.get(`/enseignant/exercises/bank/${id}`),
+  create: (payload) => api.post('/enseignant/exercises/bank', payload),
+  update: (id, payload) => api.put(`/enseignant/exercises/bank/${id}`, payload),
+  remove: (id) => api.delete(`/enseignant/exercises/bank/${id}`),
 };
 
 export const ExamBankApi = {
-  list: (params = {}) => api.get('/enseignant/exam-bank', { params: normalizeParams(params) }),
-  getById: (id) => api.get(`/enseignant/exam-bank/${id}`),
-  create: (payload) => api.post('/enseignant/exam-bank', payload),
-  update: (id, payload) => api.put(`/enseignant/exam-bank/${id}`, payload),
-  remove: (id) => api.delete(`/enseignant/exam-bank/${id}`),
-  duplicate: (id) => api.post(`/enseignant/exam-bank/${id}/duplicate`),
+  list: (params = {}) => api.get('/enseignant/exams/bank', { params: normalizeParams(params) }),
+  getById: (id) => api.get(`/enseignant/exams/bank/${id}`),
+  create: (payload) => api.post('/enseignant/exams/bank', payload),
+  update: (id, payload) => api.put(`/enseignant/exams/bank/${id}`, payload),
+  remove: (id) => api.delete(`/enseignant/exams/bank/${id}`),
+  duplicate: (id) => api.post(`/enseignant/exams/bank/${id}/copy`),
 };
+
+export const ExerciseBankApi = QuestionBankApi;

@@ -13,6 +13,7 @@ import { enseignantNavItems, buildEnseignantProfile } from '../../components/sid
 import {
   addExamToBank,
   addQuestionToBank,
+  createExercise,
   getExamBank,
   getExamBankItem,
   getExamContent,
@@ -655,6 +656,7 @@ const CreateExam = () => {
   const [exportError, setExportError] = useState('');
   const [editingExamId, setEditingExamId] = useState(null);
   const importedQuestionRef = useRef(null);
+  const importedExerciseRef = useRef(null);
 
   const onFormChange = (field, value) =>
     setExamForm(prev => ({ ...prev, [field]: value }));
@@ -807,6 +809,62 @@ const CreateExam = () => {
       try { window.history.replaceState({}, document.title, location.pathname + location.search.replace(/(&?importQuestion=[^&]*)/, '')); } catch (e) {}
     } catch (e) {
       console.warn('Import question failed', e);
+    }
+  }, [location]);
+
+  // Import an exercise passed via navigation state (from ExerciseBank 'Copier dans l\'éditeur')
+  useEffect(() => {
+    const importedEx = location.state?.importExercise;
+    if (!importedEx || importedExerciseRef.current) return;
+
+    try {
+      const mapQuestion = (q) => {
+        const nid = `imp_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+        let t = (q.type || 'ouverte').toString();
+        if (t === 'qcm') t = 'qcm_multiple';
+        const opts = Array.isArray(q.options) ? q.options.map((o, i) => ({
+          id: o.id || `opt_${Date.now()}_${i}`,
+          text: typeof o === 'string' ? o : (o.text || ''),
+          correct: !!o.correct,
+        })) : [];
+
+        return {
+          id: nid,
+          type: t,
+          text: q.text || '',
+          points: '',
+          isEditing: false,
+          answerLines: q.answerLines || 3,
+          image: null,
+          imageUrl: q.imageUrl || null,
+          options: opts,
+        };
+      };
+
+      const exToInsert = {
+        id: `imp_exo_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+        title: importedEx.title || 'Exercice importé',
+        points: importedEx.points || '',
+        collapsed: false,
+        questions: Array.isArray(importedEx.questions) ? importedEx.questions.filter(q => q.text?.trim()).map(mapQuestion) : [],
+      };
+
+      setSections((prev) => {
+        const next = Array.isArray(prev) ? JSON.parse(JSON.stringify(prev)) : [];
+        if (next.length === 0) next.push(makeSection(1));
+        const lastSec = next[next.length - 1];
+        if (!Array.isArray(lastSec.exercises)) lastSec.exercises = [];
+        lastSec.exercises.push(exToInsert);
+        return next;
+      });
+
+      importedExerciseRef.current = importedEx.id || true;
+      setActiveTab('Exercices');
+      setSuccessMessage('Exercice importé dans l\'éditeur.');
+      // Clear state to avoid re-import on refresh
+      try { window.history.replaceState({}, document.title, location.pathname + location.search.replace(/(&?importExercise=[^&]*)/, '')); } catch (e) {}
+    } catch (e) {
+      console.warn('Import exercise failed', e);
     }
   }, [location]);
 
@@ -1525,6 +1583,33 @@ const CreateExam = () => {
         ...(examForm.templateId && { templateId: examForm.templateId }),
       });
 
+      // ─── Sauvegarde des exercices dans la banque ──────────────────────
+      const exerciseSavePromises = sections.flatMap((sec, secIndex) =>
+        (sec.exercises || [])
+          .filter((exo) => Array.isArray(exo.questions) && exo.questions.some((q) => q.text?.trim()))
+          .map((exo, exoIndex) => {
+            const exerciseTitle = String(exo.title || '').trim() || `Exercice ${secIndex + 1}-${exoIndex + 1}`;
+            const questions = exo.questions
+              .filter((q) => q.text?.trim())
+              .map((q) => ({
+                text: q.text.trim(),
+                type: q.type || 'ouverte',
+                ...(typeof q.answerLines === 'number' ? { answerLines: q.answerLines } : {}),
+                ...(Array.isArray(q.options) && q.options.length > 0 ? { options: q.options } : {}),
+                ...(q.imageUrl ? { imageUrl: q.imageUrl } : {}),
+              }));
+
+            return createExercise({
+              title: exerciseTitle,
+              matiere: examForm.matiere.trim(),
+              niveau: examForm.niveau.trim(),
+              anneeUniversitaire: examForm.anneeUniversitaire ||
+                `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
+              questions,
+            }).catch((err) => console.error('Erreur sauvegarde exercice:', err));
+          })
+      );
+
       // ─── Sauvegarde des questions dans la banque ─────────────────────
       const questionSavePromises = sections.flatMap(sec =>
         sec.exercises.flatMap(exo =>
@@ -1544,7 +1629,7 @@ const CreateExam = () => {
             )
         )
       );
-      await Promise.all(questionSavePromises);
+      await Promise.all([...exerciseSavePromises, ...questionSavePromises]);
 
       // ─── Téléchargement si statut "En cours" ou "Exporte" ────────────
       if (statusToUse === 'En cours' || statusToUse === 'Exporte') {
