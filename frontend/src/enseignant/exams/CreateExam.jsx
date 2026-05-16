@@ -1771,8 +1771,20 @@ const CreateExam = () => {
       );
 
       // Prevent autosave from running when we reset the form after export
+      // This flag will be reset in the autosave effect, but we set it to true multiple times
+      // to ensure autosave is skipped through the entire reset process
       skipAutosaveRef.current = true;
+      
+      // Clear any pending autosave timer
+      if (saveDraftTimer.current) clearTimeout(saveDraftTimer.current);
+      
+      // Reset draft ID BEFORE form reset to prevent autosave from creating a new draft
+      setDraftId(null);
+      
       setTimeout(() => {
+        // Ensure autosave is still disabled before making changes
+        skipAutosaveRef.current = true;
+        
         setExamForm({
           titre: '', filiere: '', matiere: '', niveau: '', type: '', duree: '',
           noteTotale: String(FIXED_EXAM_TOTAL), statut: 'Brouillon', templateId: null,
@@ -1781,6 +1793,9 @@ const CreateExam = () => {
         setSelectedTemplate(null);
         setExportMessage('');
         setExportError('');
+        
+        // Re-enable autosave after form reset is complete
+        skipAutosaveRef.current = false;
       }, 4000);
 
     } catch (err) {

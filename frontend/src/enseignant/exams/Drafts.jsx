@@ -72,8 +72,8 @@ const Drafts = () => {
                 <div className="eb-card-footer" style={{ marginTop: 12 }}>
                   <span className="eb-card-date">{new Date(d.createdAt).toLocaleString()}</span>
                   <div>
-                    <button className="eb-modal-btn eb-modal-btn--copy" style={{ marginRight: 8 }} onClick={(e) => { e.stopPropagation(); navigate(`/enseignant/exams/create?editDraft=${d.id}`); }}><FiEdit2 size={14}/> Editer</button>
-                    <button className="eb-modal-btn eb-modal-btn--del" onClick={(e) => { e.stopPropagation(); handleDelete(d.id); }}><FiTrash2 size={14}/> Supprimer</button>
+                    <button className="eb-modal-btn eb-modal-btn--copy" style={{ marginRight: 8 }} onClick={(e) => { e.stopPropagation(); navigate(`/enseignant/exams/create?editDraft=${d.id}`); }}><FiEdit2 size={14}/> </button>
+                    <button className="eb-modal-btn eb-modal-btn--del" onClick={(e) => { e.stopPropagation(); handleDelete(d.id); }}><FiTrash2 size={14}/> </button>
                   </div>
                 </div>
               </div>

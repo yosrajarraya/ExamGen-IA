@@ -4,6 +4,56 @@
    ═══════════════════════════════════════════════════════════════ */
 
 /* ──────────────────────────────────────────────────────
+   VARIABLES GLOBALES (Ivory & Navy)
+   ────────────────────────────────────────────────────── */
+:root {
+  /* Couleurs de fond */
+  --bg: #eff2f5;
+  --bg-card: #ffffff;
+  --bg-elevated: #f5f8fa;
+
+  /* Texte */
+  --text-primary: #162032;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  --text-faint: #a0aec0;
+
+  /* Accents */
+  --navy: #0e2b50;
+  --gold: #b8922a;
+  --gold-light: #d4af37;
+  --crimson: #b22c2c;
+  --crimson-soft: #fef2f2;
+
+  /* Bordures */
+  --border: #dadde2;
+  --border-soft: #e8ebf0;
+
+  /* Ombres */
+  --shadow-sm: 0 1px 3px rgba(22, 32, 50, 0.04);
+  --shadow-md: 0 4px 12px rgba(22, 32, 50, 0.06);
+  --shadow-lg: 0 12px 32px rgba(22, 32, 50, 0.1);
+  --shadow-gold: 0 4px 16px rgba(184, 146, 42, 0.25);
+  --gold-glow: rgba(184, 146, 42, 0.3);
+
+  /* Rayons */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius: 12px;
+
+  /* Typographie */
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: Georgia, 'Times New Roman', Times, serif;
+
+  /* Timing */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Layout */
+  --sidebar-w: 260px;
+}
+
+/* ──────────────────────────────────────────────────────
    ANIMATIONS
    ────────────────────────────────────────────────────── */
 @keyframes fadeUp {
@@ -16,8 +66,18 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes fadeOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes dialogIn {
+  from { opacity: 0; transform: scale(0.93) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
 /* ──────────────────────────────────────────────────────
-   LAYOUT — shell & main identiques à EnseignantsList
+   LAYOUT — shell & main
    ────────────────────────────────────────────────────── */
 .new-admin-layout {
   display: flex;
@@ -25,6 +85,10 @@
   background: var(--bg);
   font-family: var(--font-body);
   color: var(--text-primary);
+  background-image:
+    linear-gradient(rgba(29, 78, 216, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(29, 78, 216, 0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
 .new-admin-main {
@@ -32,21 +96,21 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 40px 44px 48px;
+  padding: 40px ;
   gap: 32px;
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
 }
 
-/* Fond décoratif — même style que EnseignantsList */
+/* Fond décoratif */
 .new-admin-main::before {
   content: '';
   position: fixed;
   inset: 0;
   background-image:
-    radial-gradient(circle at 72% 18%, rgba(184,146,42,0.05) 0%, transparent 50%),
-    radial-gradient(circle at 18% 82%, rgba(22,32,50,0.04) 0%, transparent 45%);
+    radial-gradient(circle at 72% 18%, rgba(184, 146, 42, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 18% 82%, rgba(22, 32, 50, 0.04) 0%, transparent 45%);
   pointer-events: none;
   z-index: 0;
 }
@@ -128,7 +192,7 @@
 .wt-card-title  { font-size: 1.05rem; font-weight: 500; }
 
 /* ──────────────────────────────────────────────────────
-   BOUTONS — alignés sur EnseignantsList
+   BOUTONS
    ────────────────────────────────────────────────────── */
 .wt-btn-new,
 .wt-btn-primary {
@@ -438,7 +502,7 @@
   width: 31px;
   height: 31px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.94);
+  background: rgba(255, 255, 255, 0.94);
   border: 1px solid var(--border);
   cursor: pointer;
   opacity: 0;
@@ -460,7 +524,7 @@
   border-color: rgba(22, 32, 50, 0.2);
 }
 
-.admin-card-delete { right: 10px; border-color: rgba(178,44,44,0.2); }
+.admin-card-delete { right: 10px; border-color: rgba(178, 44, 44, 0.2); }
 .admin-card-delete:hover {
   background: var(--crimson-soft);
   border-color: var(--crimson);
@@ -681,7 +745,7 @@
   background: #fff;
   border-radius: 50%;
   transition: transform 0.2s var(--ease);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .wt-switch-input:checked ~ .wt-switch-slider {
@@ -692,20 +756,6 @@
   transform: translateX(16px);
 }
 
-/* ──────────────────────────────────────────────────────
-   BARRE D'ACTIONS STICKY
-   ────────────────────────────────────────────────────── */
-.wt-footer-actions {
-  position: sticky;
-  bottom: 0;
-  z-index: 900;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 12px 0 2px;
-  background: linear-gradient(to top, var(--bg) 78%, rgba(245,243,239,0));
-  margin-top: 10px;
-}
 
 /* ──────────────────────────────────────────────────────
    MESSAGE D'ERREUR
@@ -725,11 +775,10 @@
    ────────────────────────────────────────────────────── */
 .preview-modal-overlay,
 .confirmation-overlay {
-  position: fixed;
+  position: sticky;
   inset: 0;
   z-index: 9999;
-  background: rgba(14, 26, 43, 0.55);
-  backdrop-filter: blur(6px);
+  /* background: rgba(14, 26, 43, 0.45); */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -738,17 +787,12 @@
   animation: fadeOverlay 0.2s var(--ease) both;
 }
 
-@keyframes fadeOverlay {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
 .preview-modal {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   width: fit-content;
-  max-width: min(860px, 96vw);
+  max-width: min(900px, 96vw);
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -758,56 +802,116 @@
 }
 
 .preview-modal-header {
-  height: 54px;
-  padding: 0 18px;
-  border-bottom: 1px solid var(--border-soft);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px;
+  padding: 18px 22px;
+  background: var(--navy);
+  flex-shrink: 0;
 }
 
 .preview-modal-title {
   font-family: var(--font-display);
-  font-size: 0.98rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: #e8dcc4;
   letter-spacing: 0.01em;
 }
 
-.preview-modal-close,
-.preview-modal-header button {
-  border: 1px solid var(--border);
-  background: var(--bg-elevated);
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+.preview-modal-close {
+  background: rgba(255,255,255,.1);
+  border: none;
+  color: #e8dcc4;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 16px;
-  color: var(--text-muted);
+  font-size: 0.88rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition:
-    background 0.18s var(--ease),
-    color 0.18s var(--ease),
-    border-color 0.18s var(--ease);
+  transition: background 0.18s var(--ease);
+  flex-shrink: 0;
 }
 
 .preview-modal-close:hover {
-  background: var(--crimson-soft);
-  border-color: rgba(178,44,44,0.2);
-  color: var(--crimson);
+  background: rgba(255,255,255,.2);
 }
 
 .preview-modal-content {
-  background: #e8e4dc;
-  padding: 16px;
+  background: #d9d9d9;
+  padding: 24px;
   overflow: auto;
   flex: 1;
   display: flex;
   justify-content: center;
   align-items: flex-start;
+}
+
+/* Bottom-docked variant: preview as a bottom sheet */
+.preview-modal-overlay--bottom {
+  /* reuse overlay visuals but anchor to bottom */
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(14, 26, 43, 0.45);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  padding: 12px;
+  overflow: hidden;
+  animation: fadeOverlay 0.18s var(--ease) both;
+}
+
+.preview-modal--bottom {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px 12px 0 0;
+  width: min(1120px, calc(100% - 48px));
+  max-width: 1120px;
+  max-height: 86vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -8px 40px rgba(22,32,50,0.12);
+  overflow: hidden;
+  animation: bottomSheetIn 0.28s var(--ease-bounce) both;
+  transform-origin: bottom center;
+  margin: 0 auto;
+}
+
+.preview-modal--bottom .preview-modal-header {
+  border-radius: 12px 12px 0 0;
+}
+
+.preview-modal--bottom .preview-modal-content {
+  padding: 18px;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  overflow: auto;
+  max-height: calc(86vh - 72px);
+}
+
+/* Make internal A4 preview responsive within modal */
+.mini-a4 {
+  width: 100%;
+  max-width: 794px;
+  box-sizing: border-box;
+}
+
+/* Ensure overlay bottom anchoring takes precedence */
+.preview-modal-overlay--bottom {
+  align-items: flex-end !important;
+  padding: 20px 12px 36px;
+}
+
+@keyframes bottomSheetIn {
+  from { transform: translateY(18px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
 }
 
 /* Boîte de confirmation */
@@ -823,11 +927,6 @@
   flex-direction: column;
   gap: 14px;
   animation: dialogIn 0.3s var(--ease-bounce) both;
-}
-
-@keyframes dialogIn {
-  from { opacity: 0; transform: scale(0.93) translateY(12px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .confirmation-dialog h3 {
@@ -857,7 +956,6 @@
   margin-top: 6px;
 }
 
-/* btn-cancel et btn-confirm partagés avec EnseignantsList */
 .btn-cancel {
   height: 38px;
   padding: 0 18px;
@@ -876,7 +974,7 @@
 
 .btn-cancel:hover {
   background: var(--bg-elevated);
-  border-color: rgba(22, 32, 50, 0.2);
+  border-color: rgba(10, 22, 40, 0.2);
 }
 
 .btn-confirm {
@@ -891,7 +989,7 @@
   color: #ffffff;
   cursor: pointer;
   letter-spacing: 0.04em;
-  box-shadow: 0 3px 12px rgba(178, 44, 44, 0.22);
+  box-shadow: 0 3px 12px rgba(192, 51, 74, 0.22);
   transition:
     filter 0.18s var(--ease),
     transform 0.2s var(--ease-bounce),
@@ -901,7 +999,7 @@
 .btn-confirm:hover {
   filter: brightness(1.08);
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(178, 44, 44, 0.3);
+  box-shadow: 0 6px 18px rgba(192, 51, 74, 0.3);
 }
 
 .btn-confirm:active {
@@ -1014,4 +1112,56 @@
   .preview-modal-overlay { padding: 16px; }
   .preview-modal-content { padding: 12px; }
   .new-admin-main { padding: 20px 14px; gap: 20px; }
+}
+
+/* Fullscreen modal variant */
+.preview-modal-overlay--fullscreen {
+  position: sticky;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  overflow: auto;
+}
+
+.preview-modal--fullscreen {
+ 
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: fit-content;
+  max-width: min(900px, 96vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: dialogIn 0.3s var(--ease-bounce) both;
+}
+
+
+.preview-modal--fullscreen .preview-modal-header {
+  padding: 14px 18px;
+}
+
+.preview-modal--fullscreen .preview-modal-content {
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: auto;
+  flex: 1;
+}
+
+/* Make internal A4 preview scale nicely inside fullscreen modal */
+.mini-a4 {
+  width: 100%;
+  max-width: 1100px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 960px) {
+  .preview-modal--fullscreen { width: calc(100% - 24px); height: calc(100% - 24px); }
 }

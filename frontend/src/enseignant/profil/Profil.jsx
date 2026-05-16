@@ -13,9 +13,9 @@ import './Profil.css';
 const Toast = memo(({ message, type = 'success' }) => {
   if (!message) return null;
   return (
-    <div 
-      className={`pf-toast pf-toast--${type}`} 
-      role="status" 
+    <div
+      className={`pf-toast pf-toast--${type}`}
+      role="status"
       aria-live="polite"
       aria-atomic="true"
     >
@@ -27,42 +27,35 @@ const Toast = memo(({ message, type = 'success' }) => {
 Toast.displayName = 'Toast';
 
 /** Avatar avec initiales */
-const Avatar = memo(({ prenom, nom, size = 'lg' }) => {
-  const initials = useMemo(() => 
-    `${prenom?.[0] || ''}${nom?.[0] || ''}`.toUpperCase(), 
-    [prenom, nom]
-  );
-  return <div className={`pf-avatar pf-avatar--${size}`} aria-hidden="true">{initials}</div>;
-});
-Avatar.displayName = 'Avatar';
+
 
 /** Hero banner du profil */
 const ProfileHero = memo(({ profil }) => {
   if (!profil) return null;
-  
+
   return (
     <header className="pf-hero" role="banner">
-      <div className="pf-hero-content">
-        <Avatar prenom={profil.Prenom} nom={profil.Nom} size="xl" />
+      
+  
         <div className="pf-hero-info">
           <h1 className="pf-hero-name">{profil.Prenom} {profil.Nom}</h1>
           <p className="pf-hero-email">{profil.Email}</p>
           <div className="pf-hero-meta">
             {profil.Departement && (
               <span className="pf-meta-chip pf-meta-chip--dept">
-                <span aria-hidden="true">🏛</span> {profil.Departement}
+                {profil.Departement}
               </span>
             )}
             {profil.Grade && (
               <span className="pf-meta-chip pf-meta-chip--grade">
-                <span aria-hidden="true">🎓</span> {profil.Grade}
+                {profil.Grade}
               </span>
             )}
             <span className={`pf-meta-chip ${profil.Active ? 'pf-meta-chip--active' : 'pf-meta-chip--inactive'}`}>
               <span aria-hidden="true">●</span> {profil.Active ? 'Compte actif' : 'Compte désactivé'}
             </span>
           </div>
-        </div>
+     
       </div>
     </header>
   );
@@ -72,8 +65,8 @@ ProfileHero.displayName = 'ProfileHero';
 /** Navigation par onglets */
 const ProfileNav = memo(({ activeSection, onChange }) => {
   const tabs = useMemo(() => [
-    { id: 'info', label: 'Informations personnelles', icon: '👤' },
-    { id: 'security', label: 'Sécurité', icon: '🔒' },
+    { id: 'info', label: 'Informations personnelles' },
+    { id: 'security', label: 'Sécurité' },
   ], []);
 
   return (
@@ -107,19 +100,19 @@ const initialPwState = { ancienPassword: '', nouveauPassword: '' };
 
 const Profil = () => {
   const { user, logout } = useAuth();
-  
+
   // ── États ──
   const [profil, setProfil] = useState(null);
   const [pageLoading, setPageLoading] = useState(true);
   const [toast, setToast] = useState({ msg: '', type: 'success' });
   const [departements, setDepartements] = useState([]);
   const [activeSection, setActiveSection] = useState('info');
-  
+
   // Formulaires avec useReducer pour une gestion centralisée
   const [editForm, setEditForm] = useState(initialEditState);
   const [editLoading, setEditLoading] = useState(false);
   const [editError, setEditError] = useState('');
-  
+
   const [pwForm, setPwForm] = useState(initialPwState);
   const [pwLoading, setPwLoading] = useState(false);
   const [pwError, setPwError] = useState('');
@@ -144,16 +137,16 @@ const Profil = () => {
   // ── Chargement initial ──
   useEffect(() => {
     let mounted = true;
-    
+
     const fetchData = async () => {
       try {
         const [depts, data] = await Promise.all([
           getDepartements().catch(() => []),
           getProfil(),
         ]);
-        
+
         if (!mounted) return;
-        
+
         setDepartements(Array.isArray(depts) ? depts : []);
         setProfil(data);
         setEditForm({
@@ -202,10 +195,10 @@ const Profil = () => {
       setEditError(validationError);
       return;
     }
-    
+
     setEditLoading(true);
     setEditError('');
-    
+
     try {
       const data = await updateProfil(editForm);
       setProfil(data.enseignant);
@@ -224,10 +217,10 @@ const Profil = () => {
       setPwError(validationError);
       return;
     }
-    
+
     setPwLoading(true);
     setPwError('');
-    
+
     try {
       await changePassword(pwForm.ancienPassword, pwForm.nouveauPassword);
       showToast('Mot de passe changé avec succès');
@@ -254,20 +247,20 @@ const Profil = () => {
 
   // ── Données dérivées ──
   const FIELDS = useMemo(() => [
-    { key: 'Telephone', label: 'Téléphone', placeholder: 'Ex : 95 000 000', icon: '📞', type: 'tel' },
-    { key: 'Grade', label: 'Grade', placeholder: 'Ex : Maître Assistant', icon: '🎓', type: 'text' },
-    { key: 'Specialite', label: 'Spécialité', placeholder: 'Ex : Algorithmique', icon: '🔬', type: 'text' },
+    { key: 'Telephone', label: 'Téléphone', placeholder: 'Ex : 95 000 000' , type: 'tel' },
+    { key: 'Grade', label: 'Grade', placeholder: 'Ex : Maître Assistant', type: 'text' },
+    { key: 'Specialite', label: 'Spécialité', placeholder: 'Ex : Algorithmique',  type: 'text' },
   ], []);
 
   // ── Rendu : Loading ──
   if (pageLoading) {
     return (
       <div className="pf-layout">
-        <Sidebar 
-          roleLabel="Espace enseignant" 
-          navItems={enseignantNavItems} 
-          profile={buildEnseignantProfile(user)} 
-          onLogout={logout} 
+        <Sidebar
+          roleLabel="Espace enseignant"
+          navItems={enseignantNavItems}
+          profile={buildEnseignantProfile(user)}
+          onLogout={logout}
         />
         <main className="pf-main profil-main">
           <div className="pf-loading" role="status" aria-live="polite">
@@ -297,10 +290,10 @@ const Profil = () => {
 
         {/* ── Section : Informations ── */}
         {activeSection === 'info' && (
-          <section 
-            className="pf-section" 
-            role="tabpanel" 
-            id="panel-info" 
+          <section
+            className="pf-section"
+            role="tabpanel"
+            id="panel-info"
             aria-labelledby="tab-info"
           >
             <div className="pf-section-header">
@@ -333,7 +326,7 @@ const Profil = () => {
                 {/* Département — select */}
                 <div className="pf-field">
                   <label htmlFor="edit-dept" className="pf-field-label">
-                    <span className="pf-field-icon" aria-hidden="true">🏛</span>
+                    
                     Département
                   </label>
                   <select
@@ -360,16 +353,16 @@ const Profil = () => {
               )}
 
               <div className="pf-form-actions">
-                <button 
-                  type="submit" 
-                  className="pf-btn pf-btn--primary" 
+                <button
+                  type="submit"
+                  className="pf-btn pf-btn--primary"
                   disabled={editLoading}
                   aria-busy={editLoading}
                 >
                   {editLoading ? (
                     <><span className="pf-btn-spinner" aria-hidden="true" /> Enregistrement…</>
                   ) : (
-                    <><span aria-hidden="true">💾</span> Enregistrer les modifications</>
+                    <><span aria-hidden="true"></span> Enregistrer les modifications</>
                   )}
                 </button>
               </div>
@@ -379,10 +372,10 @@ const Profil = () => {
 
         {/* ── Section : Sécurité ── */}
         {activeSection === 'security' && (
-          <section 
-            className="pf-section" 
-            role="tabpanel" 
-            id="panel-security" 
+          <section
+            className="pf-section"
+            role="tabpanel"
+            id="panel-security"
             aria-labelledby="tab-security"
           >
             <div className="pf-section-header">
@@ -395,7 +388,7 @@ const Profil = () => {
             <form onSubmit={handlePasswordSubmit} className="pf-form pf-form--narrow" noValidate>
               <div className="pf-field">
                 <label htmlFor="pw-old" className="pf-field-label">
-                  <span className="pf-field-icon" aria-hidden="true">🔑</span>
+           
                   Mot de passe actuel
                 </label>
                 <div className="pf-pw-wrap">
@@ -408,21 +401,21 @@ const Profil = () => {
                     placeholder="••••••••"
                     autoComplete="current-password"
                   />
-                  <button 
-                    type="button" 
-                    className="pf-pw-eye" 
+                  <button
+                    type="button"
+                    className="pf-pw-eye"
                     onClick={() => setShowOld(v => !v)}
                     aria-label={showOld ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                     aria-pressed={showOld}
                   >
-                    <span aria-hidden="true">{showOld ? '🙈' : '👁'}</span>
+                    <span aria-hidden="true">{showOld ? '/' : '👁'}</span>
                   </button>
                 </div>
               </div>
 
               <div className="pf-field">
                 <label htmlFor="pw-new" className="pf-field-label">
-                  <span className="pf-field-icon" aria-hidden="true">🔐</span>
+             
                   Nouveau mot de passe
                 </label>
                 <div className="pf-pw-wrap">
@@ -435,14 +428,14 @@ const Profil = () => {
                     placeholder="••••••••"
                     autoComplete="new-password"
                   />
-                  <button 
-                    type="button" 
-                    className="pf-pw-eye" 
+                  <button
+                    type="button"
+                    className="pf-pw-eye"
                     onClick={() => setShowNew(v => !v)}
                     aria-label={showNew ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                     aria-pressed={showNew}
                   >
-                    <span aria-hidden="true">{showNew ? '🙈' : '👁'}</span>
+                    <span aria-hidden="true">{showNew ? '/' : '👁'}</span>
                   </button>
                 </div>
               </div>
@@ -454,16 +447,16 @@ const Profil = () => {
               )}
 
               <div className="pf-form-actions">
-                <button 
-                  type="submit" 
-                  className="pf-btn pf-btn--primary" 
+                <button
+                  type="submit"
+                  className="pf-btn pf-btn--primary"
                   disabled={pwLoading}
                   aria-busy={pwLoading}
                 >
                   {pwLoading ? (
                     <><span className="pf-btn-spinner" aria-hidden="true" /> Modification…</>
                   ) : (
-                    <><span aria-hidden="true">🔒</span> Changer le mot de passe</>
+                    <> Changer le mot de passe</>
                   )}
                 </button>
               </div>

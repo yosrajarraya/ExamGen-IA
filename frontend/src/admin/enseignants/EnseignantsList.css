@@ -64,10 +64,10 @@
   display: flex;
   min-height: 100vh;
   height: 100vh; /* lock shell to viewport height to avoid body + inner scroll */
-  background: var(--bg);
-  /* Dot grid background like the image */
-  background-image: radial-gradient(circle, #c8cdd8 1px, transparent 1px);
-  background-size: 28px 28px;
+background-image:
+    linear-gradient(rgba(29,78,216,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(29,78,216,0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
   font-family: var(--font-body);
   color: var(--text-primary);
 }
