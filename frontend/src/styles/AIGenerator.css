@@ -749,12 +749,11 @@
   width: 450px;
   height: 100vh;
   background: #f8fafc;
-  border-left: none;
+  border-left: 1px solid #e2e8f0;
   box-shadow: -16px 0 64px rgba(15, 23, 42, 0.2);
-  z-index: 1000;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
-  animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
   overflow: hidden;
 }
 
@@ -1033,7 +1032,7 @@
   bottom: 0;
   background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(8px);
-  z-index: 999;
+  z-index: 9998;
   animation: fadeIn 0.3s ease-out both;
 }
 
