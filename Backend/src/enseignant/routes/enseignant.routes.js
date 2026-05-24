@@ -100,4 +100,35 @@ router.delete('/exams/draft/:id', deleteDraftExam); // Supprimer un brouillon
 // Chatbot IA avec fichiers
 router.post('/ai/chat', upload.array('files', 5), chatWithAIController);
 
+// Génération d'images via AI
+router.post('/generate-image', async (req, res) => {
+  try {
+    const { prompt, type } = req.body;
+    
+    if (!prompt) {
+      return res.status(400).json({ message: 'Le prompt est requis' });
+    }
+
+    console.log('Received image generation request:', prompt);
+    console.log('Content type:', type || 'image');
+
+    const { generateImage } = require('../../utils/imageGeneration.utils');
+    const imageUrl = await generateImage(prompt, type || 'image');
+    
+    console.log('Image URL generated:', imageUrl);
+    
+    res.json({ 
+      imageUrl,
+      success: true,
+      message: 'Image générée avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur génération image:', error);
+    res.status(500).json({ 
+      message: 'Erreur lors de la génération de l\'image',
+      error: error.message 
+    });
+  }
+});
+
 module.exports = router;

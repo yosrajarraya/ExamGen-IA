@@ -14,6 +14,7 @@ const CreateExam = lazy(() => import('../enseignant/exams/CreateExam'));
 const ExamBank = lazy(() => import('../enseignant/exams/ExamBank'));
 const Drafts = lazy(() => import('../enseignant/exams/Drafts'));
 const ExerciseBank = lazy(() => import('../enseignant/questions/ExerciseBank'));
+const AIGenerator = lazy(() => import('../enseignant/questions/AIGenerator'));
 const Profil = lazy(() => import('../enseignant/profil/Profil'));
 const WordTemplates = lazy(() => import('../enseignant/modeles/WordTemplates'));
 const WordTemplate = lazy(() => import('../admin/modeles/WordTemplate'));
@@ -180,6 +181,15 @@ const AppRouter = () => {
             element={
               <ProtectedRoute role="enseignant">
                 <ExerciseBank />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/enseignant/questions/generator"
+            element={
+              <ProtectedRoute role="enseignant">
+                <AIGenerator />
               </ProtectedRoute>
             }
           />

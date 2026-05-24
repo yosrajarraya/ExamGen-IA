@@ -8,7 +8,9 @@ async function createAdmin() {
 
   const existing = await Admin.findOne({ email: 'admin@iit.tn' });
   if (existing) {
-    console.log('⚠️  Admin existe déjà !');
+    existing.password = process.env.ADMIN_PASSWORD || 'admin123';
+    await existing.save();
+    console.log('✅ Mot de passe Admin mis à jour avec succès !');
     process.exit();
   }
 

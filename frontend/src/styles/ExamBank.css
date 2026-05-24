@@ -238,7 +238,13 @@
 .eb-modal-btn--ghost:hover { border-color: var(--eb-border-h); color: var(--eb-text-primary); }
 
 /* ── Responsive ── */
-@media (max-width: 1100px) { .eb-main { padding: 24px 28px; } }
+@media (max-width: 1100px) { 
+  .eb-main { padding: 24px 28px; }
+  .eb-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+  }
+}
 @media (max-width: 768px) {
   .eb-main { margin-left: 64px; padding: 20px 16px; }
   .eb-header { flex-direction: column; align-items: flex-start; gap: 14px; }
@@ -247,6 +253,17 @@
   .eb-modal { max-width: 100%; max-height: 92vh; }
   .eb-modal-footer { justify-content: stretch; }
   .eb-modal-btn { flex: 1; text-align: center; }
+  .eb-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .eb-card {
+    min-height: auto;
+  }
+  .eb-card-meta {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
 }
 /* ── Sections parsées du .docx ── */
 .eb-modal-sections {
@@ -340,6 +357,7 @@
   padding: 40px 52px;
   box-shadow: 0 2px 16px rgba(0,0,0,.18);
   min-height: 400px;
+  text-align: left;
 }
 
 /* ── En-tête document ── */
@@ -646,7 +664,7 @@
 .eb-cards-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
+  gap: 20px;
   margin-bottom: 24px;
   animation: ebUp .4s var(--eb-ease) .16s both;
 }
@@ -655,30 +673,32 @@
   background: var(--eb-card);
   border: 1.5px solid var(--eb-border);
   border-radius: var(--eb-radius);
-  padding: 18px 20px 16px;
+  padding: 12px 14px 12px;
   cursor: pointer;
   box-shadow: var(--eb-shadow-sm);
   transition: transform .22s var(--eb-ease), box-shadow .22s var(--eb-ease), border-color .22s var(--eb-ease);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   position: relative;
   overflow: hidden;
+  min-height: 140px;
+  width: 100%;
 }
 
 .eb-card::before {
   content: '';
   position: absolute;
   top: 0; left: 0;
-  width: 4px; height: 100%;
-  background: var(--eb-navy);
+  width: 5px; height: 100%;
+  background: linear-gradient(180deg, var(--eb-navy) 0%, var(--eb-accent) 100%);
   border-radius: 4px 0 0 4px;
   opacity: 0;
   transition: opacity .2s var(--eb-ease);
 }
 
 .eb-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px);
   box-shadow: var(--eb-shadow-md);
   border-color: var(--eb-border-h);
 }
@@ -687,53 +707,79 @@
 
 .eb-card-top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--eb-border);
 }
 
 .eb-card-status {
-  padding: 3px 10px;
+  padding: 5px 14px;
   border-radius: 999px;
-  font-size: .68rem;
+  font-size: .72rem;
   font-weight: 600;
   letter-spacing: .04em;
+  flex-shrink: 0;
 }
 
 .eb-card-author {
-  font-size: .72rem;
+  font-size: .78rem;
   color: var(--eb-text-muted);
   font-style: italic;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 120px;
+  max-width: 180px;
 }
 
 .eb-card-title {
   font-family: var(--eb-font-d);
-  font-size: .95rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: var(--eb-text-primary);
-  line-height: 1.3;
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  margin-bottom: 4px;
 }
 
 .eb-card-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 7px;
+  margin-bottom: 6px;
 }
 
 .eb-card-meta {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px 16px;
+  font-size: .8rem;
+  color: var(--eb-text-body);
+  padding: 12px 0;
+}
+
+.eb-card-meta-item {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: .75rem;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.eb-card-meta-label {
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
   color: var(--eb-text-muted);
+  font-weight: 600;
+}
+
+.eb-card-meta-value {
+  font-size: .85rem;
+  color: var(--eb-text-primary);
+  font-weight: 500;
 }
 
 .eb-card-footer {
@@ -741,21 +787,27 @@
   align-items: center;
   justify-content: space-between;
   margin-top: auto;
-  padding-top: 10px;
+  padding-top: 14px;
   border-top: 1px solid var(--eb-border);
 }
 
 .eb-card-date {
-  font-size: .72rem;
+  font-size: .75rem;
   color: var(--eb-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .eb-card-cta {
-  font-size: .75rem;
+  font-size: .8rem;
   font-weight: 600;
   color: var(--eb-blue-mid);
   opacity: 0;
   transition: opacity .18s var(--eb-ease);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .eb-card:hover .eb-card-cta { opacity: 1; }

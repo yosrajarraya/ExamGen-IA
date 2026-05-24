@@ -1,4 +1,4 @@
-const { chatWithAI } = require('../services/ai.service');
+const { chatWithAI, generateAIQuestionsService, generateAIExamService } = require('../services/ai.service');
 
 /* ── POST /api/enseignant/ai/chat ── */
 const chatWithAIController = async (req, res) => {
@@ -29,27 +29,49 @@ const chatWithAIController = async (req, res) => {
   }
 };
 
-module.exports = { chatWithAIController };
-
-// Stubs for AI generation endpoints (to avoid route errors until implemented)
+// Generative AI questions endpoint
 const generateAIQuestions = async (req, res) => {
   try {
-    // TODO: implémenter la génération réelle via ai.service
-    res.status(501).json({ message: 'generateAIQuestions not implemented yet' });
+    const { matiere, niveau, type, count, contexte } = req.body;
+    const jsonData = await generateAIQuestionsService({
+      matiere,
+      niveau,
+      type,
+      count,
+      contexte,
+    });
+    res.json(jsonData);
   } catch (err) {
     console.error('generateAIQuestions error:', err.message);
-    res.status(500).json({ message: err.message || 'Erreur interne' });
+    res.status(500).json({
+      message: err.message || 'Erreur lors de la génération de questions par l\'IA',
+    });
   }
 };
 
+// Generative AI exam endpoint
 const generateAIExam = async (req, res) => {
   try {
-    // TODO: implémenter la génération réelle via ai.service
-    res.status(501).json({ message: 'generateAIExam not implemented yet' });
+    const { matiere, niveau, duree, noteTotale, nbQuestions, types } = req.body;
+    const jsonData = await generateAIExamService({
+      matiere,
+      niveau,
+      duree,
+      noteTotale,
+      nbQuestions,
+      types,
+    });
+    res.json(jsonData);
   } catch (err) {
     console.error('generateAIExam error:', err.message);
-    res.status(500).json({ message: err.message || 'Erreur interne' });
+    res.status(500).json({
+      message: err.message || 'Erreur lors de la génération de l\'examen par l\'IA',
+    });
   }
 };
 
-module.exports = { chatWithAIController, generateAIQuestions, generateAIExam };
+module.exports = {
+  chatWithAIController,
+  generateAIQuestions,
+  generateAIExam,
+};

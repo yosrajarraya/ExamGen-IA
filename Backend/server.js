@@ -5,14 +5,23 @@ require('dotenv').config();
 const app = express();
 const connectDB = require('./src/config/db');
 const wordTemplateRoutes = require('./src/admin/routes/wordTemplate.admin.routes');
+const aiConfig = require('./AI_CONFIG');
 
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ limit: '15mb', extended: true }));
 
+// Servir les images générées
+app.use('/uploads', express.static('uploads'));
+
 // ── Route test ────────────────────────────────────────────────────────────────
 app.get('/', (req, res) => {
   res.json({ message: 'ExamGen-IA API ✓' });
+});
+
+// ── Route pour obtenir le statut IA ────────────────────────────────────────────
+app.get('/api/ai-status', (req, res) => {
+  res.json(aiConfig.getStatus());
 });
 
 // ── Routes Admin ──────────────────────────────────────────────────────────────
@@ -22,6 +31,7 @@ app.use('/api/admin/enseignants', require('./src/admin/routes/enseignant.admin.r
 // ── Routes Enseignant ─────────────────────────────────────────────────────────
 app.use('/api/enseignant/auth',   require('./src/enseignant/routes/auth.enseignant.routes'));
 app.use('/api/enseignant',        require('./src/enseignant/routes/enseignant.routes'));
+app.use('/api/enseignant/chat-history', require('./src/enseignant/routes/chatHistory.routes'));
 
 // ── Routes word-template ─────────────────────────────────────────────────────────
 app.use('/api/admin/word-template', wordTemplateRoutes);
@@ -31,7 +41,8 @@ const start = async () => {
   try {
     await connectDB();
     app.listen(process.env.PORT || 5000, () => {
-      console.log(`✓ Serveur démarré sur le port ${process.env.PORT || 5000}`);
+      console.log(`\n✓ Serveur démarré sur le port ${process.env.PORT || 5000}\n`);
+      console.log(aiConfig.getSetupInstructions());
     });
   } catch (error) {
     console.error(error);

@@ -193,6 +193,8 @@ export const deleteExamDraft = async (id) => {
 export const generateAIQuestions = async ({ matiere, niveau, type, count, contexte = '' }) => {
   const response = await api.post('/enseignant/ai/questions', {
     matiere, niveau, type, count, contexte,
+  }, {
+    timeout: 60000
   });
   return response.data;
 };
@@ -203,6 +205,8 @@ export const generateAIQuestions = async ({ matiere, niveau, type, count, contex
 export const generateAIExam = async ({ matiere, niveau, duree, noteTotale, nbQuestions, types }) => {
   const response = await api.post('/enseignant/ai/exam', {
     matiere, niveau, duree, noteTotale, nbQuestions, types,
+  }, {
+    timeout: 60000
   });
   return response.data;
 };
@@ -220,6 +224,33 @@ export const chatWithAI = async ({ message, files = [], history = [], context = 
 
   const res = await api.post('/enseignant/ai/chat', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 60000
   });
   return res.data;
+};
+
+/* ── Historique des conversations IA ── */
+export const saveChatHistory = async (payload) => {
+  const response = await api.post('/enseignant/chat-history', payload);
+  return response.data;
+};
+
+export const getChatHistories = async () => {
+  const response = await api.get('/enseignant/chat-history');
+  return response.data;
+};
+
+export const getChatHistoryById = async (id) => {
+  const response = await api.get(`/enseignant/chat-history/${id}`);
+  return response.data;
+};
+
+export const deleteChatHistory = async (id) => {
+  const response = await api.delete(`/enseignant/chat-history/${id}`);
+  return response.data;
+};
+
+export const updateChatTitle = async (id, title) => {
+  const response = await api.patch(`/enseignant/chat-history/${id}/title`, { title });
+  return response.data;
 };
