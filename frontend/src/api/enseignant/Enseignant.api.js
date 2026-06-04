@@ -194,7 +194,7 @@ export const generateAIQuestions = async ({ matiere, niveau, type, count, contex
   const response = await api.post('/enseignant/ai/questions', {
     matiere, niveau, type, count, contexte,
   }, {
-    timeout: 60000
+    timeout: 300000
   });
   return response.data;
 };
@@ -206,7 +206,7 @@ export const generateAIExam = async ({ matiere, niveau, duree, noteTotale, nbQue
   const response = await api.post('/enseignant/ai/exam', {
     matiere, niveau, duree, noteTotale, nbQuestions, types,
   }, {
-    timeout: 60000
+    timeout: 300000
   });
   return response.data;
 };
@@ -224,7 +224,7 @@ export const chatWithAI = async ({ message, files = [], history = [], context = 
 
   const res = await api.post('/enseignant/ai/chat', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
-    timeout: 60000
+    timeout: 300000
   });
   return res.data;
 };

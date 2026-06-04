@@ -3,7 +3,7 @@ import axios from 'axios';
 // ─── Instance unique partagée par toute l'app ────────────────────────────────
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-  timeout: 10000, // annule la requête si le serveur ne répond pas en 10s
+  timeout: 300000, // 5 minutes pour les appels IA
   headers: { 'Content-Type': 'application/json' },
 });
 

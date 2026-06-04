@@ -48,6 +48,14 @@ const chatHistorySchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    messageCount: {
+      type: Number,
+      default: 0,
+    },
+    userPromptCount: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );

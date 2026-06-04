@@ -33,12 +33,15 @@ const chatWithAIController = async (req, res) => {
 const generateAIQuestions = async (req, res) => {
   try {
     const { matiere, niveau, type, count, contexte } = req.body;
+    const files = req.files || []; // Récupérer les fichiers joints
+    
     const jsonData = await generateAIQuestionsService({
       matiere,
       niveau,
       type,
       count,
       contexte,
+      files // Passer les fichiers à la fonction de service
     });
     res.json(jsonData);
   } catch (err) {
@@ -52,7 +55,9 @@ const generateAIQuestions = async (req, res) => {
 // Generative AI exam endpoint
 const generateAIExam = async (req, res) => {
   try {
-    const { matiere, niveau, duree, noteTotale, nbQuestions, types } = req.body;
+    const { matiere, niveau, duree, noteTotale, nbQuestions, types, contexte } = req.body;
+    const files = req.files || []; // Récupérer les fichiers joints
+    
     const jsonData = await generateAIExamService({
       matiere,
       niveau,
@@ -60,6 +65,8 @@ const generateAIExam = async (req, res) => {
       noteTotale,
       nbQuestions,
       types,
+      contexte,
+      files // Passer les fichiers à la fonction de service
     });
     res.json(jsonData);
   } catch (err) {

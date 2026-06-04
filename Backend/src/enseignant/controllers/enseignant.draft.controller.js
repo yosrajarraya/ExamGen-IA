@@ -26,6 +26,32 @@ const saveDraftExam = async (req, res) => {
     const user = await Enseignant.findById(req.user.id).select('Prenom Nom Email');
     if (!user) return res.status(404).json({ message: 'Enseignant introuvable' });
 
+    // ✅ VALIDATION : Empêcher la sauvegarde de brouillons complètement vides
+    const hasTitle = payload.title && payload.title.trim() !== '' && payload.title.trim() !== 'Sans titre';
+    const hasContent = payload.sections && 
+      Array.isArray(payload.sections) && 
+      payload.sections.length > 0 && 
+      payload.sections.some(section => 
+        section.exercises && 
+        Array.isArray(section.exercises) && 
+        section.exercises.length > 0 && 
+        section.exercises.some(exercise => 
+          exercise.questions && 
+          Array.isArray(exercise.questions) && 
+          exercise.questions.length > 0 &&
+          exercise.questions.some(question => 
+            question.text && 
+            question.text.trim() !== ''
+          )
+        )
+      );
+
+    if (!hasTitle && !hasContent) {
+      return res.status(400).json({ 
+        message: 'Impossible de sauvegarder un brouillon vide. Veuillez ajouter du contenu.' 
+      });
+    }
+
     // If id provided, try update
     if (payload.id && mongoose.Types.ObjectId.isValid(String(payload.id))) {
       const existing = await DraftExam.findById(payload.id);
@@ -48,7 +74,9 @@ const saveDraftExam = async (req, res) => {
     }
 
     const created = await DraftExam.create({
-      title: payload.title || '',
+      title: (payload.title && payload.title.trim() !== '' && payload.title.trim() !== 'Sans titre') 
+        ? payload.title.trim() 
+        : `Brouillon ${new Date().toLocaleDateString('fr-FR')}`,
       Departement: payload.departement || '',
       filiere: payload.filiere || '',
       matiere: payload.matiere || '',

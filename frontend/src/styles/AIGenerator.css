@@ -743,29 +743,20 @@
    ══════════════════════════════════════════════════════ */
 
 .ai-history-overlay {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 450px;
-  height: 100vh;
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  left: auto !important;
+  width: 450px !important;
+  height: 100vh !important;
   background: #f8fafc;
   border-left: 1px solid #e2e8f0;
   box-shadow: -16px 0 64px rgba(15, 23, 42, 0.2);
-  z-index: 9999;
+  z-index: 9999 !important;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-@keyframes slideInRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  transform: none !important;
 }
 
 .ai-history-header {
@@ -814,12 +805,6 @@
   width: 24px;
   height: 24px;
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.2));
-  animation: rotate 20s linear infinite;
-}
-
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 .ai-history-close-btn {
@@ -899,7 +884,7 @@
   background: #ffffff;
   border-color: #d4a843;
   box-shadow: 0 12px 48px rgba(212, 168, 67, 0.25), 0 6px 24px rgba(29, 78, 216, 0.1);
-  transform: translateX(-8px) translateY(-4px) scale(1.02);
+  transform: translateY(-4px) scale(1.02);
 }
 
 .ai-history-item:hover::before {
@@ -1036,6 +1021,14 @@
   animation: fadeIn 0.3s ease-out both;
 }
 
+/* Force la position à droite - règle prioritaire */
+div.ai-history-overlay {
+  position: fixed !important;
+  right: 0 !important;
+  left: auto !important;
+  transform: translateX(0) !important;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -1043,12 +1036,6 @@
   to {
     opacity: 1;
   }
-}
-
-/* Ajuster le conteneur principal quand l'historique est ouvert */
-.ai-generator-container.with-history {
-  margin-right: 450px;
-  transition: margin-right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Scrollbar personnalisée ultra-moderne */
@@ -1078,10 +1065,6 @@
   .ai-history-overlay {
     width: 100%;
     max-width: 380px;
-  }
-  
-  .ai-generator-container.with-history {
-    margin-right: 0;
   }
 }
 

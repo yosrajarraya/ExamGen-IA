@@ -58,8 +58,7 @@ const QUESTION_TYPES = [
 ];
 
 const CONTENT_TYPES = [
-  { value: 'text', label: '📝 Texte (Questions/Examen)' },
-  { value: 'image', label: '🖼️ Image' }
+  { value: 'text', label: '📝 Texte (Questions/Examen)' }
 ];
 
 export default function AIGenerator() {
@@ -77,7 +76,8 @@ export default function AIGenerator() {
     matiere: '',
     niveau: '',
     duree: '2 heures',
-    noteTotale: '20'
+    noteTotale: '20',
+    nbQuestions: '5' // Ajout du nombre de questions configurable
   });
   const [showConfig, setShowConfig] = useState(true);
 
@@ -132,12 +132,82 @@ export default function AIGenerator() {
     loadChatHistories();
   }, []);
 
-  // Auto-save conversation after each message
+  // Auto-save conversation after each message avec calcul du nombre de messages
   useEffect(() => {
     if (messages.length > 1) { // Don't save initial welcome message
       autoSaveConversation();
     }
   }, [messages]);
+
+  // Compter les messages en temps réel pour la conversation actuelle
+  useEffect(() => {
+    if (currentChatId && messages.length > 0) {
+      // Compter spécifiquement les prompts utilisateur
+      const userPrompts = messages.filter(msg => msg.role === 'user').length;
+      
+      // Mettre à jour le cache local des historiques avec le nouveau compte
+      setChatHistories(prev => prev.map(chat => 
+        chat.id === currentChatId 
+          ? { 
+              ...chat, 
+              messageCount: messages.length, 
+              userPromptCount: userPrompts,
+              messages: messages 
+            }
+          : chat
+      ));
+    }
+  }, [currentChatId, messages]);
+
+  // Fonction pour calculer le nombre de PROMPTS utilisateur d'une conversation
+  const getMessageCount = (chat) => {
+    // 1. Priorité : si c'est la conversation courante, compter les prompts utilisateur du state actuel
+    if (chat.id === currentChatId && messages.length > 0) {
+      const userPrompts = messages.filter(msg => msg.role === 'user').length;
+      console.log(`💬 Chat actuel ${chat.id}: ${userPrompts} prompts sur ${messages.length} messages`);
+      return userPrompts;
+    }
+
+    // 2. Si on a un tableau de messages dans le chat, compter les prompts utilisateur
+    if (Array.isArray(chat.messages) && chat.messages.length > 0) {
+      const userPrompts = chat.messages.filter(msg => 
+        msg && 
+        msg.role === 'user' && 
+        msg.content && 
+        msg.content.trim() !== '' &&
+        msg.content.trim() !== 'Analyse les fichiers joints' // Exclure les messages automatiques
+      );
+      console.log(`💬 Chat ${chat.id}: ${userPrompts.length} prompts trouvés dans messages[]`);
+      return userPrompts.length;
+    }
+
+    // 3. Utiliser le userPromptCount sauvegardé si disponible
+    if (chat.userPromptCount && typeof chat.userPromptCount === 'number' && chat.userPromptCount > 0) {
+      console.log(`💬 Chat ${chat.id}: ${chat.userPromptCount} prompts depuis userPromptCount`);
+      return chat.userPromptCount;
+    }
+
+    // 4. Utiliser le messageCount général divisé par 2 (approximation user + assistant)
+    if (chat.messageCount && typeof chat.messageCount === 'number' && chat.messageCount > 1) {
+      const estimated = Math.floor(chat.messageCount / 2);
+      console.log(`💬 Chat ${chat.id}: ${estimated} prompts estimés (${chat.messageCount}/2)`);
+      return estimated;
+    }
+
+    // 5. Fallback : essayer de parser depuis le titre
+    if (chat.title) {
+      const numberMatch = chat.title.match(/(\d+)\s*(?:question|prompt|demande|génér)/i);
+      if (numberMatch) {
+        const parsed = parseInt(numberMatch[1]);
+        console.log(`💬 Chat ${chat.id}: ${parsed} prompts parsés du titre "${chat.title}"`);
+        return parsed;
+      }
+    }
+
+    // 6. Dernier recours : retourner 1 si la conversation existe (au moins un prompt)
+    console.log(`💬 Chat ${chat.id}: 1 prompt par défaut (conversation existante)`);
+    return chat.createdAt ? 1 : 0;
+  };
 
   // Scroll to bottom of chat
   const chatEndRef = useRef(null);
@@ -168,10 +238,15 @@ export default function AIGenerator() {
 
   const autoSaveConversation = async () => {
     try {
+      // Compter spécifiquement les prompts utilisateur
+      const userPrompts = messages.filter(msg => msg.role === 'user').length;
+      
       const payload = {
         id: currentChatId,
         messages,
         context,
+        messageCount: messages.length, // Compte total des messages
+        userPromptCount: userPrompts   // Compte spécifique des prompts utilisateur
       };
       const result = await saveChatHistory(payload);
       if (result.chat && !currentChatId) {
@@ -190,7 +265,7 @@ export default function AIGenerator() {
       if (result.chat) {
         const loadedMessages = result.chat.messages || [];
         setMessages(loadedMessages);
-        setContext(result.chat.context || { matiere: '', niveau: '', duree: '2 heures', noteTotale: '20' });
+        setContext(result.chat.context || { matiere: '', niveau: '', duree: '2 heures', noteTotale: '20', nbQuestions: '5' });
         setCurrentChatId(result.chat.id);
         
         // Restaurer le dernier contenu généré (jsonData) du dernier message assistant
@@ -234,7 +309,7 @@ export default function AIGenerator() {
     ]);
     setCurrentChatId(null);
     setSandboxData(null);
-    setContext({ matiere: '', niveau: '', duree: '2 heures', noteTotale: '20' });
+    setContext({ matiere: '', niveau: '', duree: '2 heures', noteTotale: '20', nbQuestions: '5' });
   };
 
   const deleteConversation = async (chatId) => {
@@ -262,12 +337,6 @@ export default function AIGenerator() {
     setErrorText('');
     setSuccessText('');
     
-    // Si le type de contenu est une image, générer l'image
-    if (contentType !== 'text') {
-      await handleGenerateImage();
-      return;
-    }
-    
     const userMessageText = promptInput.trim();
     const userMsg = {
       id: uid(),
@@ -284,26 +353,43 @@ export default function AIGenerator() {
     try {
       const history = messages.map(m => ({ role: m.role, content: m.content }));
       
-      // Inject context seeds into user inputs if they exist
-      let enhancedMessage = userMessageText;
+      let response;
       
-      // Ajouter le mode et le type de génération au message
+      // Utiliser l'API appropriée selon le mode de génération
       if (generationMode === 'exam') {
-        enhancedMessage = `Génère un examen complet structuré. ${enhancedMessage}`;
+        // Mode examen complet - utiliser generateAIExam
+        response = await generateAIExam({
+          matiere: context.matiere || '',
+          niveau: context.niveau || '',
+          duree: context.duree || '2h',
+          noteTotale: parseInt(context.noteTotale) || 20,
+          nbQuestions: 10,
+          types: [selectedQuestionType]
+        });
+        
+        // Adapter la réponse au format attendu
+        response = {
+          reply: `Examen complet généré avec ${response.sections?.length || 0} sections`,
+          jsonData: response,
+          aiProvider: response.aiProvider || 'IA'
+        };
       } else {
-        enhancedMessage = `Génère des questions de type "${selectedQuestionType}". ${enhancedMessage}`;
+        // Mode questions individuelles - utiliser generateAIQuestions
+        response = await generateAIQuestions({
+          matiere: context.matiere || '',
+          niveau: context.niveau || '',
+          type: selectedQuestionType,
+          count: parseInt(context.nbQuestions) || 5, // Utiliser le nombre configuré
+          contexte: userMessageText
+        });
+        
+        // Adapter la réponse au format attendu
+        response = {
+          reply: `${response.questions?.length || 0} questions générées de type ${selectedQuestionType}`,
+          jsonData: response,
+          aiProvider: response.aiProvider || 'IA'
+        };
       }
-      
-      if (context.matiere || context.niveau) {
-        enhancedMessage += `\n[Contexte: Matière: ${context.matiere || 'non spécifiée'}, Niveau: ${context.niveau || 'non spécifié'}, Durée: ${context.duree || 'non spécifiée'}, Barème: ${context.noteTotale || '20'} pts]`;
-      }
-
-      const response = await chatWithAI({
-        message: enhancedMessage,
-        files: attachedFiles,
-        history,
-        context
-      });
 
       setAttachedFiles([]);
 
@@ -547,6 +633,28 @@ export default function AIGenerator() {
   // Sandbox Handlers - Saving exam draft to database
   const handleSaveExamDraft = async () => {
     if (!sandboxData || sandboxData.mode !== 'exam') return;
+    
+    // ✅ VALIDATION : Empêcher la sauvegarde d'examens vides
+    const hasValidContent = sandboxData.sections && 
+      sandboxData.sections.length > 0 && 
+      sandboxData.sections.some(section => 
+        section.exercises && 
+        section.exercises.length > 0 && 
+        section.exercises.some(exercise => 
+          exercise.questions && 
+          exercise.questions.length > 0 &&
+          exercise.questions.some(question => 
+            question.text && 
+            question.text.trim() !== ''
+          )
+        )
+      );
+
+    if (!hasValidContent) {
+      setErrorText('Impossible de sauvegarder un examen vide. Veuillez générer du contenu avant de sauvegarder en brouillon.');
+      return;
+    }
+
     setAiLoading(true);
     setErrorText('');
     setSuccessText('');
@@ -904,7 +1012,7 @@ export default function AIGenerator() {
                         </div>
                         <div className="ai-history-item-meta">
                           <span>📅 {new Date(chat.createdAt).toLocaleDateString('fr-FR')}</span>
-                          <span>💬 {chat.messages?.length || 0}</span>
+                          <span>💬 {getMessageCount(chat)} prompt{getMessageCount(chat) > 1 ? 's' : ''}</span>
                         </div>
                       </div>
                       <button
@@ -997,6 +1105,18 @@ export default function AIGenerator() {
                     onChange={(e) => setContext({ ...context, noteTotale: e.target.value })}
                   />
                 </div>
+                <div className="ai-config-field">
+                  <label>Nombre de questions</label>
+                  <input
+                    type="number"
+                    className="ai-config-input"
+                    min="1"
+                    max="50"
+                    placeholder="5"
+                    value={context.nbQuestions}
+                    onChange={(e) => setContext({ ...context, nbQuestions: e.target.value })}
+                  />
+                </div>
               </div>
             )}
 
@@ -1062,36 +1182,9 @@ export default function AIGenerator() {
 
             {/* Sélecteurs de génération */}
             <div style={{ padding: '12px 16px', borderTop: '1px solid var(--td-border)', background: '#f8f9fa' }}>
-              {/* Type de contenu */}
+              
+              {/* Mode de génération */}
               <div style={{ marginBottom: '12px' }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--td-text-label)', marginBottom: '6px' }}>
-                  Type de contenu
-                </label>
-                <select
-                  value={contentType}
-                  onChange={(e) => setContentType(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    border: '1px solid var(--td-border)',
-                    borderRadius: '6px',
-                    fontSize: '0.85rem',
-                    background: '#fff',
-                    cursor: 'pointer',
-                    fontWeight: 500
-                  }}
-                >
-                  {CONTENT_TYPES.map((type) => (
-                    <option key={type.value} value={type.value}>
-                      {type.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Mode de génération (seulement si type = text) */}
-              {contentType === 'text' && (
-                <div style={{ marginBottom: '12px' }}>
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--td-text-label)', marginBottom: '6px' }}>
                     Mode de génération
                   </label>
@@ -1116,10 +1209,9 @@ export default function AIGenerator() {
                     ))}
                   </select>
                 </div>
-              )}
 
-              {/* Type de question (seulement si mode questions et type = text) */}
-              {contentType === 'text' && generationMode === 'questions' && (
+              {/* Type de question (seulement si mode questions) */}
+              {generationMode === 'questions' && (
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--td-text-label)', marginBottom: '6px' }}>
                     Type de question
@@ -1182,9 +1274,7 @@ export default function AIGenerator() {
                   className="ai-textarea-prompt"
                   rows={1}
                   placeholder={
-                    contentType !== 'text'
-                      ? `Décrivez ${contentType === 'image' ? 'l\'image' : 'le ' + contentType} à générer... (ex: "un cube OLAP avec ses dimensions")`
-                      : generationMode === 'exam' 
+                    generationMode === 'exam' 
                         ? `Génère un examen complet sur... (ex: "Examen de Java avec QCM et exercices pratiques")`
                         : `Génère des questions de type "${QUESTION_TYPES.find(t => t.value === selectedQuestionType)?.label}" sur...`
                   }
@@ -1218,11 +1308,9 @@ export default function AIGenerator() {
                     <div className="ai-sandbox-title-group">
                       <h4>Bac à sable interactif</h4>
                       <span className="ai-sandbox-subtitle">
-                        {sandboxData.mode === 'image' 
-                          ? `${sandboxData.contentType || 'Image'} générée` 
-                          : sandboxData.mode === 'questions' 
-                            ? `${sandboxData.questions?.length || 0} questions chargées` 
-                            : 'Examen structuré complet'}
+                        {sandboxData.mode === 'questions' 
+                          ? `${sandboxData.questions?.length || 0} questions chargées` 
+                          : 'Examen structuré complet'}
                       </span>
                     </div>
                   </div>
@@ -1252,115 +1340,7 @@ export default function AIGenerator() {
 
                 {/* Sandbox Scrollable Editor */}
                 <div className="ai-sandbox-scroll">
-                  {sandboxData.mode === 'image' ? (
-                    /* Mode affichage d'image générée */
-                    <div style={{ 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      padding: '40px 20px',
-                      gap: '20px'
-                    }}>
-                      <div style={{
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        borderRadius: '16px',
-                        padding: '4px',
-                        boxShadow: '0 10px 40px rgba(102, 126, 234, 0.4)',
-                        maxWidth: '100%'
-                      }}>
-                        <img 
-                          src={sandboxData.imageUrl} 
-                          alt={sandboxData.prompt || 'Image générée'} 
-                          style={{ 
-                            width: '100%',
-                            maxWidth: '800px',
-                            height: 'auto',
-                            display: 'block',
-                            borderRadius: '12px',
-                            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
-                          }}
-                        />
-                      </div>
-                      
-                      {sandboxData.prompt && (
-                        <div style={{
-                          background: '#f8f9fa',
-                          border: '2px solid #e2e8f0',
-                          borderRadius: '12px',
-                          padding: '16px 20px',
-                          maxWidth: '800px',
-                          width: '100%'
-                        }}>
-                          <div style={{
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            color: '#64748b',
-                            marginBottom: '8px',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px'
-                          }}>
-                            Prompt utilisé
-                          </div>
-                          <div style={{
-                            fontSize: '0.95rem',
-                            color: '#1e293b',
-                            lineHeight: '1.6'
-                          }}>
-                            {sandboxData.prompt}
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
-                        <a
-                          href={sandboxData.imageUrl}
-                          download={`${sandboxData.contentType || 'image'}_${Date.now()}.png`}
-                          style={{
-                            background: 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '10px',
-                            padding: '12px 24px',
-                            fontSize: '0.9rem',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            textDecoration: 'none',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            boxShadow: '0 4px 12px rgba(29, 78, 216, 0.3)',
-                            transition: 'all 0.3s ease'
-                          }}
-                        >
-                          <FiSave size={16} /> Télécharger l'image
-                        </a>
-                        
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(sandboxData.imageUrl);
-                            setSuccessText('URL copiée dans le presse-papiers !');
-                          }}
-                          style={{
-                            background: '#f1f5f9',
-                            color: '#475569',
-                            border: '2px solid #e2e8f0',
-                            borderRadius: '10px',
-                            padding: '12px 24px',
-                            fontSize: '0.9rem',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            transition: 'all 0.3s ease'
-                          }}
-                        >
-                          <FiCopy size={16} /> Copier l'URL
-                        </button>
-                      </div>
-                    </div>
-                  ) : sandboxData.mode === 'questions' ? (
+                  {sandboxData.mode === 'questions' ? (
                     /* Mode simple liste de questions */
                     <div className="ai-sandbox-questions-list">
                       {sandboxData.questions.map((q, idx) => {
