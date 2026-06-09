@@ -100,6 +100,8 @@ export default function AIGenerator() {
   const [currentChatId, setCurrentChatId] = useState(null);
   const [showHistorySidebar, setShowHistorySidebar] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [generations, setGenerations] = useState([]);
+  const [currentGenIndex, setCurrentGenIndex] = useState(-1);
   
   // Question type selector
   const [selectedQuestionType, setSelectedQuestionType] = useState('ouverte');
@@ -112,6 +114,7 @@ export default function AIGenerator() {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteAction, setDeleteAction] = useState(null);
+  const [selectorHover, setSelectorHover] = useState(false);
 
   // Auto-fill context from user profile
   useEffect(() => {
@@ -258,6 +261,42 @@ export default function AIGenerator() {
     }
   };
 
+  const updateMessageJsonData = (messageId, updatedJson) => {
+    if (!messageId) return;
+    setMessages(prev => prev.map(msg => {
+      if (msg.id === messageId || msg._id === messageId) {
+        return {
+          ...msg,
+          jsonData: updatedJson
+        };
+      }
+      return msg;
+    }));
+  };
+
+  const updateCurrentGeneration = (updatedGen) => {
+    setSandboxData(updatedGen);
+    if (currentGenIndex >= 0 && generations[currentGenIndex]) {
+      const nextGens = [...generations];
+      nextGens[currentGenIndex] = updatedGen;
+      setGenerations(nextGens);
+      updateMessageJsonData(generations[currentGenIndex].messageId, updatedGen);
+    }
+  };
+
+  const handleSwitchGeneration = (idx) => {
+    if (idx < 0 || idx >= generations.length) return;
+    setCurrentGenIndex(idx);
+    const selectedGen = generations[idx];
+    setSandboxData(selectedGen);
+    if (selectedGen.mode === 'questions' && Array.isArray(selectedGen.questions)) {
+      const ids = selectedGen.questions.map((_, i) => i);
+      setSelectedQuestionIds(new Set(ids));
+    } else {
+      setSelectedQuestionIds(new Set());
+    }
+  };
+
   const loadConversation = async (chatId) => {
     try {
       setLoadingHistory(true);
@@ -268,24 +307,44 @@ export default function AIGenerator() {
         setContext(result.chat.context || { matiere: '', niveau: '', duree: '2 heures', noteTotale: '20', nbQuestions: '5' });
         setCurrentChatId(result.chat.id);
         
-        // Restaurer le dernier contenu généré (jsonData) du dernier message assistant
-        let lastJsonData = null;
-        for (let i = loadedMessages.length - 1; i >= 0; i--) {
-          if (loadedMessages[i].role === 'assistant' && loadedMessages[i].jsonData) {
-            lastJsonData = loadedMessages[i].jsonData;
-            break;
+        // Extraire TOUS les contenus générés (jsonData) de tous les messages assistant
+        const allGenerations = [];
+        loadedMessages.forEach(msg => {
+          if (msg.role === 'assistant') {
+            if (msg.jsonData) {
+              allGenerations.push({
+                ...msg.jsonData,
+                messageId: msg.id || msg._id
+              });
+            } else if (msg.imageUrl) {
+              allGenerations.push({
+                mode: 'image',
+                imageUrl: msg.imageUrl,
+                prompt: msg.content || 'Image générée',
+                timestamp: msg.timestamp,
+                messageId: msg.id || msg._id
+              });
+            }
           }
-        }
+        });
         
-        if (lastJsonData) {
-          setSandboxData(lastJsonData);
+        setGenerations(allGenerations);
+        
+        if (allGenerations.length > 0) {
+          const lastGen = allGenerations[allGenerations.length - 1];
+          setCurrentGenIndex(allGenerations.length - 1);
+          setSandboxData(lastGen);
           // Si c'est des questions, sélectionner toutes par défaut
-          if (lastJsonData.mode === 'questions' && Array.isArray(lastJsonData.questions)) {
-            const ids = lastJsonData.questions.map((_, idx) => idx);
+          if (lastGen.mode === 'questions' && Array.isArray(lastGen.questions)) {
+            const ids = lastGen.questions.map((_, idx) => idx);
             setSelectedQuestionIds(new Set(ids));
+          } else {
+            setSelectedQuestionIds(new Set());
           }
         } else {
+          setCurrentGenIndex(-1);
           setSandboxData(null);
+          setSelectedQuestionIds(new Set());
         }
         
         setShowHistorySidebar(false);
@@ -309,6 +368,8 @@ export default function AIGenerator() {
     ]);
     setCurrentChatId(null);
     setSandboxData(null);
+    setGenerations([]);
+    setCurrentGenIndex(-1);
     setContext({ matiere: '', niveau: '', duree: '2 heures', noteTotale: '20', nbQuestions: '5' });
   };
 
@@ -332,6 +393,18 @@ export default function AIGenerator() {
 
   // Submit Prompt to AI
   const handleSendPrompt = async () => {
+    const missingFields = [];
+    if (!context.matiere || !context.matiere.trim()) missingFields.push("Matière / Cours");
+    if (!context.niveau || !context.niveau.trim()) missingFields.push("Niveau");
+    if (!context.duree || !context.duree.trim()) missingFields.push("Durée de l'examen");
+    if (!context.noteTotale || !String(context.noteTotale).trim()) missingFields.push("Note Totale / Barème");
+
+    if (missingFields.length > 0) {
+      setErrorText(`❌ Veuillez remplir tous les champs obligatoires du contexte pédagogique : ${missingFields.join(', ')}`);
+      setShowConfig(true);
+      return;
+    }
+
     if ((!promptInput.trim() && attachedFiles.length === 0) || aiLoading) return;
 
     setErrorText('');
@@ -393,8 +466,9 @@ export default function AIGenerator() {
 
       setAttachedFiles([]);
 
+      const assistantMsgId = uid();
       const assistantMsg = {
-        id: uid(),
+        id: assistantMsgId,
         role: 'assistant',
         content: response.reply,
         jsonData: response.jsonData,
@@ -405,7 +479,16 @@ export default function AIGenerator() {
 
       // If valid structured JSON received, load it in the interactive sandbox
       if (response.jsonData) {
-        setSandboxData(response.jsonData);
+        const newGen = {
+          ...response.jsonData,
+          messageId: assistantMsgId
+        };
+        setGenerations(prev => {
+          const next = [...prev, newGen];
+          setCurrentGenIndex(next.length - 1);
+          return next;
+        });
+        setSandboxData(newGen);
         setSelectedQuestionIds(new Set());
         // Select all by default
         if (response.jsonData.mode === 'questions' && Array.isArray(response.jsonData.questions)) {
@@ -479,24 +562,34 @@ export default function AIGenerator() {
         
         setGeneratedImage(fullImageUrl);
         
-        // Mettre l'image dans le sandbox pour l'afficher à droite
-        setSandboxData({
+        const assistantMsgId = uid();
+        const newImgGen = {
           mode: 'image',
           imageUrl: fullImageUrl,
           prompt: prompt,
           contentType: contentType,
-          timestamp: new Date().toISOString()
-        });
+          timestamp: new Date().toISOString(),
+          messageId: assistantMsgId
+        };
+
+        // Mettre l'image dans le sandbox pour l'afficher à droite
+        setSandboxData(newImgGen);
         
         const assistantMsg = {
-          id: uid(),
+          id: assistantMsgId,
           role: 'assistant',
           content: `✅ ${contentType.charAt(0).toUpperCase() + contentType.slice(1)} généré${contentType === 'image' ? 'e' : ''} avec succès !`,
           imageUrl: fullImageUrl,
+          jsonData: newImgGen,
           timestamp: new Date()
         };
 
         setMessages(prev => [...prev, assistantMsg]);
+        setGenerations(prev => {
+          const next = [...prev, newImgGen];
+          setCurrentGenIndex(next.length - 1);
+          return next;
+        });
         setSuccessText(`${contentType.charAt(0).toUpperCase() + contentType.slice(1)} généré${contentType === 'image' ? 'e' : ''} avec succès !`);
       } else {
         throw new Error('Aucune URL d\'image retournée');
@@ -561,10 +654,11 @@ export default function AIGenerator() {
     if (!editedQuestion || !sandboxData) return;
     const nextQuestions = [...sandboxData.questions];
     nextQuestions[idx] = { ...editedQuestion };
-    setSandboxData({
+    const updatedGen = {
       ...sandboxData,
       questions: nextQuestions
-    });
+    };
+    updateCurrentGeneration(updatedGen);
     setEditingQuestionId(null);
     setEditedQuestion(null);
     setSuccessText('Question mise à jour avec succès.');
@@ -574,10 +668,11 @@ export default function AIGenerator() {
     setDeleteAction(() => () => {
       if (!sandboxData) return;
       const nextQuestions = sandboxData.questions.filter((_, i) => i !== idx);
-      setSandboxData({
+      const updatedGen = {
         ...sandboxData,
         questions: nextQuestions
-      });
+      };
+      updateCurrentGeneration(updatedGen);
       const nextSelect = new Set(selectedQuestionIds);
       nextSelect.delete(idx);
       setSelectedQuestionIds(nextSelect);
@@ -698,20 +793,22 @@ export default function AIGenerator() {
     if (!sandboxData) return;
     const nextSections = [...sandboxData.sections];
     nextSections[secIdx].title = newTitle;
-    setSandboxData({
+    const updatedGen = {
       ...sandboxData,
       sections: nextSections
-    });
+    };
+    updateCurrentGeneration(updatedGen);
   };
 
   const handleExerciseTitleChange = (secIdx, exoIdx, newTitle) => {
     if (!sandboxData) return;
     const nextSections = [...sandboxData.sections];
     nextSections[secIdx].exercises[exoIdx].title = newTitle;
-    setSandboxData({
+    const updatedGen = {
       ...sandboxData,
       sections: nextSections
-    });
+    };
+    updateCurrentGeneration(updatedGen);
   };
 
   // Sandbox Handlers - Edit Questions in Exam
@@ -729,10 +826,11 @@ export default function AIGenerator() {
     if (!editedQuestion || !sandboxData) return;
     const nextSections = [...sandboxData.sections];
     nextSections[secIdx].exercises[exoIdx].questions[qIdx] = { ...editedQuestion };
-    setSandboxData({
+    const updatedGen = {
       ...sandboxData,
       sections: nextSections
-    });
+    };
+    updateCurrentGeneration(updatedGen);
     setEditingQuestionId(null);
     setEditedQuestion(null);
     setSuccessText('Question mise à jour avec succès.');
@@ -743,10 +841,11 @@ export default function AIGenerator() {
       if (!sandboxData) return;
       const nextSections = [...sandboxData.sections];
       nextSections[secIdx].exercises[exoIdx].questions = nextSections[secIdx].exercises[exoIdx].questions.filter((_, i) => i !== qIdx);
-      setSandboxData({
+      const updatedGen = {
         ...sandboxData,
         sections: nextSections
-      });
+      };
+      updateCurrentGeneration(updatedGen);
       setSuccessText('Question supprimée avec succès.');
       setShowDeleteConfirm(false);
     });
@@ -962,7 +1061,7 @@ export default function AIGenerator() {
         </div>
       )}
 
-      <main className="teacher-main" style={{ padding: '20px 24px' }}>
+      <main className="teacher-main" style={{ padding: '16px 24px 10px' }}>
         {/* ── Bannières de Statut/Notification ── */}
         {errorText && (
           <div className="teacher-alert-error" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
@@ -1068,41 +1167,45 @@ export default function AIGenerator() {
             {showConfig && (
               <div className="ai-config-grid">
                 <div className="ai-config-field">
-                  <label>Matière / Cours</label>
+                  <label><span style={{ color: '#ef4444' }}>*</span> Matière / Cours</label>
                   <input
                     type="text"
                     className="ai-config-input"
                     placeholder="ex: Développement Web, Algorithmes..."
                     value={context.matiere}
                     onChange={(e) => setContext({ ...context, matiere: e.target.value })}
+                    required
                   />
                 </div>
                 <div className="ai-config-field">
-                  <label>Niveau</label>
+                  <label><span style={{ color: '#ef4444' }}>*</span> Niveau</label>
                   <input
                     type="text"
                     className="ai-config-input"
                     placeholder="ex: Licence 3, Master 1..."
                     value={context.niveau}
                     onChange={(e) => setContext({ ...context, niveau: e.target.value })}
+                    required
                   />
                 </div>
                 <div className="ai-config-field">
-                  <label>Durée de l'examen</label>
+                  <label><span style={{ color: '#ef4444' }}>*</span> Durée de l'examen</label>
                   <input
                     type="text"
                     className="ai-config-input"
                     value={context.duree}
                     onChange={(e) => setContext({ ...context, duree: e.target.value })}
+                    required
                   />
                 </div>
                 <div className="ai-config-field">
-                  <label>Note Totale / Barème</label>
+                  <label><span style={{ color: '#ef4444' }}>*</span> Note Totale / Barème</label>
                   <input
                     type="number"
                     className="ai-config-input"
                     value={context.noteTotale}
                     onChange={(e) => setContext({ ...context, noteTotale: e.target.value })}
+                    required
                   />
                 </div>
                 <div className="ai-config-field">
@@ -1181,11 +1284,17 @@ export default function AIGenerator() {
             </div>
 
             {/* Sélecteurs de génération */}
-            <div style={{ padding: '12px 16px', borderTop: '1px solid var(--td-border)', background: '#f8f9fa' }}>
+            <div style={{ 
+              padding: '8px 16px', 
+              borderTop: '1px solid var(--td-border)', 
+              background: '#f8f9fa',
+              display: 'flex',
+              gap: '12px'
+            }}>
               
               {/* Mode de génération */}
-              <div style={{ marginBottom: '12px' }}>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--td-text-label)', marginBottom: '6px' }}>
+              <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--td-text-label)', marginBottom: '4px' }}>
                     Mode de génération
                   </label>
                   <select
@@ -1193,10 +1302,10 @@ export default function AIGenerator() {
                     onChange={(e) => setGenerationMode(e.target.value)}
                     style={{
                       width: '100%',
-                      padding: '8px 12px',
+                      padding: '6px 10px',
                       border: '1px solid var(--td-border)',
                       borderRadius: '6px',
-                      fontSize: '0.85rem',
+                      fontSize: '0.8rem',
                       background: '#fff',
                       cursor: 'pointer',
                       fontWeight: 500
@@ -1212,8 +1321,8 @@ export default function AIGenerator() {
 
               {/* Type de question (seulement si mode questions) */}
               {generationMode === 'questions' && (
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--td-text-label)', marginBottom: '6px' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--td-text-label)', marginBottom: '4px' }}>
                     Type de question
                   </label>
                   <select
@@ -1221,12 +1330,13 @@ export default function AIGenerator() {
                     onChange={(e) => setSelectedQuestionType(e.target.value)}
                     style={{
                       width: '100%',
-                      padding: '8px 12px',
+                      padding: '6px 10px',
                       border: '1px solid var(--td-border)',
                       borderRadius: '6px',
-                      fontSize: '0.85rem',
+                      fontSize: '0.8rem',
                       background: '#fff',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      fontWeight: 500
                     }}
                   >
                     {QUESTION_TYPES.map((type) => (
@@ -1301,40 +1411,153 @@ export default function AIGenerator() {
               <>
                 {/* Sandbox Header */}
                 <div className="ai-sandbox-header">
-                  <div className="ai-sandbox-header-left">
-                    <div className="teacher-exam-icon-wrap" style={{ background: 'var(--td-blue-soft)', color: 'var(--td-blue)', width: 36, height: 36 }}>
-                      <FiLayers size={18} />
+                  <div className="ai-sandbox-header-left" style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'nowrap', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                      <div className="teacher-exam-icon-wrap" style={{ background: 'var(--td-blue-soft)', color: 'var(--td-blue)', width: 36, height: 36, flexShrink: 0 }}>
+                        <FiLayers size={18} />
+                      </div>
+                      <div className="ai-sandbox-title-group" style={{ whiteSpace: 'nowrap' }}>
+                        <h4 style={{ margin: 0, whiteSpace: 'nowrap', fontSize: '0.95rem', fontWeight: 600 }}>Bac à sable interactif</h4>
+                        <span className="ai-sandbox-subtitle" style={{ whiteSpace: 'nowrap', display: 'block', fontSize: '0.72rem', color: 'var(--td-text-muted)', marginTop: '2px' }}>
+                          {sandboxData.mode === 'questions' 
+                            ? `${sandboxData.questions?.length || 0} questions chargées` 
+                            : sandboxData.mode === 'exam'
+                            ? 'Examen structuré complet'
+                            : 'Image / Schéma généré'}
+                        </span>
+                      </div>
                     </div>
-                    <div className="ai-sandbox-title-group">
-                      <h4>Bac à sable interactif</h4>
-                      <span className="ai-sandbox-subtitle">
-                        {sandboxData.mode === 'questions' 
-                          ? `${sandboxData.questions?.length || 0} questions chargées` 
-                          : 'Examen structuré complet'}
-                      </span>
-                    </div>
+
+                    {generations.length > 1 && (
+                      <div className="ai-sandbox-generation-selector" style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '6px', 
+                        marginLeft: '16px', 
+                        paddingLeft: '16px', 
+                        borderLeft: '1px solid var(--td-border)',
+                        flexShrink: 0
+                      }}>
+                        <button
+                          disabled={currentGenIndex === 0}
+                          onClick={() => handleSwitchGeneration(currentGenIndex - 1)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            border: '1px solid var(--td-border)',
+                            background: '#ffffff',
+                            color: currentGenIndex === 0 ? 'var(--td-text-muted)' : 'var(--td-blue)',
+                            cursor: currentGenIndex === 0 ? 'not-allowed' : 'pointer',
+                            opacity: currentGenIndex === 0 ? 0.5 : 1,
+                            fontSize: '0.9rem',
+                            fontWeight: 'bold',
+                            transition: 'all 0.2s',
+                            boxShadow: 'var(--td-shadow-sm)',
+                            outline: 'none'
+                          }}
+                          title="Génération précédente"
+                          onMouseEnter={(e) => {
+                            if (currentGenIndex !== 0) {
+                              e.currentTarget.style.borderColor = 'var(--td-blue)';
+                              e.currentTarget.style.background = 'var(--td-blue-soft)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentGenIndex !== 0) {
+                              e.currentTarget.style.borderColor = 'var(--td-border)';
+                              e.currentTarget.style.background = '#ffffff';
+                            }
+                          }}
+                        >
+                          ←
+                        </button>
+
+                        <div 
+                          onMouseEnter={() => setSelectorHover(true)}
+                          onMouseLeave={() => setSelectorHover(false)}
+                          style={{
+                            fontSize: '0.76rem',
+                            fontWeight: 700,
+                            color: '#ffffff',
+                            background: 'linear-gradient(135deg, #d4a843, #b8860b)',
+                            border: 'none',
+                            padding: '4px 10px',
+                            borderRadius: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            whiteSpace: 'nowrap',
+                            boxShadow: selectorHover ? '0 4px 12px rgba(212, 168, 67, 0.25)' : '0 2px 8px rgba(212, 168, 67, 0.15)',
+                            transform: selectorHover ? 'translateY(-1px)' : 'none',
+                            filter: selectorHover ? 'brightness(1.08)' : 'none',
+                            transition: 'all 0.2s',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <span>Génération {currentGenIndex + 1}/{generations.length}</span>
+                          <span style={{
+                            fontSize: '0.68rem',
+                            color: '#ffffff',
+                            background: 'rgba(255, 255, 255, 0.2)',
+                            padding: '1px 5px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
+                            fontWeight: 700
+                          }}>
+                            {generations[currentGenIndex]?.mode === 'questions' 
+                              ? `${generations[currentGenIndex]?.questions?.length || 0} Qs` 
+                              : generations[currentGenIndex]?.mode === 'exam' 
+                              ? '📋 Exam' 
+                              : '🎨 Img'}
+                          </span>
+                        </div>
+
+                        <button
+                          disabled={currentGenIndex === generations.length - 1}
+                          onClick={() => handleSwitchGeneration(currentGenIndex + 1)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            border: '1px solid var(--td-border)',
+                            background: '#ffffff',
+                            color: currentGenIndex === generations.length - 1 ? 'var(--td-text-muted)' : 'var(--td-blue)',
+                            cursor: currentGenIndex === generations.length - 1 ? 'not-allowed' : 'pointer',
+                            opacity: currentGenIndex === generations.length - 1 ? 0.5 : 1,
+                            fontSize: '0.9rem',
+                            fontWeight: 'bold',
+                            transition: 'all 0.2s',
+                            boxShadow: 'var(--td-shadow-sm)',
+                            outline: 'none'
+                          }}
+                          title="Génération suivante"
+                          onMouseEnter={(e) => {
+                            if (currentGenIndex !== generations.length - 1) {
+                              e.currentTarget.style.borderColor = 'var(--td-blue)';
+                              e.currentTarget.style.background = 'var(--td-blue-soft)';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (currentGenIndex !== generations.length - 1) {
+                              e.currentTarget.style.borderColor = 'var(--td-border)';
+                              e.currentTarget.style.background = '#ffffff';
+                            }
+                          }}
+                        >
+                          →
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="ai-sandbox-header-actions">
-                    {sandboxData.mode === 'questions' ? (
-                      <>
-                        <button
-                          className="ai-sandbox-action-btn ai-sandbox-btn-secondary"
-                          onClick={toggleSelectAll}
-                        >
-                          {selectedQuestionIds.size === sandboxData.questions.length ? 'Désélectionner' : 'Sélectionner tout'}
-                        </button>
-                        <button
-                          className="ai-sandbox-action-btn ai-sandbox-btn-primary"
-                          disabled={selectedQuestionIds.size === 0}
-                          onClick={handleSaveQuestionsToBank}
-                        >
-                          <FiSave /> Ajouter à la Banque
-                        </button>
-                      </>
-                    ) : (
-                      <></>
-                    )}
                   </div>
                 </div>
 
@@ -1452,7 +1675,8 @@ export default function AIGenerator() {
                                         onChange={(e) => {
                                           const nextQuestions = [...sandboxData.questions];
                                           nextQuestions[idx].points = Number(e.target.value);
-                                          setSandboxData({ ...sandboxData, questions: nextQuestions });
+                                          const updatedGen = { ...sandboxData, questions: nextQuestions };
+                                          updateCurrentGeneration(updatedGen);
                                         }}
                                         style={{
                                           width: '50px',
@@ -1606,7 +1830,8 @@ export default function AIGenerator() {
                                       onChange={(e) => {
                                         const nextSections = [...sandboxData.sections];
                                         nextSections[secIdx].exercises[exoIdx].points = Number(e.target.value);
-                                        setSandboxData({ ...sandboxData, sections: nextSections });
+                                        const updatedGen = { ...sandboxData, sections: nextSections };
+                                        updateCurrentGeneration(updatedGen);
                                       }}
                                       style={{
                                         width: '50px',
@@ -1717,7 +1942,8 @@ export default function AIGenerator() {
                                                     onChange={(e) => {
                                                       const nextSections = [...sandboxData.sections];
                                                       nextSections[secIdx].exercises[exoIdx].questions[qIdx].points = Number(e.target.value);
-                                                      setSandboxData({ ...sandboxData, sections: nextSections });
+                                                      const updatedGen = { ...sandboxData, sections: nextSections };
+                                                      updateCurrentGeneration(updatedGen);
                                                     }}
                                                     style={{
                                                       width: '45px',
@@ -1783,6 +2009,32 @@ export default function AIGenerator() {
                     </div>
                   )}
                 </div>
+
+                {/* Footer avec boutons Sélectionner/Enregistrer - visible en mode questions */}
+                {sandboxData && sandboxData.mode === 'questions' && (
+                  <div style={{
+                    padding: '16px',
+                    borderTop: '1px solid var(--td-border)',
+                    background: 'var(--td-bg-elevated)',
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    gap: '12px'
+                  }}>
+                    <button
+                      className="ai-sandbox-action-btn ai-sandbox-btn-secondary"
+                      onClick={toggleSelectAll}
+                    >
+                      {selectedQuestionIds.size === sandboxData.questions.length ? 'Désélectionner' : 'Sélectionner tout'}
+                    </button>
+                    <button
+                      className="ai-sandbox-action-btn ai-sandbox-btn-primary"
+                      disabled={selectedQuestionIds.size === 0}
+                      onClick={handleSaveQuestionsToBank}
+                    >
+                      <FiSave /> Ajouter à la Banque
+                    </button>
+                  </div>
+                )}
 
                 {/* Footer avec bouton Enregistrer - visible en mode examen */}
                 {sandboxData && sandboxData.mode === 'exam' && (

@@ -15,9 +15,9 @@
   display: grid;
   grid-template-columns: 1fr 1.2fr;
   gap: 24px;
-  height: calc(100vh - 80px);
+  height: calc(100vh - 45px);
   min-height: 580px;
-  margin-top: 8px;
+  margin-top: 4px;
   animation: fadeUp 0.45s var(--td-ease) both;
 }
 
@@ -47,7 +47,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 18px;
+  padding: 8px 14px;
   background: var(--td-bg-elevated);
   border-bottom: 1px solid var(--td-border);
   cursor: pointer;
@@ -72,8 +72,8 @@
 .ai-config-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  padding: 16px 18px;
+  gap: 8px;
+  padding: 10px 14px;
   background: var(--td-bg-card);
   border-bottom: 1px solid var(--td-border);
   animation: slideDown 0.25s var(--td-ease);
@@ -82,7 +82,7 @@
 .ai-config-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .ai-config-field label {
@@ -94,7 +94,7 @@
 }
 
 .ai-config-input {
-  padding: 8px 12px;
+  padding: 6px 10px;
   border: 1px solid var(--td-border);
   border-radius: var(--td-radius-sm);
   font-size: 0.82rem;

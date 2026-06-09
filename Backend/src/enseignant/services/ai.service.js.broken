@@ -1,6 +1,40 @@
-const Groq = require('groq-sdk');
+﻿const Groq = require('groq-sdk');
 const fs = require('fs');
 const axios = require('axios');
+
+/* ── Helper function to extract JSON from response with code blocks ── */
+function extractJsonFromResponse(reply) {
+    let cleanedReply = reply.trim();
+    
+    // Try to extract JSON from ```json ... ``` blocks
+    if (cleanedReply.includes('```json') && cleanedReply.includes('```')) {
+        const start = cleanedReply.indexOf('```json') + 7;
+        const end = cleanedReply.indexOf('```', start);
+        if (end > start) {
+            const jsonText = cleanedReply.substring(start, end).trim();
+            return jsonText;
+        }
+    }
+    
+    // Try to extract JSON from ``` ... ``` blocks
+    if (cleanedReply.includes('```')) {
+        const start = cleanedReply.indexOf('```') + 3;
+        const end = cleanedReply.indexOf('```', start);
+        if (end > start) {
+            const jsonText = cleanedReply.substring(start, end).trim();
+            return jsonText;
+        }
+    }
+    
+    // Try to find JSON object directly
+    const jsonStart = cleanedReply.indexOf('{');
+    const jsonEnd = cleanedReply.lastIndexOf('}');
+    if (jsonStart !== -1 && jsonEnd > jsonStart) {
+        return cleanedReply.substring(jsonStart, jsonEnd + 1);
+    }
+    
+    return cleanedReply;
+}
 
 let groqInstance = null;
 function getGroqClient() {
@@ -1458,7 +1492,6 @@ ${validation.suggestions.slice(0, 3).map(s => `• "${s}"`).join('\n')}`;
         if (promptRequirements.totalPoints) {
             userContent += `Points totaux spécifiés: ${promptRequirements.totalPoints} points\n`;
         }
-    }
 
     // Ajouter une note sur les améliorations du prompt si nécessaire
     if (promptRegulation.improvements.length > 0) {
@@ -1502,12 +1535,8 @@ ${validation.suggestions.slice(0, 3).map(s => `• "${s}"`).join('\n')}`;
                 let cleanedReply = reply.trim();
                 cleanedReply = cleanedReply.replace(/^.*?(?:voici|voilà|voila|here is|here's|ci-dessous|below|suivant|following).*?:/gi, '');
                 cleanedReply = cleanedReply.replace(/^.*?(?:json|examen|exam|questions?).*?:/gi, '');
-                const jsonMatch = cleanedReply.match(/```json\s*([\s\S]*?)```/) || cleanedReply.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    const cleaned = jsonMatch[1] || jsonMatch[0];
-                    const pureJson = cleaned.replace(/```json|```/g, '').trim();
-                    jsonData = JSON.parse(pureJson);
-                }
+                const pureJson = extractJsonFromResponse(cleanedReply);
+                jsonData = JSON.parse(pureJson);
             } catch (err) {
                 console.log('Pas de JSON valide détecté dans la réponse');
                 jsonData = null;
@@ -1556,12 +1585,8 @@ ${validation.suggestions.slice(0, 3).map(s => `• "${s}"`).join('\n')}`;
                     let cleanedReply = reply.trim();
                     cleanedReply = cleanedReply.replace(/^.*?(?:voici|voilà|voila|here is|here's|ci-dessous|below|suivant|following).*?:/gi, '');
                     cleanedReply = cleanedReply.replace(/^.*?(?:json|examen|exam|questions?).*?:/gi, '');
-                    const jsonMatch = cleanedReply.match(/```json\s*([\s\S]*?)```/) || cleanedReply.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) {
-                        const cleaned = jsonMatch[1] || jsonMatch[0];
-                        const pureJson = cleaned.replace(/```json|```/g, '').trim();
-                        jsonData = JSON.parse(pureJson);
-                    }
+                    const pureJson = extractJsonFromResponse(cleanedReply);
+                    jsonData = JSON.parse(pureJson);
                 } catch (err) {
                     console.log('Pas de JSON valide détecté dans la réponse');
                     jsonData = null;
@@ -1576,7 +1601,7 @@ ${validation.suggestions.slice(0, 3).map(s => `• "${s}"`).join('\n')}`;
             }
         }
         
-        throw new Error(`Tous les services IA ont échoué: ${groqError.message}`);
+        throw new Error('Tous les services IA ont échoué: ' + groqError.message);
     }
 
     const reply = completion.choices[0].message.content;
@@ -1585,12 +1610,8 @@ ${validation.suggestions.slice(0, 3).map(s => `• "${s}"`).join('\n')}`;
         let cleanedReply = reply.trim();
         cleanedReply = cleanedReply.replace(/^.*?(?:voici|voilà|voila|here is|here's|ci-dessous|below|suivant|following).*?:/gi, '');
         cleanedReply = cleanedReply.replace(/^.*?(?:json|examen|exam|questions?).*?:/gi, '');
-        const jsonMatch = cleanedReply.match(/```json\s*([\s\S]*?)```/) || cleanedReply.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            const cleaned = jsonMatch[1] || jsonMatch[0];
-            const pureJson = cleaned.replace(/```json|```/g, '').trim();
-            jsonData = JSON.parse(pureJson);
-        }
+        const pureJson = extractJsonFromResponse(cleanedReply);
+        jsonData = JSON.parse(pureJson);
     } catch (err) {
         console.log('Pas de JSON valide détecté dans la réponse');
         jsonData = null;
@@ -1850,7 +1871,7 @@ async function generateAIQuestionsService({ matiere, niveau, type, count, contex
     
     console.log(`🚀 Génération finale: ${finalCount} questions de type "${finalType}"`);
 
-    let prompt = `Génère EXACTEMENT ${finalCount} questions de type "${finalType}" pour la matière "${matiere}" niveau "${niveau}".
+    const prompt = `Génère EXACTEMENT ${finalCount} questions de type "${finalType}" pour la matière "${matiere}" niveau "${niveau}".
 ${contexte ? `\nContexte spécifique: ${contexte}` : ''}
 
 **PARAMÈTRES OBLIGATOIRES À RESPECTER** :
@@ -1934,7 +1955,6 @@ ${contexte ? `\nContexte spécifique: ${contexte}` : ''}
 - Génère exactement le type "${finalType}" comme spécifié
 - Respecte les caractéristiques de ce type de question
 - Contenu adapté à ${matiere} niveau ${niveau}`;
-    }
     prompt += `
 
 JSON format OBLIGATOIRE:
@@ -1975,7 +1995,9 @@ Si type = "tableau_completion", tu DOIS générer exactement :
 }
 
 Types supportés: ouverte, qcm_unique, qcm_multiple, vrai_faux, vrai_faux_tableau, pratique, code_completion, code_debug, analyse_sortie, tableau_completion, etude_cas, fonction_definition, algorithme_implementation, diagramme_creation, schema_completion, analyse_complexite, optimisation_code, test_unitaire, requete_sql, modele_donnees, architecture_systeme.
-Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
+Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;`;
+
+JSON format OBLIGATOIRE:
     const messages = [
         { role: 'system', content: "Generateur de questions pedagogiques. Tu DOIS respecter exactement les parametres donnes et generer le type " + finalType + " detecte. Retourne UNIQUEMENT du JSON valide." },
         { role: 'user', content: prompt }
@@ -2000,13 +2022,8 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
                 let cleanedReply = reply.trim();
                 cleanedReply = cleanedReply.replace(/^.*?(?:voici|voilà|voila|here is|here's|ci-dessous|below).*?:/gi, '');
                 cleanedReply = cleanedReply.replace(/^.*?(?:json|questions?).*?:/gi, '');
-                const jsonMatch = cleanedReply.match(/\`\`\`json\s*([\s\S]*?)\`\`\`/) || cleanedReply.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    const cleaned = jsonMatch[1] || jsonMatch[0];
-                    jsonData = JSON.parse(cleaned.replace(/\`\`\`json|\`\`\`/g, '').trim());
-                } else {
-                    jsonData = JSON.parse(cleanedReply);
-                }
+                const pureJson = extractJsonFromResponse(cleanedReply);
+                jsonData = JSON.parse(pureJson);
             } catch (err) {
                 console.error('Erreur parsing JSON questions:', err);
                 throw err;
@@ -2050,13 +2067,8 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
                     let cleanedReply = reply.trim();
                     cleanedReply = cleanedReply.replace(/^.*?(?:voici|voilà|voila|here is|here's|ci-dessous|below).*?:/gi, '');
                     cleanedReply = cleanedReply.replace(/^.*?(?:json|questions?).*?:/gi, '');
-                    const jsonMatch = cleanedReply.match(/\`\`\`json\s*([\s\S]*?)\`\`\`/) || cleanedReply.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) {
-                        const cleaned = jsonMatch[1] || jsonMatch[0];
-                        jsonData = JSON.parse(cleaned.replace(/\`\`\`json|\`\`\`/g, '').trim());
-                    } else {
-                        jsonData = JSON.parse(cleanedReply);
-                    }
+                    const pureJson = extractJsonFromResponse(cleanedReply);
+                    jsonData = JSON.parse(pureJson);
                 } catch (err) {
                     console.error('Erreur parsing JSON questions:', err);
                     throw err;
@@ -2068,7 +2080,7 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
             }
         }
         
-        throw new Error(`Impossible de générer les questions: ${groqError.message}`);
+        throw new Error('Impossible de générer les questions: ' + groqError.message);
     }
 
     const reply = completion.choices[0].message.content;
@@ -2077,16 +2089,11 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
         let cleanedReply = reply.trim();
         cleanedReply = cleanedReply.replace(/^.*?(?:voici|voilà|voila|here is|here's|ci-dessous|below).*?:/gi, '');
         cleanedReply = cleanedReply.replace(/^.*?(?:json|questions?).*?:/gi, '');
-        const jsonMatch = cleanedReply.match(/\`\`\`json\s*([\s\S]*?)\`\`\`/) || cleanedReply.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            const cleaned = jsonMatch[1] || jsonMatch[0];
-            jsonData = JSON.parse(cleaned.replace(/\`\`\`json|\`\`\`/g, '').trim());
-        } else {
-            jsonData = JSON.parse(cleanedReply);
-        }
+        const pureJson = extractJsonFromResponse(cleanedReply);
+        jsonData = JSON.parse(pureJson);
     } catch (err) {
         console.error('Erreur parsing JSON questions:', err);
-        throw new Error(`Impossible de générer les questions. Erreur: ${err.message}`);
+        throw new Error('Impossible de générer les questions. Erreur: ' + err.message);
     }
     
     const cleaned = removeCorrectAnswers(jsonData);
@@ -2113,23 +2120,23 @@ async function generateAIExamService({ matiere, niveau, duree, noteTotale, nbQue
 
     // NOUVEAU : ANALYSER LE PROMPT CONTEXTE POUR DÉTECTION INTELLIGENTE
     if (contexte && contexte.trim()) {
-        console.log(`🔍 Analyse du prompt contexte pour examen: "${contexte}"`);
+        console.log('[ANALYSIS] Contexte prompt examen: ' + contexte);
         
         // Normaliser le prompt
         const normalized = normalizeAndInterpretPrompt(contexte, { matiere, niveau });
-        console.log(`📝 Prompt normalisé: "${normalized.normalized}"`);
+        console.log('[NORMALIZED] ' + normalized.normalized);
         
         // Analyser les exigences du prompt
         const promptReqs = parsePromptRequirements(contexte);
         if (promptReqs.isSpecificRequest) {
             if (promptReqs.totalQuestions > 0) {
                 questionsCount = promptReqs.totalQuestions;
-                console.log(`📊 Nombre total détecté dans le prompt: ${questionsCount}`);
+                console.log('[COUNT] Total questions detected: ' + questionsCount);
             }
             
             if (promptReqs.questionTypes.length > 0) {
                 questionTypes = promptReqs.questionTypes;
-                console.log(`🎯 Types détectés dans le prompt: ${questionTypes.join(', ')}`);
+                console.log('[TYPES] Types detected: ' + questionTypes.join(', '));
             }
         }
     }
@@ -2229,13 +2236,8 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
                 let cleanedReply = reply.trim();
                 cleanedReply = cleanedReply.replace(/^.*?(?:voici|voilà|voila|here is|here's|ci-dessous|below).*?:/gi, '');
                 cleanedReply = cleanedReply.replace(/^.*?(?:json|examen|exam).*?:/gi, '');
-                const jsonMatch = cleanedReply.match(/```json\s*([\s\S]*?)```/) || cleanedReply.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    const cleaned = jsonMatch[1] || jsonMatch[0];
-                    jsonData = JSON.parse(cleaned.replace(/```json|```/g, '').trim());
-                } else {
-                    jsonData = JSON.parse(cleanedReply);
-                }
+                const pureJson = extractJsonFromResponse(cleanedReply);
+                jsonData = JSON.parse(pureJson);
             } catch (err) {
                 console.error('Erreur parsing JSON exam:', err);
                 throw err;
@@ -2279,16 +2281,11 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
                     let cleanedReply = reply.trim();
                     cleanedReply = cleanedReply.replace(/^.*?(?:voici|voilà|voila|here is|here's|ci-dessous|below).*?:/gi, '');
                     cleanedReply = cleanedReply.replace(/^.*?(?:json|examen|exam).*?:/gi, '');
-                    const jsonMatch = cleanedReply.match(/\`\`\`json\s*([\s\S]*?)\`\`\`/) || cleanedReply.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) {
-                        const cleaned = jsonMatch[1] || jsonMatch[0];
-                        jsonData = JSON.parse(cleaned.replace(/\`\`\`json|\`\`\`/g, '').trim());
-                    } else {
-                        jsonData = JSON.parse(cleanedReply);
-                    }
+                    const pureJson = extractJsonFromResponse(cleanedReply);
+                    jsonData = JSON.parse(pureJson);
                 } catch (err) {
                     console.error('Erreur parsing JSON exam:', err);
-                    throw new Error(`Impossible de générer l'examen. Erreur: ${err.message}`);
+                    throw new Error('Impossible de générer l\'examen. Erreur: ' + err.message);
                 }
                 const cleaned = removeCorrectAnswers(jsonData);
                 return await enrichWithImages(cleaned);
@@ -2297,7 +2294,7 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
             }
         }
         
-        throw new Error(`Impossible de générer l'examen: ${groqError.message}`);
+        throw new Error('Impossible de générer l\'examen: ' + groqError.message);
     }
 
     const reply = completion.choices[0].message.content;
@@ -2306,16 +2303,11 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
         let cleanedReply = reply.trim();
         cleanedReply = cleanedReply.replace(/^.*?(?:voici|voilà|voila|here is|here's|ci-dessous|below).*?:/gi, '');
         cleanedReply = cleanedReply.replace(/^.*?(?:json|examen|exam).*?:/gi, '');
-        const jsonMatch = cleanedReply.match(/\`\`\`json\s*([\s\S]*?)\`\`\`/) || cleanedReply.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            const cleaned = jsonMatch[1] || jsonMatch[0];
-            jsonData = JSON.parse(cleaned.replace(/\`\`\`json|\`\`\`/g, '').trim());
-        } else {
-            jsonData = JSON.parse(cleanedReply);
-        }
+        const pureJson = extractJsonFromResponse(cleanedReply);
+        jsonData = JSON.parse(pureJson);
     } catch (err) {
         console.error('Erreur parsing JSON exam:', err);
-        throw new Error(`Impossible de générer l'examen. Erreur: ${err.message}`);
+        throw new Error('Impossible de générer l\'examen. Erreur: ' + err.message);
     }
     
     const cleaned = removeCorrectAnswers(jsonData);

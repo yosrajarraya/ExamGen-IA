@@ -1458,7 +1458,6 @@ ${validation.suggestions.slice(0, 3).map(s => `• "${s}"`).join('\n')}`;
         if (promptRequirements.totalPoints) {
             userContent += `Points totaux spécifiés: ${promptRequirements.totalPoints} points\n`;
         }
-    }
 
     // Ajouter une note sur les améliorations du prompt si nécessaire
     if (promptRegulation.improvements.length > 0) {
@@ -1850,7 +1849,7 @@ async function generateAIQuestionsService({ matiere, niveau, type, count, contex
     
     console.log(`🚀 Génération finale: ${finalCount} questions de type "${finalType}"`);
 
-    let prompt = `Génère EXACTEMENT ${finalCount} questions de type "${finalType}" pour la matière "${matiere}" niveau "${niveau}".
+    const prompt = `Génère EXACTEMENT ${finalCount} questions de type "${finalType}" pour la matière "${matiere}" niveau "${niveau}".
 ${contexte ? `\nContexte spécifique: ${contexte}` : ''}
 
 **PARAMÈTRES OBLIGATOIRES À RESPECTER** :
@@ -1934,7 +1933,6 @@ ${contexte ? `\nContexte spécifique: ${contexte}` : ''}
 - Génère exactement le type "${finalType}" comme spécifié
 - Respecte les caractéristiques de ce type de question
 - Contenu adapté à ${matiere} niveau ${niveau}`;
-    }
     prompt += `
 
 JSON format OBLIGATOIRE:
@@ -1975,7 +1973,9 @@ Si type = "tableau_completion", tu DOIS générer exactement :
 }
 
 Types supportés: ouverte, qcm_unique, qcm_multiple, vrai_faux, vrai_faux_tableau, pratique, code_completion, code_debug, analyse_sortie, tableau_completion, etude_cas, fonction_definition, algorithme_implementation, diagramme_creation, schema_completion, analyse_complexite, optimisation_code, test_unitaire, requete_sql, modele_donnees, architecture_systeme.
-Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
+Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;`;
+
+JSON format OBLIGATOIRE:
     const messages = [
         { role: 'system', content: "Generateur de questions pedagogiques. Tu DOIS respecter exactement les parametres donnes et generer le type " + finalType + " detecte. Retourne UNIQUEMENT du JSON valide." },
         { role: 'user', content: prompt }
@@ -2000,10 +2000,10 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
                 let cleanedReply = reply.trim();
                 cleanedReply = cleanedReply.replace(/^.*?(?:voici|voilà|voila|here is|here's|ci-dessous|below).*?:/gi, '');
                 cleanedReply = cleanedReply.replace(/^.*?(?:json|questions?).*?:/gi, '');
-                const jsonMatch = cleanedReply.match(/\`\`\`json\s*([\s\S]*?)\`\`\`/) || cleanedReply.match(/\{[\s\S]*\}/);
+                const jsonMatch = cleanedReply.match(/```json\s*([\s\S]*?)```/) || cleanedReply.match(/\{[\s\S]*\}/);
                 if (jsonMatch) {
                     const cleaned = jsonMatch[1] || jsonMatch[0];
-                    jsonData = JSON.parse(cleaned.replace(/\`\`\`json|\`\`\`/g, '').trim());
+                    jsonData = JSON.parse(cleaned.replace(/```json|```/g, '').trim());
                 } else {
                     jsonData = JSON.parse(cleanedReply);
                 }
@@ -2050,10 +2050,10 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
                     let cleanedReply = reply.trim();
                     cleanedReply = cleanedReply.replace(/^.*?(?:voici|voilà|voila|here is|here's|ci-dessous|below).*?:/gi, '');
                     cleanedReply = cleanedReply.replace(/^.*?(?:json|questions?).*?:/gi, '');
-                    const jsonMatch = cleanedReply.match(/\`\`\`json\s*([\s\S]*?)\`\`\`/) || cleanedReply.match(/\{[\s\S]*\}/);
+                    const jsonMatch = cleanedReply.match(/```json\s*([\s\S]*?)```/) || cleanedReply.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                         const cleaned = jsonMatch[1] || jsonMatch[0];
-                        jsonData = JSON.parse(cleaned.replace(/\`\`\`json|\`\`\`/g, '').trim());
+                        jsonData = JSON.parse(cleaned.replace(/```json|```/g, '').trim());
                     } else {
                         jsonData = JSON.parse(cleanedReply);
                     }
@@ -2077,10 +2077,10 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
         let cleanedReply = reply.trim();
         cleanedReply = cleanedReply.replace(/^.*?(?:voici|voilà|voila|here is|here's|ci-dessous|below).*?:/gi, '');
         cleanedReply = cleanedReply.replace(/^.*?(?:json|questions?).*?:/gi, '');
-        const jsonMatch = cleanedReply.match(/\`\`\`json\s*([\s\S]*?)\`\`\`/) || cleanedReply.match(/\{[\s\S]*\}/);
+        const jsonMatch = cleanedReply.match(/```json\s*([\s\S]*?)```/) || cleanedReply.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             const cleaned = jsonMatch[1] || jsonMatch[0];
-            jsonData = JSON.parse(cleaned.replace(/\`\`\`json|\`\`\`/g, '').trim());
+            jsonData = JSON.parse(cleaned.replace(/```json|```/g, '').trim());
         } else {
             jsonData = JSON.parse(cleanedReply);
         }
@@ -2279,10 +2279,10 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
                     let cleanedReply = reply.trim();
                     cleanedReply = cleanedReply.replace(/^.*?(?:voici|voilà|voila|here is|here's|ci-dessous|below).*?:/gi, '');
                     cleanedReply = cleanedReply.replace(/^.*?(?:json|examen|exam).*?:/gi, '');
-                    const jsonMatch = cleanedReply.match(/\`\`\`json\s*([\s\S]*?)\`\`\`/) || cleanedReply.match(/\{[\s\S]*\}/);
+                    const jsonMatch = cleanedReply.match(/```json\s*([\s\S]*?)```/) || cleanedReply.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                         const cleaned = jsonMatch[1] || jsonMatch[0];
-                        jsonData = JSON.parse(cleaned.replace(/\`\`\`json|\`\`\`/g, '').trim());
+                        jsonData = JSON.parse(cleaned.replace(/```json|```/g, '').trim());
                     } else {
                         jsonData = JSON.parse(cleanedReply);
                     }
@@ -2306,10 +2306,10 @@ Retourne UNIQUEMENT le JSON, sans texte avant ou après.`;
         let cleanedReply = reply.trim();
         cleanedReply = cleanedReply.replace(/^.*?(?:voici|voilà|voila|here is|here's|ci-dessous|below).*?:/gi, '');
         cleanedReply = cleanedReply.replace(/^.*?(?:json|examen|exam).*?:/gi, '');
-        const jsonMatch = cleanedReply.match(/\`\`\`json\s*([\s\S]*?)\`\`\`/) || cleanedReply.match(/\{[\s\S]*\}/);
+        const jsonMatch = cleanedReply.match(/```json\s*([\s\S]*?)```/) || cleanedReply.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             const cleaned = jsonMatch[1] || jsonMatch[0];
-            jsonData = JSON.parse(cleaned.replace(/\`\`\`json|\`\`\`/g, '').trim());
+            jsonData = JSON.parse(cleaned.replace(/```json|```/g, '').trim());
         } else {
             jsonData = JSON.parse(cleanedReply);
         }
@@ -2327,4 +2327,5 @@ module.exports = {
     extractFileContent,
     generateAIQuestionsService,
     generateAIExamService
+};
 };
